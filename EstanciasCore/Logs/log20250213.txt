@@ -1,0 +1,77 @@
+2025-02-13 13:09:29.343 -03:00 [WRN] No type was specified for the decimal column 'Deuda' on entity type 'Accesos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.397 -03:00 [WRN] No type was specified for the decimal column 'MaximoDisponible' on entity type 'Campanas'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.401 -03:00 [WRN] No type was specified for the decimal column 'MinimoDisponible' on entity type 'Campanas'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.405 -03:00 [WRN] No type was specified for the decimal column 'Disponible' on entity type 'CampanasRenglones'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.408 -03:00 [WRN] No type was specified for the decimal column 'ImporteMaximo' on entity type 'CampanasRenglones'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.412 -03:00 [WRN] No type was specified for the decimal column 'Saldo' on entity type 'Billetera'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.414 -03:00 [WRN] No type was specified for the decimal column 'InteresesPorCuota' on entity type 'Financiacion'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.417 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'MovimientoBilletera'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.420 -03:00 [WRN] No type was specified for the decimal column 'MontoAdeudado' on entity type 'PagoTarjeta'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.423 -03:00 [WRN] No type was specified for the decimal column 'Oferta' on entity type 'Producto'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.426 -03:00 [WRN] No type was specified for the decimal column 'Precio' on entity type 'Producto'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.428 -03:00 [WRN] No type was specified for the decimal column 'Oferta' on entity type 'ProductoCliente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.431 -03:00 [WRN] No type was specified for the decimal column 'Precio' on entity type 'ProductoCliente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.434 -03:00 [WRN] No type was specified for the decimal column 'Importe' on entity type 'CuentaCorriente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.437 -03:00 [WRN] No type was specified for the decimal column 'Saldo' on entity type 'CuentaCorriente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.440 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'MockServicio'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:09:29.443 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'RelacionPuntos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-02-13 13:10:00.878 -03:00 [ERR] An unhandled exception has occurred while executing the request.
+Microsoft.AspNetCore.Connections.ConnectionResetException: The client has disconnected ---> System.Runtime.InteropServices.COMException: Se ha intentado una operación en una conexión de red inexistente. (Exception from HRESULT: 0x800704CD)
+   --- End of inner exception stack trace ---
+   at Microsoft.AspNetCore.Server.IIS.Core.IO.AsyncIOOperation.GetResult(Int16 token)
+   at Microsoft.AspNetCore.Server.IIS.Core.IISHttpContext.ReadBody()
+   at System.IO.Pipelines.PipeCompletion.ThrowLatchedException()
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& result)
+   at System.IO.Pipelines.Pipe.ReadAsync(CancellationToken token)
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.ReadAsync(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Server.IIS.Core.IISHttpContext.ReadAsync(Memory`1 memory, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Server.IIS.Core.HttpRequestStream.ReadAsyncInternal(Memory`1 buffer, CancellationToken cancellationToken)
+   at System.IO.StreamReader.ReadBufferAsync()
+   at System.IO.StreamReader.ReadAsyncInternal(Memory`1 buffer, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.WebUtilities.FormReader.BufferAsync(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.WebUtilities.FormReader.ReadNextPairAsyncImpl(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.WebUtilities.FormReader.ReadFormAsync(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Features.FormFeature.InnerReadFormAsync(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Features.FormFeature.ReadForm()
+   at Microsoft.AspNetCore.Http.Internal.DefaultHttpRequest.get_Form()
+   at Commons.Controllers.BaseController.DataTable[T](IQueryable`1 queryable)
+   at EstanciasCore.Controllers.UsuariosController.UsuariosDataTable() in C:\Iscoders\Estancias\EstanciasCore\Areas\Administracion\Controllers\UsuariosController.cs:line 59
+   at lambda_method(Closure , Object , Object[] )
+   at Microsoft.Extensions.Internal.ObjectMethodExecutor.Execute(Object target, Object[] parameters)
+   at Microsoft.AspNetCore.Mvc.Internal.ActionMethodExecutor.SyncActionResultExecutor.Execute(IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Internal.ControllerActionInvoker.InvokeActionMethodAsync()
+   at Microsoft.AspNetCore.Mvc.Internal.ControllerActionInvoker.InvokeNextActionFilterAsync()
+   at Microsoft.AspNetCore.Mvc.Internal.ControllerActionInvoker.Rethrow(ActionExecutedContext context)
+   at Microsoft.AspNetCore.Mvc.Internal.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Internal.ControllerActionInvoker.InvokeInnerFilterAsync()
+   at Microsoft.AspNetCore.Mvc.Internal.ResourceInvoker.InvokeNextResourceFilter()
+   at Microsoft.AspNetCore.Mvc.Internal.ResourceInvoker.Rethrow(ResourceExecutedContext context)
+   at Microsoft.AspNetCore.Mvc.Internal.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Internal.ResourceInvoker.InvokeFilterPipelineAsync()
+   at Microsoft.AspNetCore.Mvc.Internal.ResourceInvoker.InvokeAsync()
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Cors.Infrastructure.CorsMiddleware.InvokeCore(HttpContext context)
+   at Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore.MigrationsEndPointMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore.DatabaseErrorPageMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore.DatabaseErrorPageMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context)
+2025-02-13 13:16:08.459 -03:00 [WRN] Request API: ::1 - /api/MTarjetas/SubirComprobantePagoTarjeta -  {
+  "id": 0,
+  "Persona": 1293,
+  "NroTarjeta": "500022890",
+  "ComprobantePago ": null,
+  "UAT": "vnvM4yERbultacVYEK7MkOVXlr8cb4"
+}
+2025-02-13 13:16:12.895 -03:00 [WRN] Query: '(from DatosEstructura <generated>_1 in DbSet<DatosEstructura> select [<generated>_1]).FirstOrDefault...' uses First/FirstOrDefault/Last/LastOrDefault operation without OrderBy and filter which may lead to unpredictable results.
+2025-02-13 13:16:13.671 -03:00 [WRN] Query: '(from TipoMovimientoTarjeta <generated>_1 in DbSet<TipoMovimientoTarjeta> select [<generated>_1]).Fi...' uses First/FirstOrDefault/Last/LastOrDefault operation without OrderBy and filter which may lead to unpredictable results.
+2025-02-13 13:16:52.887 -03:00 [WRN] Query: '(from LeyendaTipoMovimiento <generated>_1 in DbSet<LeyendaTipoMovimiento> select [<generated>_1]).Fi...' uses First/FirstOrDefault/Last/LastOrDefault operation without OrderBy and filter which may lead to unpredictable results.
+2025-02-13 13:25:30.283 -03:00 [WRN] Query: '(from Empresas <generated>_1 in DbSet<Empresas> select [<generated>_1]).FirstOrDefault()' uses First/FirstOrDefault/Last/LastOrDefault operation without OrderBy and filter which may lead to unpredictable results.

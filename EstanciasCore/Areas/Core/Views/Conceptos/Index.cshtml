@@ -1,0 +1,73 @@
+﻿@{
+    ViewData["Title"] = "Conceptos - Cuenta Corriente";
+}
+
+@using DAL.Models
+@model IEnumerable<Conceptos>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Conceptos - Cuenta Corriente</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevoConcepto()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoConceptos" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Concepto
+                    </th>
+                    <th>
+                        Signo
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.ToList())
+                {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Nombre)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Signo)
+                    </td>
+                    <td>
+                        <a onclick="editConcepto(@item.Id)" title="Editar Concepto" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar este Concepto?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Edición de Concepto" callback-modal="true" function="editConcepto" load-url="/Core/Conceptos/_Update/" size="Medium"></modal>
+<modal title="Nuevo Concepto" callback-modal="true" function="nuevoConcepto" load-url="/Core/Conceptos/_Create/" size="Medium"></modal>
+
+
+<script>
+    $(document).ready(function () {
+        $('#listadoConceptos').DataTable(
+        {
+            "columnDefs": [
+                { "width": "80%", "targets": 0 },
+                { "width": "10%", class: "text-center", "targets": 1 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 2 }
+            ],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>
+
+

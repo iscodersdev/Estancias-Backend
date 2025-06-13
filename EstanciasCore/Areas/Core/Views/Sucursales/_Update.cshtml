@@ -1,0 +1,46 @@
+﻿@model DAL.Models.Sucursales
+@{
+    ViewData["Title"] = "Editar Sucursal";
+}
+<form method="post" asp-action="_Update" asp-controller="Sucursales" asp-area="Core" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    <div class="box-body">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input asp-for="@Model.Id" type="hidden" />
+        <div class="form-group">
+            <label class="control-label">Nombre</label>
+            <input asp-for="name" class="form-control" />
+            <span asp-validation-for="name" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Dirección</label>
+            <input asp-for="address" class="form-control" />
+            <span asp-validation-for="address" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Telefono</label>
+            <input asp-for="phone" class="form-control" />
+            <span asp-validation-for="phone" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Longitud</label>
+            <input asp-for="latitude" class="form-control" />
+            <span asp-validation-for="latitude" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Latitud</label>
+            <input asp-for="longitude" class="form-control" />
+            <span asp-validation-for="longitude" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Grupo</label>
+            <input asp-for="group" class="form-control" />
+            <span asp-validation-for="group" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="box-footer">
+        <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+        <button type="submit" class="btn btn-info pull-right">Guardar</button>
+    </div>
+</form>
+

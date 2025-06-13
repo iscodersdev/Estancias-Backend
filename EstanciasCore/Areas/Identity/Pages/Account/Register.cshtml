@@ -1,0 +1,30 @@
+﻿@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Registro";
+}
+
+    <form asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" role="form">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <p class="login-box-msg">@ViewBag.Title</p>
+        <div class="form-group has-feedback">
+            <input asp-for="Input.Email" class="form-control" placeholder="Email" />
+            <span class="glyphicon glyphicon-user form-control-feedback"></span>
+            <span asp-validation-for="Input.Email" class="text-danger"></span>
+        </div>
+        <div class="form-group has-feedback">
+            <input asp-for="Input.Password" class="form-control" placeholder="Contraseña" />
+            <span class="glyphicon glyphicon-lock form-control-feedback"></span>
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+        <div class="form-group has-feedback">
+            <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="Confirma Contraseña" />
+            <span class="glyphicon glyphicon-lock form-control-feedback"></span>
+            <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+        </div>
+        <div class="form-group has-feedback">
+                <button type="submit" class="btn btn-primary btn-block btn-flat">Registra</button>
+            </div>
+    </form>
+    <partial name="_ValidationScriptsPartial" />
+

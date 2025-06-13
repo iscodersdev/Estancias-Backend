@@ -1,0 +1,89 @@
+﻿@{
+    ViewData["Title"] = "Listado de Tipos de Movimientos de Billetera";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+@using DAL.Models.Core
+@model IEnumerable<TipoMovimientoBilletera>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Tipos de Movimientos de Billetera</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevoTipoMovimientoBilletera()" title="Nueva Tipo de Movimiento de Billetera" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoTipoMovimientoBilletera" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Tipo de Movimiento de Billetera
+                    </th>
+                    <th>
+                        Crédito
+                    </th>
+                    <th>
+                        Débito
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.ToList())
+                {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Nombre)
+                    </td>
+                    <td>
+                        @if (item.Credito)
+                        {
+                            <label>SI</label>
+                        }
+                        else
+                        {
+                            <label>NO</label>
+                        }
+                    </td>
+                    <td>
+                        @if (item.Debito)
+                        {
+                            <label>SI</label>
+                        }
+                        else
+                        {
+                            <label>NO</label>
+                        }
+                    </td>
+                    <td>
+                        <a onclick="editTipoMovimientoBilletera('@item.Id')" title="Editar Institución Financiera" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                        <a asp-action="Delete" title="Borrar Tipo de Movimiento de Billetera" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar este Tipo de Movimiento de Billetera?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Nuevo Tipo de Movimiento de Billetera" callback-modal="true" function="nuevoTipoMovimientoBilletera" load-url="/Core/TipoMovimientoBilletera/_Create/" size="Medium"></modal>
+<modal title="Edición Tipo de Movimiento de Billetera" callback-modal="true" function="editTipoMovimientoBilletera" load-url="/Core/TipoMovimientoBilletera/_Update/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoTipoMovimientoBilletera').DataTable(
+        {
+            "columnDefs": [{ "width": "70%", "targets": 0 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 1 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 2 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 3 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        }
+    );
+    });
+</script>

@@ -1,0 +1,10 @@
+﻿@model IEnumerable<DAL.Models.Novedades>
+@{
+    ViewData["Title"] = "Novedades";
+}
+
+<box color="Info">
+    <load id="tablaNovedades" load-url="/Core/Novedades/ObtenerNovedades">
+        <box-header title="Listado de Novedades"></box-header>
+    </load>
+</box>

@@ -1,0 +1,24 @@
+﻿@model DAL.Models.LeyendaTipoMovimiento
+@{
+    ViewData["Title"] = "Nueva Moneda";
+}
+<form method="post" asp-action="_Create" asp-controller="LeyendaTipoMovimiento" asp-area="Core" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    <div class="box-body">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="form-group">
+            <label asp-for="NombreMovimiento" class="control-label"></label>
+            <input asp-for="NombreMovimiento" class="form-control" />
+            <span asp-validation-for="NombreMovimiento" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="TextoLeyenda" class="control-label"></label>
+            <input asp-for="TextoLeyenda" class="form-control" />
+            <span asp-validation-for="TextoLeyenda" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="box-footer">
+        <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+        <button type="submit" class="btn btn-info pull-right">Agregar</button>
+    </div>
+</form>

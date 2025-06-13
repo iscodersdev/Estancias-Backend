@@ -1,0 +1,10 @@
+﻿@model IEnumerable<DAL.Models.Promociones>
+@{
+    ViewData["Title"] = "Promociones";
+}
+
+<box color="Info">
+    <load id="tablaPromociones" load-url="/Core/Promociones/ObtenerPromociones">
+        <box-header title="Listado de Promociones"></box-header>
+    </load>
+</box>

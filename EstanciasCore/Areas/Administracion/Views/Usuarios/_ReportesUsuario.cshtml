@@ -1,0 +1,58 @@
+﻿
+    <form class="form-horizontal" method="post" asp-action="_ReportesUsuario" asp-controller="Usuario">
+        <div class="form-group">
+            <div class="col-md-12">
+                <label for="UnidadId" class="control-label">Seleccione el reporte</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-12">
+                <select type="text" asp-items="@ViewBag.Reportes" class="form-control" name="reporte" id="reporte"></select>
+            </div>
+        </div>
+        <div class="form-group" id="seleccion_roles">
+            <div class="col-md-4">
+                <label for="UnidadId" class="control-label">Seleccione el rol</label>
+            </div>
+            <div class="col-md-8">
+                <select type="text" asp-items="@ViewBag.Roles" class="form-control" name="rol">
+                    <option value="0" selected>Todos los Roles</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group" id="seleccion_funcion">
+            <div class="col-md-4">
+                <label for="UnidadId" class="control-label">Seleccione la función</label>
+            </div>
+            <div class="col-md-8">
+                <select type="text" asp-items="@ViewBag.Funciones" class="form-control" name="funcion">
+                    <option value="0" selected>Todas las Funciones</option>
+                </select>
+            </div>
+        </div>
+        <div class="box-footer">
+            <a asp-action="Index" class="btn btn-danger">Cancelar</a>
+            <button type="submit" class="btn btn-info pull-right">Ver Reporte</button>
+        </div>
+    </form>
+
+    <script type="text/javascript">
+    $('#seleccion_funcion').hide();
+
+        $('#reporte').change(function () {
+            //alert($(this).val());
+
+        if ($(this).val() == 'UsuariosyRoles') {
+            $('#seleccion_funcion').hide(200);
+            $('#seleccion_roles').show(500);
+        }
+        if ($(this).val() == 'RolesyFunciones') {
+            $('#seleccion_funcion').show(500);
+            $('#seleccion_roles').show(500);
+        }
+            if ($(this).val() == 'FuncionesyRutas') {
+            $('#seleccion_funcion').show(500);
+            $('#seleccion_roles').hide(500);
+        }
+    })
+    </script>

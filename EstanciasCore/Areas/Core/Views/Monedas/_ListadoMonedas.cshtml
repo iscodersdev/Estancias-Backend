@@ -1,0 +1,53 @@
+﻿@model Commons.Models.Page<DAL.Models.Monedas>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Monedas</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaMoneda()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoMonedas" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Nombre
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Nombre)
+                        </td>
+                        <td>
+                            <a onclick="editMoneda('@item.Id')" title="Editar Moneda" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar esta Moneda?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Nueva Moneda" callback-modal="true" function="nuevaMoneda" load-url="/Core/Monedas/_Create/" size="Medium"></modal>
+<modal title="Edición de Moneda" callback-modal="true" function="editMoneda" load-url="/Core/Monedas/_Update/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoMonedas').DataTable({
+            "columnDefs": [{ "width": "90%", "targets": 0 }, { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 1 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

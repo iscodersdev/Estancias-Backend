@@ -1,0 +1,100 @@
+﻿@using DAL.DTOs
+@using DAL.Models
+@using DAL.Models.Core;
+@model Commons.Models.Page<Clientes>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Comprobantes</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 900px;    min-width: 200px;">
+@*             <a onclick="exportarPagosTarjeta()" class="btn btn-success btn-sm">
+                <i class="fa fa-download"><span class="hidden-xs"> Exportar</span></i>
+            </a> *@
+            <a class="btn btn-success btn-sm" style="margin-right: 2%;" href="/Reportes/ClientesReportes/ExportarExcel?fechaIngresoDesdeFiltro=@(ViewBag.fechaIngresoDesdeFiltro)&fechaIngresoHastaFiltro=@(ViewBag.fechaIngresoHastaFiltro)">
+                <i class="fa fa-file-excel-o"><span class="hidden-xs">.xlsx</span></i>
+            </a>
+
+            <a class="btn btn-success btn-sm" style="margin-right: 2%;" href="/Reportes/ClientesReportes/ExportarCSV?fechaIngresoDesdeFiltro=@(ViewBag.fechaIngresoDesdeFiltro)&fechaIngresoHastaFiltro=@(ViewBag.fechaIngresoHastaFiltro)">
+                <i class="fa fa-file"><span class="hidden-xs"> .csv</span></i>
+            </a>
+
+            <a class="btn btn-default btn-sm" href="/Reportes/ClientesReportes/ExportarTXT?fechaIngresoDesdeFiltro=@(ViewBag.fechaIngresoDesdeFiltro)&fechaIngresoHastaFiltro=@(ViewBag.fechaIngresoHastaFiltro)">
+                <i class="fa fa-file-text-o"><span class="hidden-xs"> .txt</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <input name="fechaIngresoFiltro" id="fechaIngresoFiltro" value="@ViewBag.fechaIngresoFiltro" type="hidden">
+        <table id="listadoClientesReport" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Mail
+                    </th>
+                    <th>
+                        Nro Documento
+                    </th>
+                    <th>
+                        Nombre Completo
+                    </th>
+                    <th>
+                        Nro Tarjeta
+                    </th>
+                    <th>
+                        Fecha Ingreso
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in (List<Clientes>)ViewBag.listClientes)
+                {
+                    <tr>
+                        <td>
+                            @(item.Usuario!=null?item.Usuario.UserName:"Sin Datos")
+                        </td>
+                        <td>
+                            @(item.Persona!=null ? item.Persona.NroDocumento : "Sin Datos")
+                        </td>
+                        <td>
+                            @(item.Persona!=null ? item.Persona.GetNombreCompleto() : "Sin Datos")
+                        </td>
+                        <td>
+                            @(item.Persona!=null ? item.Persona.NroTarjeta : "Sin Datos")
+                        </td>
+                        <td>
+                            @item.FechaIngreso.ToString("dd/MM/yyyy")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Exportar Listado" callback-modal="true" function="exportarPagosTarjeta" load-url="/Reportes/PagoTarjetaReportes/_Exportar?fechaDesdeFiltro=@(ViewBag.fechaDesdeFiltro)&fechaHastaFiltro=@(ViewBag.fechaHastaFiltro)&estadoFiltro=@(ViewBag.estadoFiltro)&nroDocumentoFiltro=@(ViewBag.nroDocumentoFiltro)&montoFiltro=@(ViewBag.montoFiltro)" size="Small"></modal>
+
+
+
+<script>
+    $(document).ready(function () {
+        $('#listadoClientesReport').DataTable({
+            "columnDefs": [
+                { "width": "10%", class: "text-center", "searchable": true, "orderable": false, "targets": 0 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 1 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 2 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 3 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 4 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 4 },
+            ],
+            "stateSave": true,
+            "cache": false,
+            "order": [[0, 'desc']],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+
+
+
+
+</script>

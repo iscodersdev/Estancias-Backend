@@ -1,0 +1,62 @@
+﻿@{
+    ViewData["Title"] = "Listado de Localidades";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+<div class="row">
+    <div class="col-md-12">
+        <div class="box box-info">
+            <div class="box-header with-border filtro-grilla">
+                <div class="row">
+                    <div class="col-md-2"><h4>Listado de Localidades</h4></div>
+                    <div class="col-md-10">
+                        <a onclick="nuevaLocalidad()" asp- class="pull-right btn btn-info btn-sm">
+                            <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="box-body">
+                <table class="table table-hover table-bordered table-responsive" id="LocalidadDataTable"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<modal title="Nueva Localidad" callback-modal="true" function="nuevaLocalidad" load-url="/Core/Localidad/_Create/" size="Medium"></modal>
+<modal title="Edición de Localidad" callback-modal="true" function="editLocalidad" load-url="/Core/Localidad/_Update/" size="Medium"></modal>
+<modal title="Borrar Localidad" callback-modal="true" function="deleteLocalidad" load-url="/Core/Localidad/Delete/" size="Medium"></modal>
+<script type="text/javascript">
+    $(function () {
+        var table = $('#LocalidadDataTable').DataTable({
+            serverSide: true,
+            processing: true,
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            },
+            "columnDefs": [{ "width": "20%", "targets": 0 }, { "width": "20%", class: "text-center", "searchable": false, "orderable": false, "targets": 1 }],
+            ajax: {
+                url: '@Url.Action("LocalidadesDataTable")',
+                type: "POST",
+            },
+            rowId: 'Id',
+            columns: [
+                { data: "LocalidadNombre", title: "Localidad" },
+                { data: "ProvinciaNombre", title: "Provincia" },
+                { data: "GuarnicionNombre", title: "Guarnición" },
+                { data: "Latitud", title: "Latitud" },
+                { data: "Longitud", title: "Longitud" },                
+                {
+                    "title": "Acciones",
+                    class: "text-center",
+                    "sortable": false,
+                    "render": function (data, type, row) {
+                        var action = '';
+                        action = action + `<a datatoggle='tooltip' title='Editar Localidad' onclick="editLocalidad(${row['Id']})" class="btn btn-primary btn-xs"><i class=" fa fa-file-text-o"></i></a> `;
+                        action = action + `<a datatoggle='tooltip' title='Borrar Localidad' onclick="deleteLocalidad(${row['Id']})" class="btn btn-danger btn-xs"><i class=" fa fa-trash-o"></i></a> `;
+                        return action;
+                    }
+                }]
+
+        });
+    });
+</script>

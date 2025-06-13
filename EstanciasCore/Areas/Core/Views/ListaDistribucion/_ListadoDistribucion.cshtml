@@ -1,0 +1,68 @@
+﻿@model Commons.Models.Page<DAL.Models.Core.ListaDistribucion>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Distribución</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaLista()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoDistribucion" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Nombre
+                    </th>
+                    <th>
+                        Descripcion
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items.OrderBy(x=>x.Id))
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Nombre)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Descripcion)
+                        </td>
+                        <td>
+                            @if (item.Nombre!="Todos")
+                            {
+                                <a asp-controller="ListaDistribucion" asp-action="Index" asp-route-id="@item.Id" class="btn btn-warning btn-xs"><i class="fa fa-bars"></i></a>
+                                <a onclick="editLista('@item.Id')" title="Editar Lista" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar esta Lista de Distribución?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                            }
+                            else
+                            {
+                                @Html.Raw("No se puede modificar esta Lista de Distribución")
+                            }
+
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Nueva Lista de Distribución" callback-modal="true" function="nuevaLista" load-url="/Core/ListaDistribucion/_Create/" size="Medium"></modal>
+<modal title="Edición Lista de Distribución" callback-modal="true" function="editLista" load-url="/Core/ListaDistribucion/_Update/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoDistribucion').DataTable({
+            "columnDefs": [{ "width": "30%", class: "text-center", "targets": 0, "searchable": true, "orderable": false, }, { "width": "40%", class: "text-center", "searchable": false, "orderable": false, "targets": 1 }, { class: "text-center", "searchable": false, "orderable": false, "targets": 2 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

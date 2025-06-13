@@ -1,0 +1,39 @@
+﻿<header class="main-header" >
+    <!-- Logo -->
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="logo" style="background-color: #0326a0;">
+        <!-- mini logo for sidebar mini 50x50 pixels -->
+        <span class="logo-mini" style="background-color: #0326a0;"><b>EsT</b></span>
+        <!-- logo for regular state and mobile devices -->
+        <span class="logo-lg" style="background-color: #0326a0;"><b>Estancias</b></span>
+        
+    </a>
+    <!-- Header Navbar -->
+    <nav class="navbar navbar-static-top" role="navigation" style="background-color: #0326a0;">
+        <!-- Sidebar toggle button-->
+        <a asp-area="" asp-controller="Layout" asp-action="SwitchSidebarCollapse" data-ajax="true" method="post" class="sidebar-toggle" data-toggle="push-menu" role="button">
+            <span class="sr-only">Toggle navigation</span>
+        </a>
+        <!-- Navbar Right Menu -->
+        <div class="navbar-custom-menu">
+            <ul class="nav navbar-nav">
+                <!-- Messages: style can be found in dropdown.less-->
+                @*  @await Component.InvokeAsync("MenuMessage")*@
+                <!-- /.messages-menu -->
+                <!-- Notifications Menu -->
+                @*@await Component.InvokeAsync("MenuNotification")*@
+                <!-- Tasks Menu -->
+                @*@await Component.InvokeAsync("MenuTask")*@
+                <!-- User Account Menu -->
+                @await Component.InvokeAsync("MenuUser")
+                <!-- ASP Login Menu -->
+                @*<li>
+                        <partial name="_LoginPartial"/>
+                    </li>*@
+                <!-- Control Sidebar Toggle Button -->
+                @*<li>
+                    <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+                </li>*@
+            </ul>
+        </div>
+    </nav>
+</header>

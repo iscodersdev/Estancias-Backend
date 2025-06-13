@@ -1,0 +1,11 @@
+﻿@if (@ViewBag.txtError != "")
+{
+    <div class="alert alert-danger" id="errormodal">
+        @ViewBag.txtError
+    </div>
+    <script type="text/javascript">
+        $('#errormodal').hide();
+        $('#errormodal').show(200);
+    </script>
+
+}

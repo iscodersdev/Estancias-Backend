@@ -1,0 +1,13 @@
+﻿@{
+    string link = "javascript:history.back()";
+
+    if (ViewData["BackArrow"] != null && ViewData["BackArrow"].ToString() != "")
+    {
+        link = ViewData["BackArrow"].ToString();
+    }
+}
+
+<h1>
+    <a href="@link" title="Volver"><i class="fa fa-arrow-left"></i></a> @ViewBag.Title
+    <small>@ViewBag.SubTitle</small>
+</h1>

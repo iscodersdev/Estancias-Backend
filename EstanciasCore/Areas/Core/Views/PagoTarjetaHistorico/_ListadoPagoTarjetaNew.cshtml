@@ -1,0 +1,256 @@
+﻿@using DAL.Models.Core;
+
+
+
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Comprobantes</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+        </div>
+    </div>
+
+  <div class="row" style="    padding-left: 1%;">
+  <div class="form-group col-md-3">
+    <label for="fecha">Fecha:</label>
+    <input type="date" class="form-control" id="fechaFiltro" name="fecha" />
+  </div>
+
+  <div class="form-group col-md-2">
+    <label for="estado">Estado:</label>
+    <select class="form-control" id="estadoFiltro">
+      <option value="">Todos</option>
+      <option value="1">Pendiente</option>
+      <option value="2">Pagado</option>
+      <option value="3">Aprobado</option>
+      <option value="4">Rechazado</option>
+    </select>
+  </div> 
+
+  <div class="form-group col-md-4" style="padding-top: 1.6%;">
+    <label for="estado">&nbsp;</label>
+      <a class="pull-right btn bg-orange btn-sm pull-left" id="botonFiltrar">
+        <i class="fa fa-search"><span class="hidden-xs"> Filtrar</span></i>
+        </a>
+  
+      <a class="pull-right btn btn-danger btn-sm pull-left" id="botonLimpiarFiltro" style="margin-left: 1%;">
+        <i class="fa fa-undo"><span class="hidden-xs"> Limpiar</span></i>
+        </a>
+  </div>
+</div>
+    <div class="box-body">
+        <table id="listadoPagos" class="table table-hover table-bordered table-responsive borde_interno">          
+        </table>
+    </div>
+</div>
+<modal title="Ver Comprobante" callback-modal="true" function="VerComprobante" load-url="/Core/PagoTarjetaHistorico/_VerComprobante/" size="Large"></modal>
+
+<script>
+    $(document).ready(function () {
+
+        var tablaPagos = $('#listadoPagos').DataTable({
+
+            serverSide: true,
+            processing: true,
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            },
+            ajax: {
+                url: '@Url.Action("_ListadoPagoTarjetaDataTable")',
+                type: "POST",
+            },
+            rowId: 'Id',
+            "columnDefs": [
+                {
+                    "targets": [0], // Ocultar la tercera columna (índice 2)
+                    "visible": false,
+                }
+            ],
+            columns: [
+                { data: "Id", title: "Id" },
+                { data: "FechaOrden", title: "FechaOrden",  visible: false},
+                { data: "Persona", title: "Cliente" },
+                { data: "NroDocumento", title: "NroDocumento" },
+                { data: "FechaVencimiento", title: "FechaVencimiento" },
+                { data: "FechaComprobante", title: "FechaComprobante" },
+                { data: "MontoAdeudado", title: "MontoProximaCuota" },
+                {
+                    "title": "EstadoPago",
+                    class: "text-center",
+                    "sortable": false,
+                    "render": function (data, type, row) {
+                        var estado = '';
+                        if (row['EstadoPagoId']==1)
+                            estado = estado + `<span class='pull-right-container'><small class='label bg-yellow'>Pendiente</small></span> `;
+                        else if (row['EstadoPagoId'] == 2)
+                            estado = estado + `<span class='pull-right-container'> <small class="label bg-blue">Pagado</small> </span>`;
+                        else if (row['EstadoPagoId'] == 3)
+                            estado = estado + `<span class='pull-right-container'> <small class="label bg-green">Aprobado</small> </span>`;
+                        else if (row['EstadoPagoId'] == 4)
+                            estado = estado + `<span class='pull-right-container'> <small class="label bg-red">Rechazado</small> </span>`;
+                        return estado;
+                    }
+                },
+                { data: "EstadoPagoId", title: "EstadoPagoId",  visible: false},
+                {
+                    "title": "Acciones",
+                    class: "text-center",
+                    "sortable": false,
+                    "render": function (data, type, row) {
+                        var action = '';
+                        if (row['ComprobantePago']==true){
+                            action = action + `<a onclick="VerComprobante('${row['Id']}')" title="Ver Comprobante" class="btn btn-warning btn-xs"><i class="fa fa-file-photo-o"></i></a> `;
+                            if (row['EstadoPagoId']==2){
+                                action = action + ` <a onclick="AprobarComprobante('${row['Id']}')" title="Aprobar Pago" class="btn btn-primary btn-xs"><i class="fa fa-check"></i></a> `;
+                                action = action + ` <a onclick="RechazarComprobante('${row['Id']}')" title="Rechazar Pago" class="btn btn-danger btn-xs"><i class="fa fa-remove "></i></a>`;
+                            }
+                        }else{                       
+                            action = "Sin Comprobante"
+                        }                              
+                        return action;
+                    }
+                }],                
+            "order": [0, 'desc'],
+
+        });
+        
+    });
+
+    
+        $("#botonFiltrar").on("click", function()
+        {
+            var estado =  $("#estadoFiltro").val()
+            var fecha =  $("#fechaFiltro").val()
+            if (fecha) {
+              fecha = moment(fecha).format("DD/MM/YYYY");
+            }
+            $('#listadoPagos').DataTable().columns().search('').draw();
+            $('#listadoPagos').DataTable()
+                .column(8).search(estado) // Asumiendo que 'estado' es la columna 0
+                .column(5).search(fecha) // Asumiendo que 'fecha' es la columna 1
+                .draw(); 
+        });        
+        
+        $("#botonLimpiarFiltro").on("click", function()
+        { 
+            $("#fechaFiltro").val('');
+            $("#estadoFiltro").selectpicker('val', ''); 
+            $('#listadoPagos').DataTable().columns().search('').draw();
+        });
+
+
+    const AprobarComprobante = (id) => {
+        Swal.fire({
+            title: "¿Aprobar Pago?",
+            text: "Una vez aprobado no se prodra regresar al estado anterior!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Aceptar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/Core/PagoTarjetaHistorico/AprobarComprobante/' + id)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data); // Aquí puedes manipular los datos obtenidos
+                        //if (result.isConfirmed) {
+                        if (result.isConfirmed && data==true) {
+                            Swal.fire({
+                                title: "Aprobado!",
+                                text: "El Pago se Aprobó.",
+                                icon: "success"
+                            });
+                        }else{
+                            Swal.fire({
+                                title: "Error!",
+                                text: "Error al aprobar el Pago.",
+                                icon: "danger"
+                            });
+                        }
+                        location.reload();
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            title: "Error!",
+                            text: "Error al obtener los datos:" + error,
+                            icon: "danger"
+                        });
+                    });
+                }
+        });        
+    };
+
+
+    const RechazarComprobante = (id) => {
+        Swal.fire({
+            title: "¿Rechazar Pago?",
+            text: "Una vez rechazado no se prodra regresar al estado anterior!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Aceptar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/Core/PagoTarjetaHistorico/RechazarComprobante/' + id)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data); // Aquí puedes manipular los datos obtenidos
+                        //if (result.isConfirmed) {
+                        if (result.isConfirmed && data == true) {
+                            Swal.fire({
+                                title: "Rechazado!",
+                                text: "El Pago se Rechazó.",
+                                icon: "success"
+                            });
+                        } else {
+                            Swal.fire({
+                                title: "Error!",
+                                text: "Error al rechazar el Pago.",
+                                icon: "danger"
+                            });
+                        }
+                        location.reload();
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            title: "Error!",
+                            text: "Error al obtener los datos:" + error,
+                            icon: "danger"
+                        });
+                    });
+                }
+        });
+    };
+
+     // Agregar la lógica de filtrado
+    $.fn.dataTable.ext.search.push(
+      function(settings, data, dataIndex) {
+        var fechaRango = $('#fecha').val();
+        var estado = $('#estado').val();
+        var fecha = data[4]; // índice de la columna FechaVencimiento
+        var estadoPagoId = data[7]; // índice de la columna EstadoPago
+
+        if (fechaRango !== '') {
+          var fechas = fechaRango.split(' - ');
+          var fechaDesde = fechas[0];
+          var fechaHasta = fechas[1];
+
+          if (fecha < fechaDesde || fecha > fechaHasta) {
+            return false;
+          }
+        }
+
+        if (estado !== '' && estadoPagoId != estado) {
+          return false;
+        }
+
+        return true;
+      }
+    );
+
+
+
+
+</script>

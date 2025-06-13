@@ -1,0 +1,75 @@
+2025-01-07 09:22:45.965 -03:00 [WRN] No type was specified for the decimal column 'Deuda' on entity type 'Accesos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.028 -03:00 [WRN] No type was specified for the decimal column 'MaximoDisponible' on entity type 'Campanas'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.043 -03:00 [WRN] No type was specified for the decimal column 'MinimoDisponible' on entity type 'Campanas'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.045 -03:00 [WRN] No type was specified for the decimal column 'Disponible' on entity type 'CampanasRenglones'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.047 -03:00 [WRN] No type was specified for the decimal column 'ImporteMaximo' on entity type 'CampanasRenglones'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.049 -03:00 [WRN] No type was specified for the decimal column 'Saldo' on entity type 'Billetera'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.052 -03:00 [WRN] No type was specified for the decimal column 'InteresesPorCuota' on entity type 'Financiacion'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.055 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'MovimientoBilletera'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.057 -03:00 [WRN] No type was specified for the decimal column 'MontoAdeudado' on entity type 'PagoTarjeta'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.059 -03:00 [WRN] No type was specified for the decimal column 'Oferta' on entity type 'Producto'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.061 -03:00 [WRN] No type was specified for the decimal column 'Precio' on entity type 'Producto'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.063 -03:00 [WRN] No type was specified for the decimal column 'Oferta' on entity type 'ProductoCliente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.064 -03:00 [WRN] No type was specified for the decimal column 'Precio' on entity type 'ProductoCliente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.066 -03:00 [WRN] No type was specified for the decimal column 'Importe' on entity type 'CuentaCorriente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.068 -03:00 [WRN] No type was specified for the decimal column 'Saldo' on entity type 'CuentaCorriente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.070 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'MockServicio'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 09:22:46.072 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'RelacionPuntos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:02.043 -03:00 [WRN] Error unprotecting the session cookie.
+System.Security.Cryptography.CryptographicException: The payload was invalid.
+   at Microsoft.AspNetCore.DataProtection.Cng.CbcAuthenticatedEncryptor.DecryptImpl(Byte* pbCiphertext, UInt32 cbCiphertext, Byte* pbAdditionalAuthenticatedData, UInt32 cbAdditionalAuthenticatedData)
+   at Microsoft.AspNetCore.DataProtection.Cng.Internal.CngAuthenticatedEncryptorBase.Decrypt(ArraySegment`1 ciphertext, ArraySegment`1 additionalAuthenticatedData)
+   at Microsoft.AspNetCore.DataProtection.KeyManagement.KeyRingBasedDataProtector.UnprotectCore(Byte[] protectedData, Boolean allowOperationsOnRevokedKeys, UnprotectStatus& status)
+   at Microsoft.AspNetCore.DataProtection.KeyManagement.KeyRingBasedDataProtector.DangerousUnprotect(Byte[] protectedData, Boolean ignoreRevocationErrors, Boolean& requiresMigration, Boolean& wasRevoked)
+   at Microsoft.AspNetCore.DataProtection.KeyManagement.KeyRingBasedDataProtector.Unprotect(Byte[] protectedData)
+   at Microsoft.AspNetCore.Session.CookieProtection.Unprotect(IDataProtector protector, String protectedText, ILogger logger)
+2025-01-07 12:48:02.252 -03:00 [WRN] Error unprotecting the session cookie.
+System.Security.Cryptography.CryptographicException: The payload was invalid.
+   at Microsoft.AspNetCore.DataProtection.Cng.CbcAuthenticatedEncryptor.DecryptImpl(Byte* pbCiphertext, UInt32 cbCiphertext, Byte* pbAdditionalAuthenticatedData, UInt32 cbAdditionalAuthenticatedData)
+   at Microsoft.AspNetCore.DataProtection.Cng.Internal.CngAuthenticatedEncryptorBase.Decrypt(ArraySegment`1 ciphertext, ArraySegment`1 additionalAuthenticatedData)
+   at Microsoft.AspNetCore.DataProtection.KeyManagement.KeyRingBasedDataProtector.UnprotectCore(Byte[] protectedData, Boolean allowOperationsOnRevokedKeys, UnprotectStatus& status)
+   at Microsoft.AspNetCore.DataProtection.KeyManagement.KeyRingBasedDataProtector.DangerousUnprotect(Byte[] protectedData, Boolean ignoreRevocationErrors, Boolean& requiresMigration, Boolean& wasRevoked)
+   at Microsoft.AspNetCore.DataProtection.KeyManagement.KeyRingBasedDataProtector.Unprotect(Byte[] protectedData)
+   at Microsoft.AspNetCore.Session.CookieProtection.Unprotect(IDataProtector protector, String protectedText, ILogger logger)
+2025-01-07 12:48:24.500 -03:00 [WRN] No type was specified for the decimal column 'Deuda' on entity type 'Accesos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.505 -03:00 [WRN] No type was specified for the decimal column 'MaximoDisponible' on entity type 'Campanas'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.507 -03:00 [WRN] No type was specified for the decimal column 'MinimoDisponible' on entity type 'Campanas'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.509 -03:00 [WRN] No type was specified for the decimal column 'Disponible' on entity type 'CampanasRenglones'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.511 -03:00 [WRN] No type was specified for the decimal column 'ImporteMaximo' on entity type 'CampanasRenglones'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.514 -03:00 [WRN] No type was specified for the decimal column 'Saldo' on entity type 'Billetera'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.516 -03:00 [WRN] No type was specified for the decimal column 'InteresesPorCuota' on entity type 'Financiacion'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.519 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'MovimientoBilletera'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.521 -03:00 [WRN] No type was specified for the decimal column 'MontoAdeudado' on entity type 'PagoTarjeta'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.523 -03:00 [WRN] No type was specified for the decimal column 'Oferta' on entity type 'Producto'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.525 -03:00 [WRN] No type was specified for the decimal column 'Precio' on entity type 'Producto'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.527 -03:00 [WRN] No type was specified for the decimal column 'Oferta' on entity type 'ProductoCliente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.530 -03:00 [WRN] No type was specified for the decimal column 'Precio' on entity type 'ProductoCliente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.532 -03:00 [WRN] No type was specified for the decimal column 'Importe' on entity type 'CuentaCorriente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.534 -03:00 [WRN] No type was specified for the decimal column 'Saldo' on entity type 'CuentaCorriente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.536 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'MockServicio'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.539 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'RelacionPuntos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-01-07 12:48:24.886 -03:00 [WRN] Request API: ::1 - /api/MTarjetas/MovimientoTarjeta -  {
+  "UAT": "DrIlshXd7RdMuIRXoJpwsFlSs3kyQKyZ",
+  "CantMovimientos": 100,
+  "tipomovimiento": 0,
+  "NroTarjeta": "0000010012018003"
+}
+2025-01-07 12:48:24.995 -03:00 [WRN] Query: '(from DatosEstructura <generated>_1 in DbSet<DatosEstructura> select [<generated>_1]).FirstOrDefault...' uses First/FirstOrDefault/Last/LastOrDefault operation without OrderBy and filter which may lead to unpredictable results.
+2025-01-07 12:48:45.734 -03:00 [WRN] Request API: ::1 - /api/MTarjetas/MovimientoTarjeta -  {
+  "UAT": "DrIlshXd7RdMuIRXoJpwsFlSs3kyQKyZ",
+  "CantMovimientos": 100,
+  "tipomovimiento": 0,
+  "NroTarjeta": "0000010012018003"
+}
+2025-01-07 12:54:09.710 -03:00 [WRN] Request API: ::1 - /api/MTarjetas/MovimientoTarjeta -  {
+  "UAT": "DrIlshXd7RdMuIRXoJpwsFlSs3kyQKyZ",
+  "CantMovimientos": 100,
+  "tipomovimiento": 0,
+  "NroTarjeta": "0000010012018003"
+}
+2025-01-07 13:07:42.225 -03:00 [WRN] Request API: ::1 - /api/MTarjetas/MovimientoTarjeta -  {
+  "UAT": "DrIlshXd7RdMuIRXoJpwsFlSs3kyQKyZ",
+  "CantMovimientos": 100,
+  "tipomovimiento": 0,
+  "NroTarjeta": "0000010012018003"
+}

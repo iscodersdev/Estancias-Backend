@@ -1,0 +1,39 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.DTOs.ProductoDTO
+@{
+    ViewData["Title"] = "Borrar Producto: " + Model.Descripcion;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="Delete" asp-antiforgery="true">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxBody())
+                {
+                    <input type="hidden" asp-for="ProductoId" />
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label asp-for="Descripcion" class="control-label"></label>
+                                <input asp-for="Descripcion" class="form-control" disabled />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label asp-for="RubroSeleccionado" class="control-label"></label>
+                                <select asp-items="Model.Rubros" asp-for="RubroSeleccionado" class="form-control" title="Seleccione el Rubro" disabled></select>
+                            </div>
+                        </div>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a data-dismiss="modal" class="btn btn-default">Cancelar</a>
+                    <input type="submit" value="Borrar" class="btn btn-danger pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>

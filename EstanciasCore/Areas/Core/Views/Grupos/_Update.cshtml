@@ -1,0 +1,30 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Grupos
+@{
+    ViewData["Title"] = "Editar Grupo: " + Model.Nombre;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="_Update">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Información")) { }
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="form-group">
+                        <label asp-for="Nombre" class="control-label"></label>
+                        <input asp-for="Nombre" class="form-control" />
+                        <span asp-validation-for="Nombre" class="text-danger"></span>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a asp-action="Index" class="btn btn-default">Cancelar</a>
+                    <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>

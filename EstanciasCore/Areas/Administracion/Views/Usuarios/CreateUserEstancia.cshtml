@@ -1,0 +1,117 @@
+﻿@using Commons.HtmlHelpers
+@using EstanciasCore.Areas.Administracion.ViewModels
+@model UsuarioEstanciasVM
+@{
+    ViewData["Title"] = "Nuevo Usuario";
+}
+<form method="post" asp-action="CreateUserEstancia" asp-controller="Usuarios" asp-area="Administracion" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    @using (Html.BoxDefault(BoxColor.Info))
+    {
+        using (Html.BoxBody())
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="row">
+
+                <div class="col-md-1"></div>
+                <div class="col-md-8">
+                    <div class="form-group">
+                        <label asp-for="TarjetaEstancia" class="control-label">Número Tarjeta Estancia</label>
+                        <input asp-for="TarjetaEstancia" class="form-control" />
+                        <span asp-validation-for="TarjetaEstancia" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="control-label"> &nbsp;</label>
+                    <button type="button" class="btn btn-info btn-flat" onclick="buscarDatosTarjeta()">Buscar</button>
+                </div>
+            </div>
+            <div class="col-md-1"></div>
+            <div class="col-md-10">
+                <div class="alert alert-warning alert-dismissible" id="divAlerta" hidden>
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                    <h4><i class="icon fa fa-warning"></i> Aviso</h4>
+                    <span id="textoAlerta"></span>
+                </div>
+            </div>
+            <div class="row" id="DivDatosEstanciasLoad" style="text-align: center;" hidden>
+                <img src="~/images/loading.gif" style="width:15%">
+            </div>
+            <div class="row" id="DivDatosEstancias" hidden>
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label asp-for="NroDocumento" class="control-label"></label>
+                        <input asp-for="NroDocumento" class="form-control" />
+                        <span asp-validation-for="NroDocumento" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Nombre" class="control-label"></label>
+                        <input asp-for="Nombre" class="form-control" />
+                        <span asp-validation-for="Nombre" class="text-danger"></span>
+                    </div>
+                    <div class="form-group ">
+                        <label asp-for="Apellido" class="control-label"></label>
+                        <input asp-for="Apellido" class="form-control" />
+                        <span asp-validation-for="Apellido" class="text-danger"></span>
+                    </div>
+                    <div class="form-group ">
+                        <label asp-for="Mail" class="control-label"></label>
+                        <input asp-for="Mail" class="form-control" />
+                        <span asp-validation-for="Mail" class="text-danger"></span>
+                    </div>
+                    <div class="form-group ">
+                        <label asp-for="Password" class="control-label"></label>
+                        <input asp-for="Password" class="form-control" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        }
+        @using (Html.BoxFooter())
+        {
+
+            <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+            <button type="submit" class="btn btn-info pull-right" id="buttonGuardarUser" hidden>Guardar</button>
+
+        }
+    }
+</form>
+
+<script>
+         $("#buttonGuardarUser").hide();
+    function buscarDatosTarjeta() {
+         $("#divAlerta").hide();
+         $("#buttonGuardarUser").hide();
+         $("#DivDatosEstanciasLoad").show();
+      var numeroTarjeta = $("#TarjetaEstancia").val()
+      $.ajax({
+        url: '/Administracion/Usuarios/BuscarUsuarioLoan', // Reemplaza con la ruta correcta de tu controlador
+        method: 'POST', // O 'GET' si prefieres enviar el número por la URL
+        data: { numeroTarjeta: numeroTarjeta },
+        dataType: 'json', // Esperamos una respuesta en formato JSON
+        success: function(data) {
+            $("#DivDatosEstanciasLoad").hide();
+            if(data.Error){
+                $("#divAlerta").show();
+                $("#textoAlerta").html(data.Mensaje);
+            }else{
+                $('#NroDocumento').val(data.NroDocumento);
+                $('#Nombre').val(data.Nombre);
+                $('#Apellido').val(data.Apellido);
+                $('#Mail').val(data.Mail);
+                $("#buttonGuardarUser").show();
+                $("#DivDatosEstancias").show();
+            }
+          }
+      });
+    }
+
+    // Ejemplo de cómo llamar a la función cuando el usuario ingresa un número de tarjeta
+    $('#numero_tarjeta').on('blur', function() {
+      var numeroTarjeta = $(this).val();
+      if (numeroTarjeta.length > 0) {
+        buscarDatosTarjeta(numeroTarjeta);
+      }
+    });
+</script>

@@ -1,0 +1,78 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.DTOs.ProductoDTO
+@{
+    ViewData["Title"] = "Editar Producto: " + Model.Descripcion;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="_Update" asp-antiforgery="true">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="ProductoId" />
+                    <input type="hidden" asp-for="ProveedorId" />
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label asp-for="Descripcion" class="control-label"></label>
+                                <input asp-for="Descripcion" class="form-control" />
+                                <span asp-validation-for="Descripcion" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label asp-for="DescripcionAmpliada " class="control-label">Detalle</label>
+                                <input asp-for="DescripcionAmpliada " class="form-control" />
+                                <span asp-validation-for="DescripcionAmpliada " class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label asp-for="Precio" class="control-label"></label>
+                                <input asp-for="Precio" class="form-control" />
+                                <span asp-validation-for="Precio" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label asp-for="Oferta" class="control-label"></label>
+                                <input asp-for="Oferta" class="form-control" />
+                                <span asp-validation-for="Oferta" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label asp-for="Financiable" class="control-label"></label>
+                                <input type="checkbox" asp-for="Financiable" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label asp-for="RubroSeleccionado" class="control-label"></label>
+                                <select asp-items="Model.Rubros" asp-for="RubroSeleccionado" class="form-control" title="Seleccione el Rubro" searchable="true"></select>
+                                <span asp-validation-for="RubroSeleccionado" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a data-dismiss="modal" asp-action="Index" class="btn btn-default">Cancelar</a>
+                    <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>

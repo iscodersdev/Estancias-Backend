@@ -1,0 +1,28 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.TipoDocumento
+@{
+    ViewData["Title"] = "Borrar Tipo de Documento: " + Model.Descripcion;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="Delete">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Información")) { }
+                using (Html.BoxBody())
+                {
+                    <input type="hidden" asp-for="Id" />
+                    <div class="form-group">
+                        <label asp-for="Descripcion" class="control-label"></label>
+                        <input asp-for="Descripcion" class="form-control" disabled/>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a asp-action="Index" class="btn btn-default">Cancelar</a>
+                    <input type="submit" value="Borrar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>

@@ -1,0 +1,63 @@
+﻿@{
+    ViewData["Title"] = "Empresas";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="box box-info">
+            <div class="box-header with-border filtro-grilla">
+                <div class="row">
+                    <div class="col-md-3"><span class="txt-titulo-box">Listado de Empresas</span></div>
+                    <div class="col-md-9">
+                        <a onclick="nuevaEmpresa()" class="pull-right btn btn-info btn-sm">
+                            <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="box-body">
+                <table class="table table-hover table-bordered table-responsive" id="EmpresaDataTable"></table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<modal title="Edición de Empresa" callback-modal="true" function="editEmpresa" load-url="/Core/Empresas/_Update/" size="Medium"></modal>
+<modal title="Nueva Empresa" callback-modal="true" function="nuevaEmpresa" load-url="/Core/Empresas/_Create/" size="Medium"></modal>
+<modal title="Cargar Imagenes" callback-modal="true" function="imgEmpresa" load-url="/Core/Empresas/_Image/" size="Medium"></modal>
+<modal title="Cambiar datos Bancarios" callback-modal="true" function="editCBU" load-url="/Core/Empresas/_UpdateCBU/" size="Medium"></modal>
+
+<script type="text/javascript">
+$(function () {
+    var table = $('#EmpresaDataTable').DataTable({
+                serverSide: true,
+                processing: true,
+                "language": {
+                    'url': '@Url.Content("~/lib/arg.json")'
+                },
+                ajax: {
+                    url: '@Url.Action("EmpresaDataTable")',
+                    type: "POST",
+                    },
+                rowId: 'Id',
+                columns: [
+                    { data: "CUIT", title: "CUIT"},
+                    { data: "RazonSocial", title: "Razon Social"},
+                    { data: "Grupo", title: "Grupo"},
+                    {
+                        "title": "Acciones",
+                        "sortable": false,
+                        class: "text-center", 
+                        "render": function(data, type, row) {
+                            var action = '';
+                                action = action + `<a datatoggle='tooltip' title='Editar Empresa' onclick="editEmpresa('${row['Id']}')" class="btn btn-primary btn-xs"><i class=" fa fa-file-text-o"></i></a> `;
+                                action = action + `<a datatoggle='tooltip' title='Cambiar datos Bancarios' onclick="editCBU('${row['Id']}')" class="btn btn-success btn-xs"><i class=" fa fa-institution "></i></a> `;
+                                action = action + `<a datatoggle='tooltip' title='Cargar Icono' onclick="imgEmpresa('${row['Id']}')" class="btn btn-warning btn-xs"><i class=" fa fa-file-image-o"></i></a> `;
+                                return action;
+                        }
+         }]
+
+    });
+})
+</script>

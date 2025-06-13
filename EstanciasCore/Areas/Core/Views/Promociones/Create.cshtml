@@ -1,0 +1,96 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Promociones
+@{
+    ViewData["Title"] = "Crear Promociones";
+}
+<form asp-action="Create">
+
+    @using (Html.BoxDefault(BoxColor.Info))
+    {
+        using (Html.BoxHeader("Nueva"))
+        {
+        }
+        using (Html.BoxBody())
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Fecha" class="control-label"></label>
+                <input type="date" asp-for="Fecha" class="form-control" />
+                <span asp-validation-for="Fecha" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="fechaHastaCheckCreate" name="TieneFechaVencimiento" />
+                    ¿Tiene una fecha de Vencimiento?
+                </label>
+            </div>
+
+            <div id="fechaHastaDivCreate" style="display:none;">
+                <div class="form-group">
+                    <label asp-for="FechaDesde" class="control-label">Fecha Desde</label>
+                    <input type="date" asp-for="FechaDesde" class="form-control" />
+                    <span asp-validation-for="FechaDesde" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="FechaHasta" class="control-label">Fecha Hasta</label>
+                    <input type="date" asp-for="FechaHasta" class="form-control" />
+                    <span asp-validation-for="FechaHasta" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="Titulo" class="control-label"></label>
+                <input asp-for="Titulo" class="form-control" />
+                <span asp-validation-for="Titulo" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Subtitulo" class="control-label"></label>
+                <input asp-for="Subtitulo" class="form-control" />
+                <span asp-validation-for="Subtitulo" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Link" class="control-label"></label>
+                <input asp-for="Link" class="form-control" />
+                <span asp-validation-for="Link" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TextoBoton" class="control-label"></label>
+                <input asp-for="TextoBoton" class="form-control" />
+                <span asp-validation-for="TextoBoton" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Texto" class="control-label"></label>
+                <textarea asp-for="Texto" rows="10" class="form-control" style="text-wrap:normal" type="text" placeholder="Describa el Texto de la Promoción"></textarea>
+                <span asp-validation-for="Texto" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Publica" class="control-label"></label>
+                <input asp-for="Publica" type="checkbox" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Promoción Fija</label>
+                <select name="PromocionFija" class="form-control">
+                    <option value="0">No</option>
+                    <option value="1" selected>Si</option>
+                </select>
+                <span asp-validation-for="PromocionFija" class="text-danger"></span>
+            </div>
+        }
+        using (Html.BoxFooter())
+        {
+            <a class="btn btn-default" asp-action="Index">Cancelar</a>
+            <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+        }
+    }
+</form>
+
+<script>
+    $(document).ready(function () {
+        $('#fechaHastaCheckCreate').change(function () {
+            if ($(this).is(':checked')) {
+                $('#fechaHastaDivCreate').show();
+            } else {
+                $('#fechaHastaDivCreate').hide();
+            }
+        });
+    });
+</script>

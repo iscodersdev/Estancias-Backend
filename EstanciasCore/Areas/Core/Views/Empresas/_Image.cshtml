@@ -1,0 +1,97 @@
+﻿@using Commons.HtmlHelpers
+@{
+    ViewData["Title"] = "Crear Empresa";
+}
+
+<form asp-action="_image" enctype="multipart/form-data">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" value="@ViewBag.EmpresaId" name="Id" />
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="control-label">Seleccione Fondo Mobile:</label>
+                    <input class="preview" type="file" name="FondoMobile" data-div="FondoMobileUpdate" />
+                    <span id="alertaFondoMobile" class="text-danger"></span>
+                </div>
+                <div class="col-md-6" style=" text-align: center; ">
+                    <div id="FondoMobileUpdate">
+                        @if (@ViewBag.FondoMobile != null)
+                        {
+                            <img src="data:image/gif;base64,@ViewBag.FondoMobile" style="height:80px;width:80px" />
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="control-label">Seleccione GIF Logo Mutual:</label>
+                    <input class="preview" type="file" name="GIFLogoMutual" data-div="GIFLogoMutualUpdate" />
+                    <span id="alertaGIFLogoMutual" class="text-danger"></span>
+                </div>
+                <div class="col-md-6" style=" text-align: center; ">
+                    <div id="GIFLogoMutualUpdate">
+                        @if (@ViewBag.GIFLogoMutual != null)
+                        {
+                            <img src="data:image/gif;base64,@ViewBag.GIFLogoMutual" style="height:80px;width:80px" />
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="control-label">Seleccione Logo Mutual:</label>
+                    <input class="preview" type="file" name="LogoMutual" data-div="LogoMutualUpdate" />
+                    <span id="alertaLogoMutual" class="text-danger"></span>
+                </div>
+                <div class="col-md-6" style=" text-align: center; ">
+                    <div id="LogoMutualUpdate">
+                        @if (@ViewBag.LogoMutual != null)
+                        {
+                            <img src="data:image/gif;base64,@ViewBag.LogoMutual" style="height:80px;width:80px" />
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+
+</form>
+
+<script>
+
+    $(function () {
+
+        $(".preview").on("change", function (e) {
+            // Creamos el objeto de la clase FileReader
+            let reader = new FileReader();
+            // Leemos el archivo subido y se lo pasamos a nuestro fileReader
+            reader.readAsDataURL(e.target.files[0]);
+            // Le decimos que cuando este listo ejecute el código interno
+            reader.onload = function () {
+                let preview = document.getElementById(e.target.attributes[3].value),
+                    image = document.createElement('img');
+                image.style.width = "80px";
+                image.style.height = "80px";
+                // preview.empty;
+                image.src = reader.result;
+                preview.innerHTML = '';
+                preview.append(image);
+            };
+        });
+    });
+</script>

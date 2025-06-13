@@ -1,0 +1,58 @@
+﻿@{
+    ViewData["Title"] = "Proveedores";
+}
+<div class="row">
+    <div class="col-md-12">
+        <div class="box box-info">
+            <div class="box-header with-border filtro-grilla">
+                <div class="row">
+                    <div class="col-md-2"><h4>Listado de Proveedores</h4></div>
+                    <div class="col-md-10">
+                        <a onclick="nuevoProveedor()" title="Nuevo Proveedor" asp- class="pull-right btn btn-info btn-sm">
+                            <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="box-body">
+                <table class="table table-hover table-bordered table-responsive" id="ProveedorDataTable"></table>
+            </div>
+        </div>
+    </div>
+</div>
+<modal title="Nuevo Proveedor" callback-modal="true" function="nuevoProveedor" load-url="/Core/Proveedor/_Create/" size="Medium"></modal>
+<modal title="Editar Proveedor" callback-modal="true" function="editarProveedor" load-url="/Core/Proveedor/_Update/" size="Medium"></modal>
+<modal title="Cargar Foto del Proveedor" callback-modal="true" function="imgProveedor" load-url="/Core/Proveedor/_Image/" size="Medium"></modal>
+<modal title="Borrar Proveedor" function="borrarProveedor" load-url="/Core/Proveedor/_Delete/" size="Medium"></modal>
+<script type="text/javascript">
+$(function () {
+    var table = $('#ProveedorDataTable').DataTable({
+                serverSide: true,
+                processing: true,
+                ajax: {
+                    url: '@Url.Action("ProveedorDataTable")',
+                    type: "POST",
+                    },
+                rowId: 'Id',
+                columns: [
+                    { data: "NombreCompleto", title: "Nombre Completo"},
+                    { data: "CUIT", title: "CUIT"},
+                    { data: "RazonSocial", title: "Razon Social"},
+                    { data: "Empresa", title: "Empresa"},
+                    {
+                        "title": "Acciones",
+                        "sortable": false,
+                        "render": function(data, type, row) {
+                            var action = '';
+                            action = action + `<a datatoggle='tooltip' title='Editar Proveedor' onclick="editarProveedor('${row['Id']}')" class="btn btn-primary btn-xs"><i class=" fa fa-file-text-o"></i></a> `;
+                            action = action + `<a href="/Core/Proveedor/_DetalleProveedor/${row['Id']}" datatoggle='tooltip' title='Listar Productos del Proveedor' class="btn btn-warning btn-xs"><i class=" fa fa-link"></i></a> `;
+                            action = action + `<a datatoggle='tooltip' title='Cargar Foto del Proveedor' onclick="imgProveedor('${row['Id']}')" class="btn btn-warning btn-xs"><i class=" fa fa-file-image-o"></i></a> `;
+                            action = action + `<a datatoggle='tooltip' title='Borrar Proveedor' onclick="borrarProveedor('${row['Id']}')" class="btn btn-danger btn-xs"><i class=" fa fa-trash-o"></i></a> `;
+                            return action;
+                        }
+                    }
+                ]
+
+    });
+})
+</script>

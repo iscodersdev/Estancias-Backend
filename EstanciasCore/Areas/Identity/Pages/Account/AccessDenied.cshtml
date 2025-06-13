@@ -1,0 +1,47 @@
+﻿@page
+@model AccessDeniedModel
+@{
+    ViewData["Title"] = "Access denied";
+    Layout = "";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Estancias - Acceso denegado</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <environment>
+        <link href="~/css/commons/lte/bootstrap.min.css" rel="stylesheet" />
+        <link rel="stylesheet" href="~/css/site.css" />
+        <link rel="stylesheet" href="~/css/error.css" />
+    </environment>
+</head>
+<body>
+    <div class="">
+        <div class="">
+            <div class="block-error">
+                <div class="error-num">401</div>
+                <div class="error-text">Acceso denegado</div>
+                <div class="error-description">
+                    No posee acceso a este recurso. Comuníquese con el administrador.
+
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <button class="btn btn-primary btn-block" onClick="history.back();">Volver</button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-info btn-block" onClick="document.location.href = '/';">Inicio</button>
+                    </div>
+                </div>
+                <div class="copy">
+                    © All Rights Centro de Producción de Software - Dirección General de Comunicaciones e Informática - 2020
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

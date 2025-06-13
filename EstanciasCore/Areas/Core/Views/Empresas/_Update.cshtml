@@ -1,0 +1,152 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Empresas
+@{
+    ViewData["Title"] = "Editar Empresa: " + Model.RazonSocial;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="_Update">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Información")) { }
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="LogoMutual" />
+                    <input type="hidden" asp-for="GIFLogoMutual" />
+                    <input type="hidden" asp-for="FondoMobile" />
+                    <div class="form-group">
+                        <label asp-for="CUIT" class="control-label"></label>
+                        <input asp-for="CUIT" class="form-control" />
+                        <span asp-validation-for="CUIT" class="text-danger"></span>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <div class="col-md-8">
+                                <label asp-for="RazonSocial" class="control-label"></label>
+                                <input asp-for="RazonSocial" class="form-control" />
+                                <span asp-validation-for="RazonSocial" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Abreviatura" class="control-label"></label>
+                                <input asp-for="Abreviatura" class="form-control" />
+                                <span asp-validation-for="Abreviatura" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Domicilio" class="control-label"></label>
+                        <input asp-for="Domicilio" class="form-control" />
+                        <span asp-validation-for="Domicilio" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label asp-for="Telefono" class="control-label"></label>
+                                <input asp-for="Telefono" class="form-control" />
+                                <span asp-validation-for="Telefono" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Mail" class="control-label"></label>
+                                <input asp-for="Mail" class="form-control" />
+                                <span asp-validation-for="Mail" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label asp-for="ColorFontCarnet" class="control-label"></label>
+                                <div class="input-group colorpickerDiv">
+                                    <input asp-for="ColorFontCarnet" value="#000000" type="text" class="form-control my-colorpicker1 colorpicker-element">
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
+                                <span asp-validation-for="ColorFontCarnet" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ColorCarnet" class="control-label"></label>
+                                <div class="input-group colorpickerDiv">
+                                    <input asp-for="ColorCarnet" value="#000000" type="text" class="form-control my-colorpicker1 colorpicker-element">
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
+                                <span asp-validation-for="ColorCarnet" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ColorFondo" class="control-label"></label>
+                                <div class="input-group colorpickerDiv">
+                                    <input asp-for="ColorFondo" value="#000000" type="text" class="form-control my-colorpicker1 colorpicker-element">
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
+                                <span asp-validation-for="ColorFondo" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ColorBotones" class="control-label"></label>
+                                <div class="input-group colorpickerDiv">
+                                    <input asp-for="ColorBotones" value="#000000" type="text" class="form-control my-colorpicker1 colorpicker-element">
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
+                                <span asp-validation-for="ColorBotones" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label asp-for="Facebook" class="control-label"></label>
+                                <input asp-for="Facebook" class="form-control" />
+                                <span asp-validation-for="Facebook" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="WhatsApp" class="control-label"></label>
+                                <input asp-for="WhatsApp" class="form-control" />
+                                <span asp-validation-for="WhatsApp" class="text-danger"></span>
+
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ColorLogin" class="control-label"></label>
+                                <div class="input-group colorpickerDiv">
+                                    <input asp-for="ColorLogin" value="#000000" type="text" class="form-control my-colorpicker1 colorpicker-element">
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
+                                <span asp-validation-for="ColorLogin" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label asp-for="Facebook" class="control-label"></label>
+                                <input asp-for="Facebook" class="form-control" />
+                                <span asp-validation-for="Facebook" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="WhatsApp" class="control-label"></label>
+                                <input asp-for="WhatsApp" class="form-control" />
+                                <span asp-validation-for="WhatsApp" class="text-danger"></span>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Grupo" class="control-label"></label>
+                        <select asp-items="@ViewBag.Grupos" asp-for="Grupo.Id" class="form-control" searchable="true"></select>
+                        <span asp-validation-for="Grupo" class="text-danger"></span>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a asp-action="Index" class="btn btn-default">Cancelar</a>
+                    <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.colorpickerDiv').colorpicker()
+    });
+</script>

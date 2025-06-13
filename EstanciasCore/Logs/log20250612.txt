@@ -1,0 +1,37 @@
+2025-06-12 16:34:23.873 -03:00 [WRN] No type was specified for the decimal column 'Deuda' on entity type 'Accesos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.939 -03:00 [WRN] No type was specified for the decimal column 'MaximoDisponible' on entity type 'Campanas'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.941 -03:00 [WRN] No type was specified for the decimal column 'MinimoDisponible' on entity type 'Campanas'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.943 -03:00 [WRN] No type was specified for the decimal column 'Disponible' on entity type 'CampanasRenglones'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.946 -03:00 [WRN] No type was specified for the decimal column 'ImporteMaximo' on entity type 'CampanasRenglones'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.948 -03:00 [WRN] No type was specified for the decimal column 'Saldo' on entity type 'Billetera'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.950 -03:00 [WRN] No type was specified for the decimal column 'InteresesPorCuota' on entity type 'Financiacion'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.953 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'MovimientoBilletera'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.955 -03:00 [WRN] No type was specified for the decimal column 'MontoAdeudado' on entity type 'PagoTarjeta'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.957 -03:00 [WRN] No type was specified for the decimal column 'Oferta' on entity type 'Producto'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.959 -03:00 [WRN] No type was specified for the decimal column 'Precio' on entity type 'Producto'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.961 -03:00 [WRN] No type was specified for the decimal column 'Oferta' on entity type 'ProductoCliente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.963 -03:00 [WRN] No type was specified for the decimal column 'Precio' on entity type 'ProductoCliente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.966 -03:00 [WRN] No type was specified for the decimal column 'Importe' on entity type 'CuentaCorriente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.968 -03:00 [WRN] No type was specified for the decimal column 'Saldo' on entity type 'CuentaCorriente'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.970 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'MockServicio'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:23.972 -03:00 [WRN] No type was specified for the decimal column 'Monto' on entity type 'RelacionPuntos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2025-06-12 16:34:24.373 -03:00 [WRN] Request API: ::1 - /api/MTarjetas/MovimientoTarjeta -  {
+  "UAT": "9TpjpCQShyko1Fygzq8YzIbFbLsZRN",
+  "CantMovimientos": 100,
+  "tipomovimiento": 0,
+  "NroTarjeta": "500022911"
+}
+2025-06-12 16:34:24.494 -03:00 [WRN] Query: '(from DatosEstructura <generated>_1 in DbSet<DatosEstructura> select [<generated>_1]).FirstOrDefault...' uses First/FirstOrDefault/Last/LastOrDefault operation without OrderBy and filter which may lead to unpredictable results.
+2025-06-12 16:34:25.664 -03:00 [WRN] Query: '(from LeyendaTipoMovimiento <generated>_1 in DbSet<LeyendaTipoMovimiento> select [<generated>_1]).Fi...' uses First/FirstOrDefault/Last/LastOrDefault operation without OrderBy and filter which may lead to unpredictable results.
+2025-06-12 16:41:14.015 -03:00 [WRN] Request API: ::1 - /api/MTarjetas/MovimientoTarjeta -  {
+  "UAT": "9TpjpCQShyko1Fygzq8YzIbFbLsZRN",
+  "CantMovimientos": 100,
+  "tipomovimiento": 0,
+  "NroTarjeta": "500022911"
+}
+2025-06-12 17:03:13.989 -03:00 [WRN] Request API: ::1 - /api/MTarjetas/MovimientoTarjeta -  {
+  "UAT": "kz8W28SQ8yGLbOkqz6qa2CRj8lflys",
+  "CantMovimientos": 5,
+  "tipomovimiento": 1,
+  "NroTarjeta": "0000016020044619"
+}

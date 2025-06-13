@@ -1,0 +1,271 @@
+﻿@using DAL.Models
+@using System.Globalization;
+@model Commons.Models.Page<DAL.Models.Promociones>
+
+<box-header title="Listado">
+    <box-search update-div="tablaPromociones">
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaPromocion()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </box-search>
+</box-header>
+<box-body table="true">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    Fecha
+                </th>
+                <th>
+                    Titulo
+                </th>
+                <th>
+                    Orden
+                </th>
+                <th>
+                    Estado
+                </th>
+                <th>
+                    Fecha Desde
+                </th>
+                <th>
+                    Fecha Hasta
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items.OrderBy(x => x.Orden))
+            {
+             <tr>
+                 <td>
+                     @item.Fecha.ToString("dd/MM/yyyy")
+                 </td>
+                 <td>
+                     @Html.DisplayFor(modelItem => item.Titulo)
+                 </td>
+                 <td>
+                     @Html.DisplayFor(modelItem => item.Orden)
+                 </td>
+                 <td>
+                        @if (item.Vencimiento)
+                        {
+                            @if (item.FechaHasta.Date.CompareTo(DateTime.Now.Date) >= 0)
+                            {
+                              
+
+                                <small class="label pull-center bg-green">@Html.Raw("Habilitado")</small>
+                            }
+                            else
+                            {
+
+                                <small class="label pull-center bg-red">@Html.Raw("Vencido")</small>
+                            }
+                        }
+                        else
+                        {                            
+                            <small class="label pull-center bg-green">@Html.Raw("Habilitado")</small>
+                        }
+
+                </td>
+                <td class=" pull-center">
+                    @if (item.Vencimiento)
+                    {
+                        @Html.DisplayFor(modelItem => item.FechaDesde)
+                    }
+                    else
+                    {
+                        @Html.Raw("Sin Dato")
+                    }
+                </td>
+                <td class=" pull-center">
+                    @if (item.Vencimiento)
+                    {
+                        @Html.DisplayFor(modelItem => item.FechaHasta)
+                    }
+                    else
+                    {
+                            @Html.Raw("Sin Dato")
+                    }
+                </td>
+                 <td>
+                     <a onclick="editPromocion(@item.Id)" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                     @if (item.Foto == null)
+                     {
+                         <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                             <i class="fa fa-image"></i>
+                             <i class="fa fa-exclamation"></i>
+                         </a>
+                     }
+                     else
+                     {
+                         <a onclick="imagen(@item.Id)" title="Editar Foto" class="btn btn-primary btn-xs"><i class="fa fa-image"></i></a>
+                         @*<a title ="Enviar Notificaciones" asp-action="Notificacion" asp-route-id="@item.Id" onclick="return confirm('Esta seguro de Difundir Esta Promoción?');" class="btn btn-primary btn-xs"><i class="fa fa-phone"></i></a>*@
+                     }
+
+                    @if (item.QR)
+                    {
+                        <a href="/Core/Promociones/_DisabledQR?id=@item.Id" title="Deshabilitar QR" confirm-icon="Warning" confirm-no="Cancelar" confirm-yes="Deshabilitar" confirm="¿Esta seguro que quiere Deshabilitar el QR de la Promoción?" class="btn btn-danger btn-xs"><i class="fa fa-qrcode"></i></a>
+                    }
+                    else
+                    {
+                        <a href="/Core/Promociones/_EnabledQR?id=@item.Id" title="Habilitar QR" confirm-icon="Warning" confirm-no="Cancelar" confirm-yes="Habilitar" confirm="¿Esta seguro que quiere Habilitar el QR de la Promoción?" class="btn btn-success btn-xs"><i class="fa fa-qrcode"></i></a>
+                    }
+                    <a onclick="cambiarOrdenPromocion(@item.Id)" title="Cambiar Orden" class="btn btn-primary btn-xs"><i class="fa fa-sort-numeric-asc"></i></a>
+                    <a onclick="borrarPromocion(@item.Id)" title="Borrar Promoción" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
+                 </td>
+             </tr>
+            }
+        </tbody>
+    </table>
+
+</box-body>
+<box-footer page-update-div="tablaPromociones"></box-footer>
+<modal title="Edición de Promoción" function="editPromocion" load-url="/Core/Promociones/Update/" size="Medium"></modal>
+<modal title="Nueva Promoción" function="nuevaPromocion" load-url="/Core/Promociones/Create/" size="Medium"></modal>
+<modal title="Cambiar Foto" function="imagen" load-url="/Core/Promociones/_CambiarImagen/" size="Medium"></modal>
+
+
+<script>
+
+    borrarPromocion = (id) => {
+        Swal.fire({
+            title: "¿Desea Borrar la Pomoción?",
+            showDenyButton: true,
+            showCancelButton: true,
+            showConfirmButton: false,
+            confirmButtonText: "Save",
+            cancelButtonText: "Cancelar",
+            denyButtonText: `Borrar`
+        }).then((result) => {
+           if (result.isDenied) {
+                $.ajax({
+                    url: '/Core/Promociones/Delete/' + id,  // Ruta del controlador y método
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+                        console.log(response)
+                        if(response){
+                            //Swal.fire("Borrado con éxito.", "", "success");
+                            location.reload();
+                        }else{
+
+                            Swal.fire("Error al borrar.", "", "warning");
+                        }
+                    },
+                    error: function (error) {
+                        // Manejo de errores
+                        Swal.fire("Error al borrar.", "", "warning");
+                    }
+                });
+
+                
+            }
+        });
+    }
+
+
+
+    cambiarOrdenPromocion = (id) => {
+
+        Swal.fire({
+            title: '¿Modificar orden de la promoción?',
+            text: 'Ingrese un número de orden',
+            input: 'text',
+            inputPlaceholder: 'Escriba su observación aquí...',
+            showCancelButton: true,
+            showConfirmButton: true,
+            confirmButtonText: 'SI',
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            icon: 'question',
+            iconColor: 'LightSkyBlue',
+            showCancelButton: true,
+            cancelButtonText: 'No',
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                if (result.value) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/Core/Promociones/ModificarOrden',
+                        data: { Id: id, Orden: result.value },
+                        success: function (data) {
+                            Swal.fire({
+                                title: 'Correcto!',
+                                text: 'Se Modificó el Orden',
+                                icon: 'success',
+                                showConfirmButton: true,
+                            }).then(function (result) {
+                                window.location.href = '/Core/Promociones/'
+                            });
+                        },
+                        error: function (XHR) {
+                            if (XHR.status === 500) {
+                                Swal.fire({
+                                    text: "Error 500",
+                                    icon: 'error',
+                                    showConfirmButton: true,
+                                });
+                            } else {
+                                Swal.fire({
+                                    text: "Error " + XHR.status,
+                                    icon: 'error',
+                                    showConfirmButton: true,
+                                });
+                            }
+                        }
+                    })
+                } else {
+                    Swal.fire({
+                        text: "Debe Ingresar una Observación",
+                        icon: 'warning',
+                        showConfirmButton: true,
+                    });
+                }
+            }
+
+        });
+        
+        }
+        
+        
+        
+        
+        
+        
+        
+        //// SweetAlert para pedir un número al usuario
+        //Swal.fire({
+        //    title: "Modificar orden de la promoción",
+        //    input: "number",
+        //    inputLabel: "Nuevo orden",
+        //    inputPlaceholder: "Ingresa el nuevo orden",
+        //    showCancelButton: true,
+        //    inputValidator: (value) => {
+        //        if (!value || isNaN(value) || value <= 0) {
+        //            return "Por favor ingresa un número válido";
+        //        }
+        //    }
+        //});
+        //console.log(value)
+        //if (value) {
+        //    fetch('/Core/Promociones/ModificarOrden', {
+        //        method: 'POST',
+        //        body: JSON.stringify({ Id: id, Orden: promotionOrder })
+        //    })
+        //        .then(response => response.json())
+        //        .then(data => {
+        //            if (data.success) {
+        //                Swal.fire(`El orden de la promoción ha sido modificado a ${promotionOrder}`);
+        //            } else {
+        //                Swal.fire('Error', 'No se pudo modificar el orden de la promoción', 'error');
+        //            }
+        //        })
+        //        .catch(error => {
+        //            Swal.fire('Error', 'Ocurrió un error al enviar la solicitud', 'error');
+        //        });
+        //}
+    
+
+</script>

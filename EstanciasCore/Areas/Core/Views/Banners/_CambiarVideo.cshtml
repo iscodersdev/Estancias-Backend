@@ -1,0 +1,44 @@
+﻿@model DAL.Models.Banners
+
+<div>
+
+    <h3 class="profile-username text-center">@Model.Titulo</h3>
+    <div style="text-align: center;">
+        @if (Model.Video != null && Model.EsVideo==true)
+        {
+            <video style="width: 100%;" controls>
+                <source src="@Model.Video" type="video/mp4">
+                Tu navegador no soporta la reproducción de video.
+            </video>
+        }
+    </div>
+    <br />
+    <div style="text-align: center;">
+        <form asp-action="_CambiarVideo" method="post" enctype="multipart/form-data" id="GuardaImagen">
+            <ul class="list-group list-group-unbordered" style="text-align: -webkit-center;">
+                <li class="list-group-item">
+                    <input type="hidden" asp-for="Id" />
+                    <input type="file" name="file" id="file" accept="video/*" />
+                </li>
+            </ul>
+            <p id="Texto" class="text-red">El archivo debe ser menor a 12MB</p>
+            <button id="BotonGuardar" type="submit" class="btn btn-primary btn-block"><b>Cambiar</b></button>
+        </form>
+    </div>
+</div>
+
+
+<script>
+
+    $('#Texto').hide();
+    $('#file').change(function () {
+        var file = this.files[0];
+        if (file.size > 12048576) { // 1MB = 1048576 bytes
+            $('#BotonGuardar').prop('disabled', true);
+            $('#Texto').show();
+        } else {
+            $('#BotonGuardar').prop('disabled', false);
+            $('#Texto').hide();
+        }
+    });
+</script>

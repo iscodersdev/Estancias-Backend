@@ -1,0 +1,386 @@
+﻿@using Commons.Extensions
+
+@{
+    ViewData["Title"] = "Borrar Usuario";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+
+<style>
+    .timeline-item {
+        border: 1px solid #000 !important;
+        background-color: #f4f4f466 !important;
+    }
+
+</style>
+
+
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <h3 class="box-title">Buscar Usuario</h3>
+    </div>
+    <div class="box-body">
+        <div class="row">
+            <div class="col-xs-3"></div>
+            <div class="col-xs-2">
+                <div class="form-group">
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="tipoDeBusqueda" id="tipoDeBusqueda1" value="1" checked="">
+                            Nro Documento
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="tipoDeBusqueda" id="tipoDeBusqueda2" value="2">
+                            Usuario/Mail
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="tipoDeBusqueda" id="tipoDeBusqueda3" value="3">
+                            Nro Tarjeta
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xs-2">
+                <div class="form-group">
+                    <label id="labelBusqueda">Nro Documento</label>
+                    <input type="text" class="form-control" id="valorBusqueda">
+                </div>                    
+            </div>
+            <div class="col-xs-1">
+                <div class="form-group">
+                    <label >&nbsp; </label>
+                    <button type="button" id="buttonBuscarUsuario" class="btn btn-primary form-control">Buscar</button>
+                </div>
+                    
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingBuscarUsuario" style="display:none;padding-top: 2%; text-align-last: center;">
+    <img src="~/images/loading.gif" style="width:6%">
+</div>
+
+<div class="box box-primary" id="detallesBuscarUsuario" style="display:none">
+    <div class="box-body">
+        <div class="tab-pane active" id="timeline">
+
+            <ul class="timeline timeline-inverse">
+                <li>
+                    <i class="fa fa-user bg-blue"></i>
+                    <div class="timeline-item" style="">
+                        <span class="time"><i class="fa fa-clock-o"></i> 12:05</span>
+                        <h3 class="timeline-header"><b>Datos del Usuario</b></h3>
+                        <div class="timeline-body">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <div class="form-group">
+                                        <label>Usuario</label>
+                                        <input id="datoUsuario" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-xs-2">
+                                    <div class="form-group">
+                                        <label>DeviceId</label>
+                                        <input id="datoDeviceId" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-xs-6">
+                                    <div class="form-group">
+                                        <label>WonderPushDeviceId</label>
+                                        <input id="datoWonderPush" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-xs-2">
+                                    <div class="form-group">
+                                        <label>Nro Documento</label>
+                                        <input id="datoNroDocumento" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-xs-2">
+                                    <div class="form-group">
+                                        <label>Apellidos</label>
+                                        <input id="datoApellido" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-xs-2">
+                                    <div class="form-group">
+                                        <label>Nombres</label>
+                                        <input id ="datoNombre" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-xs-2">
+                                    <div class="form-group">
+                                        <label>Nro Tarjeta</label>
+                                        <input id="datoNroTarjeta" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-xs-2">
+                                    <div class="form-group">
+                                        <label>Celular</label>
+                                        <input id="datoCelular" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-xs-2">
+                                    <div class="form-group">
+                                        <label>Fecha de nacimiento</label>
+                                        <input id="datoFechaNacimiento" type="text" class="form-control" placeholder="Sin Datos" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+
+
+
+
+                <li>
+                    <i class="fa fa-comments bg-yellow"></i>
+                    <div class="timeline-item">
+                        <span class="time"><i class="fa fa-clock-o"></i> 27 mins ago</span>
+                        <h3 class="timeline-header"><b>Información</b></h3>
+                        <div class="timeline-body" id="DivInformacion">
+                            <div id="statusUsuario">
+                                <strong><i class="fa fa-book margin-r-5"></i> Usuario</strong>
+                                <p class="text-muted" style="padding-left: 2%;">
+                                    <i class="fa fa-check" style="color: #04865c; display: none;"> </i>
+                                    <b class="success-text" style="color: #04865c; display: none;">Creado Correctamente</b>
+                                    <br />
+                                    <i class="fa fa-close" style="color: #dd4b39; display: none;"> </i>
+                                    <b class="error-text" style="color: #dd4b39; display: none;">Error Usuario no Creado</b>
+                                </p>
+                            </div>
+                            <hr>
+                            <div id="statusCliente">
+                                <strong><i class="fa fa-book margin-r-5"></i> Cliente</strong>
+                                <p class="text-muted" style="padding-left: 2%;">
+                                    <i class="fa fa-check" style="color: #04865c; display: none;"> </i>
+                                    <b class="success-text" style="color: #04865c; display: none;">Creado Correctamente</b>
+                                    <br />
+                                    <i class="fa fa-close" style="color: #dd4b39; display: none;"> </i>
+                                    <b class="error-text" style="color: #dd4b39; display: none;">Error Cliente no Creado</b>
+                                </p>
+                            </div>
+                            <hr>
+                            <div id="statusPersona">
+                                <strong><i class="fa fa-book margin-r-5"></i> Persona</strong>
+                                <p class="text-muted" style="padding-left: 2%;">
+                                    <i class="fa fa-check" style="color: #04865c; display: none;"> </i>
+                                    <b class="success-text" style="color: #04865c; display: none;">Creado Correctamente</b>
+                                    <br />
+                                    <i class="fa fa-close" style="color: #dd4b39; display: none;"> </i>
+                                    <b class="error-text" style="color: #dd4b39; display: none;">Error Persona no Creada</b>
+                                </p>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </li>
+
+                <li>
+                    <i class="fa fa-camera bg-purple"></i>
+                    <div class="timeline-item">
+                        <span class="time"><i class="fa fa-clock-o"></i> Comprobantes Subidos</span>
+                        <h3 class="timeline-header"><b>Comprobantes Subidos</b></h3>
+                        <div class="timeline-body" id="pagosContainer">
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <i class="fa fa-gears bg-aqua"></i>
+                    <div class="timeline-item">
+                        <button class="btn btn-danger btn-block" id="buttonBorrarUsuario">Borrar</button>
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+    $(document).ready(function () {      
+        $('input[name="tipoDeBusqueda"]').on('change', function () {
+            var selectedValue = $(this).val();
+            var newLabelText = '';
+            $("#valorBusqueda").val("");
+            switch (selectedValue) {
+                case '1':
+                    newLabelText = 'Nro Documento';
+                    break;
+                case '2':
+                    newLabelText = 'Usuario/Mail';
+                    break;
+                case '3':
+                    newLabelText = 'Nro Tarjeta';
+                    break;
+            }
+            $('#labelBusqueda').text(newLabelText);
+        });
+
+        $('#buttonBuscarUsuario').on('click', function () {
+            $('#detallesBuscarUsuario').hide();
+            $('#loadingBuscarUsuario').show();
+            var inputValue = $('#valorBusqueda').val();
+            var tipoDeBusqueda = $('input[name="tipoDeBusqueda"]:checked').val();
+
+            $.ajax({
+                url: '/Administracion/Usuarios/BuscarUsuario',
+                type: 'POST',
+                data: { valor: inputValue, tipoDeBusqueda: tipoDeBusqueda },
+                success: function (response) {
+                    var data = JSON.parse(response);
+                    if (data.success) {
+                        $('#datoUsuario').val(data.usuario.UserName);
+                        $('#datoDeviceId').val(data.usuario.DeviceId);
+                        $('#datoWonderPush').val(data.usuario.WonderPushDeviceId);
+                        $('#datoNroDocumento').val(data.usuario.NroDocumento);
+                        $('#datoApellido').val(data.usuario.Apellidos);
+                        $('#datoNombre').val(data.usuario.Nombres);
+                        $('#datoNroTarjeta').val(data.usuario.NroTarjeta);
+                        $('#datoCelular').val(data.usuario.Celular);
+                        $('#datoFechaNacimiento').val(data.usuario.FechaNacimiento);
+
+                        updateStatus('Usuario', data.usuario.Usuario);
+                        updateStatus('Cliente', data.usuario.Cliente);
+                        updateStatus('Persona', data.usuario.Persona);
+
+                        renderPagos(data.usuario.Pagos);
+
+                        $('#detallesBuscarUsuario').show();
+                        $('#loadingBuscarUsuario').hide();
+                    } else {
+                        $('#loadingBuscarUsuario').hide();
+                        var textoAlert="";
+                        switch (tipoDeBusqueda){
+                            case "1":
+                                textoAlert = "No se encontro ningún usuario con ese DNI ingrese el Mail o NroTarjeta";
+                                break;
+                             case "2":
+                                textoAlert = "No se encontro ningún usuario con ese Mail ingrese el DNI o NroTarjeta";
+                                break;
+                            case "3":
+                                textoAlert = "No se encontro ningún usuario con ese NroTarjeta ingrese el DNI o Mail";
+                                break;
+                        }
+
+                        Swal.fire({
+                            title: "Error!",
+                            text: textoAlert,
+                            icon: "error",
+                        });
+                    }
+                },
+                error: function (error) {
+                    $('#loadingBuscarUsuario').hide();
+                    Swal.fire({
+                        title: "Error!",
+                        text: error,
+                        icon: "error",
+                    });
+                }
+            });
+        });
+
+        function updateStatus(type, status) {
+            if (status == 1) {
+                $('#status' + type + ' .fa-check').show();
+                $('#status' + type + ' .fa-close').hide();
+                $('#status' + type + ' .success-text').show();
+                $('#status' + type + ' .error-text').hide();
+            } else {
+                $('#status' + type + ' .fa-check').hide();
+                $('#status' + type + ' .fa-close').show();
+                $('#status' + type + ' .success-text').hide();
+                $('#status' + type + ' .error-text').show();
+            }
+        }
+
+        function renderPagos(pagos) {
+            var pagosContainer = $('#pagosContainer');
+            pagosContainer.empty();
+            pagos.forEach(function (pago) {
+                var comprobanteSrc = pago.ComprobantePago ? 'data:image/png;base64,' + pago.ComprobantePago : 'http://placehold.it/150x100';
+
+                var pagoHtml = `
+                    <div class="attachment-block clearfix">
+                        <img class="attachment-img" src="${comprobanteSrc}" alt="Attachment Image">
+                        <div class="attachment-pushed">
+                            <h4 class="attachment-heading">${pago.FechaComprobante}</h4>
+                        </div>
+                    </div>
+                `;
+                pagosContainer.append(pagoHtml);
+            });
+        }
+
+
+        $('#buttonBorrarUsuario').on('click', function () {
+            var inputValue = $('#valorBusqueda').val();
+            var tipoDeBusqueda = $('input[name="tipoDeBusqueda"]:checked').val();
+            Swal.fire({
+                title: '¿Quiere Borrar el Usuario?',
+                text: 'Si borra el usuario perderá toda la información que se detalla arriba',
+                icon: 'warning',
+                showConfirmButton: true,
+                showCancelButton: true,
+                cancelButtonColor: "#dd4b39",
+                confirmButtonText: "Aceptar",
+                cancelButtonText: "Cancelar",
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/Administracion/Usuarios/BorrarUsuario',
+                        type: 'POST',
+                        data: { valor: inputValue, tipoDeBusqueda: tipoDeBusqueda },
+                        success: function (response) {
+                            var data = JSON.parse(response);
+                            console.log(data)
+                            if (data.success && data.respuesta==true) {
+                                Swal.fire({
+                                    title: "Borrado!",
+                                    text: "",
+                                    icon: "success",
+                                    showConfirmButton: false,
+                                });
+
+                                setTimeout(() => {
+                                    window.location.href = '/Administracion/Usuarios/BorrarUsuario';
+                                }, 2000); // 3000 milisegundos = 3 segundos
+
+                            } else {
+                                Swal.fire({
+                                    title: "Error!",
+                                    text: "",
+                                    icon: "error",
+                                });
+                            }
+                        },
+                        error: function (error) {
+                            // Maneja los errores aquí
+                            alert('Error: ' + error);
+                        }
+                    });                                       
+                }
+            });
+
+
+            
+        });
+
+    });
+</script>
+

@@ -1,0 +1,53 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Core.Billetera
+@{
+    ViewData["Title"] = "Editar Billetera";
+}
+<form method="post" asp-action="_Update" asp-controller="Billetera" asp-area="Core" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    @using (Html.BoxDefault(BoxColor.Info))
+    {
+        using (Html.BoxBody())
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input asp-for="@Model.Id" type="hidden" />
+
+            <div class="form-group">
+                <label asp-for="Cliente" class="control-label"></label>
+                <select-ajax title="Ingrese Nro Documento, Apellido o Nombre."
+                             class="form-control"
+                             name="Cliente"
+                             url="@Url.Action("BilleteraComboJson", $"Billetera")"
+                             color="Default"
+                             width="100%"
+                             class-btn="btn-flat"
+                             text-no-results="<h4 class='text-center'>El Cliente no está en el sistema.<br></h3>"></select-ajax>
+                <span asp-validation-for="Cliente" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Saldo" class="control-label"></label>
+                <input asp-for="Saldo" class="form-control" />
+                <span asp-validation-for="Saldo" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="AliasCVU" class="control-label"></label>
+                <input asp-for="AliasCVU" class="form-control" />
+                <span asp-validation-for="AliasCVU" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="CVU" class="control-label"></label>
+                <input asp-for="CVU" class="form-control" />
+                <span asp-validation-for="CVU" class="text-danger"></span>
+            </div>
+        }
+        @using (Html.BoxFooter())
+        {
+            <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+            <button type="submit" class="btn btn-info pull-right">Guardar</button>
+        }
+    }
+</form>
+

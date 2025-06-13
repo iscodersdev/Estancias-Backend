@@ -1,0 +1,76 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Vendedores
+@{
+    ViewData["Title"] = "Editar Vendedor";
+}
+<form asp-action="_Update">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input asp-for="@Model.Id" type="hidden" />
+        <input type="hidden" asp-for="Mail" class="form-control" />
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-3">
+                    <label asp-for="Persona.TipoDocumento" class="control-label"></label>
+                    <select asp-items="@ViewBag.TiposDocumento" asp-for="Persona.TipoDocumento.Id" class="form-control" searchable="true"></select>
+                    <span asp-validation-for="Persona.TipoDocumento" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.NroDocumento" class="control-label"></label>
+                    <input asp-for="Persona.NroDocumento" class="form-control" />
+                    <span asp-validation-for="Persona.NroDocumento" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.Pais" class="control-label"></label>
+                    <select asp-items="@ViewBag.Paises" asp-for="Persona.Pais.Id" class="form-control" searchable="true"></select>
+                    <span asp-validation-for="Persona.Pais" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <label asp-for="Persona.Nombres" class="control-label"></label>
+                    <input asp-for="Persona.Nombres" class="form-control" />
+                    <span asp-validation-for="Persona.Nombres" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.Apellido" class="control-label"></label>
+                    <input asp-for="Persona.Apellido" class="form-control" />
+                    <span asp-validation-for="Persona.Apellido" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.Cuil" class="control-label"></label>
+                    <input asp-for="Persona.Cuil" class="form-control" />
+                    <span asp-validation-for="Persona.Cuil" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.FechaNacimiento" class="control-label"></label>
+                    <input asp-for="Persona.FechaNacimiento" class="form-control" />
+                    <span asp-validation-for="Persona.FechaNacimiento" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <label asp-for="Domicilio" class="control-label"></label>
+                    <input asp-for="Domicilio" class="form-control" />
+                    <span asp-validation-for="Domicilio" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Telefono" class="control-label"></label>
+                    <input asp-for="Telefono" class="form-control" />
+                    <span asp-validation-for="Telefono" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Mail" class="control-label"></label>
+                    <input asp-for="Mail" class="form-control"  disabled/>
+                </div>
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+</form>

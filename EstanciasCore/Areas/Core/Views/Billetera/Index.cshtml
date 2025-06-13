@@ -1,0 +1,84 @@
+﻿@{
+    ViewData["Title"] = "Listado de Billeteras";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+@using DAL.Models.Core
+@model IEnumerable<Billetera>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Billeteras</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaBilletera()" title="Nueva Billetera" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoBilletera" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Cliente
+                    </th>
+                    <th>
+                        Saldo
+                    </th>
+                    <th>
+                        Alias CVU
+                    </th>
+                    <th>
+                        CVU
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.ToList())
+                {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Cliente.Usuario.Email)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Saldo)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.AliasCVU)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.CVU)
+                    </td>
+                    <td>
+                        <a onclick="editBilletera('@item.Id')" title="Editar Movimiento de Billetera" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                        <a asp-action="Delete" title="Borrar Billetera" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar esta Billetera?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Nueva Billetera" callback-modal="true" function="nuevaBilletera" load-url="/Core/Billetera/_Create/" size="Medium"></modal>
+<modal title="Edición de Billetera" callback-modal="true" function="editBilletera" load-url="/Core/Billetera/_Update/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoBilletera').DataTable(
+        {
+            "columnDefs": [
+                { "width": "40%", "targets": 0 },
+                { "width": "15%", class: "text-center", "targets": 1 },
+                { "width": "15%", class: "text-center", "targets": 2 },
+                { "width": "20%", class: "text-center", "targets": 3 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 4 }
+            ],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        }
+    );
+    });
+</script>

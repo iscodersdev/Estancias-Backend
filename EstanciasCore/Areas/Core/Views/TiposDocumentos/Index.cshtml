@@ -1,0 +1,52 @@
+﻿@{
+    ViewData["Title"] = "Tipos de Documento";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+<div class="row">
+    <div class="col-md-12">
+        <div class="box box-info">
+            <div class="box-header with-border filtro-grilla">
+                <div class="row">
+                    <div class="col-md-3"><h4>Listado de Tipos de Documentos</h4></div>
+                    <div class="col-md-9">
+                        <a onclick="nuevoTipoDocumento()" title="Nuevo Tipo de Documento" asp- class="pull-right btn btn-info btn-sm">
+                            <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="box-body">
+                <table class="table table-hover table-bordered table-responsive borde_interno" id="TipoDocumentoDataTable"></table>
+            </div>
+        </div>
+    </div>
+</div>
+<modal title="Edición de Tipo de Documento" callback-modal="true" function="editTipoDocumento" load-url="/Core/TiposDocumentos/_Update/" size="Medium"></modal>
+<modal title="Nuevo Tipo de Documento" callback-modal="true" function="nuevoTipoDocumento" load-url="/Core/TiposDocumentos/_Create/" size="Medium"></modal>
+<modal title="Borrar Tipo de Documento" callback-modal="true" function="deleteTipoDocumento" load-url="/Core/TiposDocumentos/_Delete/" size="Medium"></modal>
+<script type="text/javascript">
+$(function () {
+    var table = $('#TipoDocumentoDataTable').DataTable({
+                serverSide: true,
+                processing: true,
+                ajax: {
+                    url: '@Url.Action("TiposDocumentosDataTable")',
+                    type: "POST",
+                    },
+                rowId: 'Id',
+                columns: [
+                    { data: "NroDocumento", title: "Tipo de Documento"},
+                    {
+                        "title": "Acciones",
+                        "sortable": false,
+                        "render": function(data, type, row) {
+                            var action = '';
+                            action = action + `<a datatoggle='tooltip' title='Editar Tipo de Documento' onclick="editTipoDocumento('${row['Id']}')" class="btn btn-primary btn-xs"><i class=" fa fa-file-text-o"></i></a> `;
+                            action = action + `<a datatoggle='tooltip' title='Borrar Tipo de Documento' onclick="deleteTipoDocumento('${row['Id']}')" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a> `;
+                            return action;
+                        }
+                    }
+                ]
+    });
+})
+</script>

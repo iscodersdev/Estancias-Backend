@@ -1,0 +1,23 @@
+﻿@model DAL.Models.Novedades
+
+<div>
+
+    <h3 class="profile-username text-center">@Model.Titulo</h3>
+    <div style="text-align: center;">
+        @if (Model.Foto!=null)
+        {
+            <img style="width:30em" src="data:image/png;base64,@Model.Foto" alt="Imagen en Base64">
+        }
+    </div>
+    <br />
+    <form asp-action="_CambiarImagen" method="post" enctype="multipart/form-data" >
+        <ul class="list-group list-group-unbordered">
+            <li class="list-group-item">
+                <input type="hidden" asp-for="Id"/>
+                <input type="file" name="file"/>
+            </li>
+        </ul>
+
+        <button type="submit" class="btn btn-primary btn-block"><b>Cambiar</b></button>
+    </form>
+</div>

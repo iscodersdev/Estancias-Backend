@@ -1,0 +1,48 @@
+﻿@model DAL.Models.Promociones
+
+<div>
+
+    <h3 class="profile-username text-center">@Model.Titulo</h3>
+    <div style="text-align: center;">
+        @if (Model.Foto!=null)
+        {
+            <img style="width:30em" src="data:image/png;base64,@Model.Foto" alt="Imagen en Base64">
+        }
+    </div>
+    <br />
+    <form asp-action="_CambiarImagen" method="post" enctype="multipart/form-data" id="GuardaImagen">
+        <ul class="list-group list-group-unbordered">
+            <li class="list-group-item">
+                <input type="hidden" asp-for="Id"/>
+                <input type="file" name="file" id="file" />
+            </li>
+        </ul>
+        <p id="Texto" class="text-red">El archivo excede la resolución máxima de 1080 * 1080</p>
+        <button id="BotonGuardar" type="submit" class="btn btn-primary btn-block"><b>Cambiar</b></button>
+    </form>
+</div>
+
+
+<script>
+
+    $('#Texto').hide();
+    $('#file').change(function () {
+        var file = this.files[0]; 
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var image = new Image();
+            image.src = e.target.result;
+
+            image.onload = function () {
+                if (this.width > 1080 || this.height > 1080) {
+                    $('#BotonGuardar').prop('disabled', true);
+                    $('#Texto').show();
+                }else{
+                    $('#BotonGuardar').prop('disabled', false);
+                    $('#Texto').hide();
+                }
+            };
+        };
+        reader.readAsDataURL(file);
+    });   
+</script>

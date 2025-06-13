@@ -1,0 +1,41 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.ImagenIntro
+@{
+    ViewData["Title"] = "Editar Imagen Intro: " + Model.Titulo;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="Update">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Información")) { }
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="form-group">
+                        <label asp-for="Fecha" class="control-label"></label>
+                        <input asp-for="Fecha" class="form-control" />
+                        <span asp-validation-for="Fecha" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Titulo" class="control-label"></label>
+                        <input asp-for="Titulo" class="form-control" />
+                        <span asp-validation-for="Titulo" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Orden" class="control-label"></label>
+                        <input asp-for="Orden" class="form-control" />
+                        <span asp-validation-for="Orden" class="text-danger"></span>
+                    </div>                    
+                }
+                using (Html.BoxFooter())
+                {
+                    <a asp-action="Index" class="btn btn-default">Cancelar</a>
+                   @* <a asp-action="Delete" asp-route-id="@Model.Id" onclick="return confirm('Esta seguro de borrar este registro?');" class="btn btn-danger">Borrar</a>*@
+                    <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>

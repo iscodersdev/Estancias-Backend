@@ -1,0 +1,70 @@
+﻿<div class="row">
+    <div class="col-md-12">
+        <div class="box box-info">
+            <div class="box-header with-border filtro-grilla">
+                <div class="row">
+                    <div class="col-md-2"><h4>Listado de Productos</h4></div>
+                    <div class="col-md-10">
+                        <a onclick="nuevoProducto(@ViewBag.ProveedorId)" title="Nuevo Producto" asp- class="pull-right btn btn-info btn-sm">
+                            <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+                        </a>
+                        <a onclick="descargarProductosExcel(@ViewBag.ProveedorId)" title="Exportar Productos a Excel" asp- class="pull-right btn btn-success btn-sm" style="margin-right: 10px;">
+                            <i class="fa fa-download"><span class="hidden-xs"> Exportar Excel</span></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="box-body">
+                <table class="table table-hover table-bordered table-responsive" id="ProductoDataTable" width="100%"></table>
+            </div>
+        </div>
+    </div>
+</div>
+<modal title="Nuevo Producto" callback-modal="true" function="nuevoProducto" load-url="/Core/Productos/_Create/" size="Medium"></modal>
+<modal title="Editar Producto" callback-modal="true" function="editarProducto" load-url="/Core/Productos/_Update/" size="Medium"></modal>
+<modal title="Editar Financiación" callback-modal="true" function="editarFinanciacion" load-url="/Core/Productos/_Financiacion/" size="Large"></modal>
+<modal title="Borrar Producto" function="borrarProducto" load-url="/Core/Productos/_Delete/" size="Medium"></modal>
+<modal title="Cargar Foto del Producto" callback-modal="true" function="imgProducto" load-url="/Core/Productos/_Image/" size="Medium"></modal>
+<script type="text/javascript">
+    $(function () {
+        var table = $('#ProductoDataTable').DataTable({
+            serverSide: true,
+            processing: true,
+            ajax: {
+                url: '@Url.Action("ProductosDataTable")',
+                type: "POST",
+                data: {
+                    ProveedorId: '@Html.Raw(@ViewBag.ProveedorId)',
+                }
+            },
+            rowId: 'Id',
+            columns: [
+                { data: "Descripcion", title: "Producto" },
+                { data: "Rubro", title: "Rubro" },
+                { data: "DescripcionAmpliada", title: "Detalle" },
+                { data: "Precio", title: "Precio" },                 
+                { data: "Oferta", title: "Precio Oferta" },                 
+                { data: "Financiable", title: "Financiable" },                 
+                {
+                    "title": "Acciones",
+                    "sortable": false,
+                    "render": function (data, type, row) {
+                        var action = '';
+                        action = action + `<a datatoggle='tooltip' title='Editar Producto' onclick="editarProducto('${row['Id']}')" class="btn btn-primary btn-xs"><i class=" fa fa-file-text-o"></i></a> `;
+                        action = action + `<a datatoggle='tooltip' title='Borrar Producto' onclick="borrarProducto('${row['Id']}')" class="btn btn-danger btn-xs"><i class=" fa fa-trash-o"></i></a> `;                        
+                        action = action + `<a datatoggle='tooltip' title='Cargar Foto del Producto' onclick="imgProducto('${row['Id']}')" class="btn btn-warning btn-xs"><i class=" fa fa-file-image-o"></i></a> `;
+                        if (row['Financiable'] == "SI") {
+                            action = action + `<a datatoggle='tooltip' title='Cargar Financiación' onclick="editarFinanciacion('${row['Id']}')" class="btn btn-success btn-xs"><i class=" fa fa-link"></i></a> `;
+                        }
+                        return action;
+                    }
+                }
+            ]
+
+        });
+    });
+    function descargarProductosExcel(proveedorId) {
+        var url = "/Core/Productos/_DescargaProductosExcel/?ProveedorId=" + proveedorId;
+        window.location.replace(url);
+    }
+</script>

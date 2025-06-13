@@ -1,0 +1,77 @@
+﻿@using DAL.Models
+@model IEnumerable<Empresas>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Empresas</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+           @* <a onclick="nuevaEmpresa()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>*@
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoEmpresas" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        CUIT
+                    </th>
+                    <th>
+                        Razon Social
+                    </th>
+                    <th>
+                        Grupo
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.ToList())
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.CUIT.ToString())
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.RazonSocial)
+                        </td>
+                        <td>
+                            @if (item.Grupo != null)
+                            {
+                                @Html.DisplayFor(modelItem => item.Grupo.Nombre)
+                            }
+                        </td>
+                        <td>
+                            <a onclick="editEmpresa(@item.Id)" title="Editar Empresa" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                            <a onclick="editCBU(@item.Id)" title="Cambiar datos Bancarios" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar esta Empresa?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Edición de Empresa" callback-modal="true" function="editEmpresa" load-url="/Core/Empresas/_Update/" size="Medium"></modal>
+<modal title="Nueva Empresa" callback-modal="true" function="nuevaEmpresa" load-url="/Core/Empresas/_Create/" size="Medium"></modal>
+<modal title="Cambiar datos Bancarios" callback-modal="true" function="editCBU" load-url="/Core/Empresas/_UpdateCBU/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoEmpresas').DataTable({
+            "columnDefs": [
+                { "width": "10%", "targets": 0 },
+                { "width": "50%", "targets": 1 },
+                { "width": "30%", "targets": 2 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 3 }
+            ],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

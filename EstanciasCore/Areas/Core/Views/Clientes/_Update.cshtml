@@ -1,0 +1,392 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Clientes
+@{
+    ViewData["Title"] = "Editar Cliente: " + Model.RazonSocial;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="_Update">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Información")) { }
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label asp-for="TipoCliente" class="control-label"></label>
+                                <select asp-items="@ViewBag.TiposClientes" asp-for="TipoCliente.Id" class="form-control" searchable="true"></select>
+                                <span asp-validation-for="TipoCliente" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="Persona.TipoDocumento" class="control-label"></label>
+                                <select asp-items="@ViewBag.TiposDocumento" asp-for="Persona.TipoDocumento.Id" class="form-control" searchable="true"></select>
+                                <span asp-validation-for="Persona.TipoDocumento" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="Persona.Pais" class="control-label"></label>
+                                <select asp-items="@ViewBag.Paises" asp-for="Persona.Pais.Id" class="form-control" searchable="true"></select>
+                                <span asp-validation-for="Persona.Pais" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label asp-for="Persona.NroDocumento" class="control-label"></label>
+                                <input asp-for="Persona.NroDocumento" class="form-control" />
+                                <span asp-validation-for="Persona.NroDocumento" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Persona.Cuil" class="control-label"></label>
+                                <input asp-for="Persona.Cuil" class="form-control" />
+                                <span asp-validation-for="Persona.Cuil" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="RazonSocial" class="control-label"></label>
+                                <input asp-for="RazonSocial" class="form-control" />
+                                <span asp-validation-for="RazonSocial" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label asp-for="Persona.Apellido" class="control-label"></label>
+                                <input asp-for="Persona.Apellido" class="form-control" />
+                                <span asp-validation-for="Persona.Apellido" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Persona.Nombres" class="control-label"></label>
+                                <input asp-for="Persona.Nombres" class="form-control" />
+                                <span asp-validation-for="Persona.Nombres" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="Persona.FechaNacimiento" class="control-label"></label>
+                                <input asp-for="Persona.FechaNacimiento" class="form-control" />
+                                <span asp-validation-for="Persona.FechaNacimiento" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="CBU" class="control-label"></label>
+                                <input asp-for="CBU" class="form-control" />
+                                <span asp-validation-for="CBU" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="NumeroCliente" class="control-label"></label>
+                                <input asp-for="NumeroCliente" class="form-control" />
+                                <span asp-validation-for="NumeroCliente" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label asp-for="Persona.CantidadHijos" class="control-label"></label>
+                                <input asp-for="Persona.CantidadHijos" class="form-control" />
+                                <span asp-validation-for="Persona.CantidadHijos" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Usuario.Mail" class="control-label"></label>
+                                <input asp-for="Usuario.Mail" class="form-control" />
+                                <span asp-validation-for="Usuario.Mail" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="Telefono" class="control-label"></label>
+                                <input asp-for="Telefono" class="form-control" />
+                                <span asp-validation-for="Telefono" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label asp-for="Provincia" class="control-label"></label>
+                                <select asp-items="@ViewBag.Provincias" asp-for="Provincia.Id" class="form-control" searchable="true"></select>
+                                <span asp-validation-for="Provincia.Id" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Localidad" class="control-label"></label>
+                                <select asp-items="@ViewBag.Localidades" asp-for="Localidad.Id" class="form-control" searchable="true"></select>
+                                <span asp-validation-for="Localidad.Id" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Domicilio" class="control-label"></label>
+                                <input asp-for="Domicilio" class="form-control" />
+                                <span asp-validation-for="Domicilio" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="CodigoPostal" class="control-label"></label>
+                                <input asp-for="CodigoPostal" class="form-control" />
+                                <span asp-validation-for="CodigoPostal" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label asp-for="Celular" class="control-label"></label>
+                                <input asp-for="Celular" class="form-control" />
+                                <span asp-validation-for="Celular" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group" id="selectorCodeudorUpdate">
+                                    <label asp-for="Codeudor" class="control-label"></label>
+                                    <select id="CodeudorSelectUpdate" name="Codeudor.Id"></select>
+                                    <span asp-validation-for="Codeudor" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group" id="selectorDependeDeUpdate">
+                                    <label asp-for="DependeDe" class="control-label"></label>
+                                    <select id="DependeDeSelectUpdate" name="Depende.Id"></select>
+                                    <span asp-validation-for="DependeDe" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <br /><label asp-for="RecibirPublicidad" class="control-label"></label>
+                                <input type="checkbox" asp-for="RecibirPublicidad" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label asp-for="Empresa" class="control-label"></label>
+                                <select asp-items="@ViewBag.Empresa" asp-for="Empresa.Id" class="form-control" searchable="true"></select>
+                                <span asp-validation-for="Empresa" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="FechaIngresoLaboral" class="control-label"></label>
+                                <input asp-for="FechaIngresoLaboral" class="form-control" />
+                                <span asp-validation-for="FechaIngresoLaboral" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="NumeroLegajoLaboral" class="control-label"></label>
+                                <input asp-for="NumeroLegajoLaboral" class="form-control" />
+                                <span asp-validation-for="NumeroLegajoLaboral" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="NumeroAsociado" class="control-label"></label>
+                                <input asp-for="NumeroAsociado" class="form-control" />
+                                <span asp-validation-for="NumeroAsociado" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="DestinoLaboral" class="control-label"></label>
+                                <input asp-for="DestinoLaboral" class="form-control" />
+                                <span asp-validation-for="DestinoLaboral" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label asp-for="CategoriaLaboral" class="control-label"></label>
+                                <input asp-for="CategoriaLaboral" class="form-control" />
+                                <span asp-validation-for="CategoriaLaboral" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="FechaIngreso" class="control-label"></label>
+                                <input asp-for="FechaIngreso" class="form-control" />
+                                <span asp-validation-for="FechaIngreso" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <br /><label asp-for="PersonaPoliticamenteExpuesta" class="control-label"></label>
+                                <input type="checkbox" asp-for="PersonaPoliticamenteExpuesta" class="form-control" />
+                            </div>
+                            <div class="col-md-2">
+                                <br /><label asp-for="EsMilitar" class="control-label"></label>
+                                <input type="checkbox" asp-for="EsMilitar" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="form-group">
+                        <label asp-for="ReferenciaA" class="control-label"></label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label asp-for="ReferenciaA.NombreCompleto" class="control-label"></label>
+                                <input asp-for="ReferenciaA.NombreCompleto" class="form-control" />
+                                <span asp-validation-for="ReferenciaA.NombreCompleto" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ReferenciaA.Vinculo" class="control-label"></label>
+                                <input asp-for="ReferenciaA.Vinculo" class="form-control" />
+                                <span asp-validation-for="ReferenciaA.Vinculo" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ReferenciaA.Telefono" class="control-label"></label>
+                                <input asp-for="ReferenciaA.Telefono" class="form-control" />
+                                <span asp-validation-for="ReferenciaA.Telefono" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <hr>
+                        <label asp-for="ReferenciaB" class="control-label"></label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label asp-for="ReferenciaB.NombreCompleto" class="control-label"></label>
+                                <input asp-for="ReferenciaB.NombreCompleto" class="form-control" />
+                                <span asp-validation-for="ReferenciaB.NombreCompleto" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ReferenciaB.Vinculo" class="control-label"></label>
+                                <input asp-for="ReferenciaB.Vinculo" class="form-control" />
+                                <span asp-validation-for="ReferenciaB.Vinculo" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="ReferenciaB.Telefono" class="control-label"></label>
+                                <input asp-for="ReferenciaB.Telefono" class="form-control" />
+                                <span asp-validation-for="ReferenciaB.Telefono" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a asp-action="Index" class="btn btn-default">Cancelar</a>
+                    <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>
+<script>
+$(document).ready(function () {
+    $('#Provincia_Id').on('change', function () {
+        $.ajax({
+            url: "/Core/Clientes/SelectLocalidades",
+            data: {
+                id: $('#Provincia_Id').val()
+            },
+            type: "Post",
+            success: function (data) {
+                $('#Localidad_Id').empty();
+                $('#Localidad_Id').html(data).selectpicker('refresh');
+                $('#Localidad_Id').selectpicker('val', ['0']).selectpicker('refresh');
+            }
+        });
+    });
+    $("#selectorCodeudorUpdate .bootstrap-select").hide();
+    $("#CodeudorSelectUpdate").select2({
+        language: {
+            inputTooShort: function () {
+                return "Debe ingresar como mínimo 3 caracteres.";
+            },
+            errorLoading: function () {
+                return "Hubo un error al traer los Clientes."
+            },
+            noResults: function () {
+                return 'No se encontraron Clientes.';
+            },
+            searching: function () {
+                return 'Buscando...';
+            }
+        },
+        ajax: {
+            url: "/Core/Clientes/ClienteCombo",
+            dataType: 'json',
+            data: function (params) {
+                return {
+                    term: params.term,
+                    id: $("#Id").val()
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data
+                };
+            },
+        },
+        placeholder: 'Ingrese un Cliente',
+        minimumInputLength: 3
+    });
+    let Codeudor = {
+        id: "@ViewBag.CodeudorId",
+        text:"@Html.Raw(ViewBag.CodeudorDescripcion)"
+    }
+    let DefaultCodeudor = new Option(Codeudor.text, Codeudor.id, true, false);
+    $("#CodeudorSelectUpdate").append(DefaultCodeudor).trigger("change");
+
+
+    $("#selectorDependeDeUpdate .bootstrap-select").hide();
+    $("#DependeDeSelectUpdate").select2({
+        language: {
+            inputTooShort: function () {
+                return "Debe ingresar como mínimo 3 caracteres.";
+            },
+            errorLoading: function () {
+                return "Hubo un error al traer los Clientes."
+            },
+            noResults: function () {
+                return 'No se encontraron Clientes.';
+            },
+            searching: function () {
+                return 'Buscando...';
+            }
+        },
+        ajax: {
+            url: "/Core/Clientes/ClienteCombo",
+            dataType: 'json',
+            data: function (params) {
+                return {
+                    term: params.term,
+                    id: $("#Id").val()
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data
+                };
+            },
+        },
+        placeholder: 'Ingrese un Cliente',
+        minimumInputLength: 3
+    });
+    let DependeDe = {
+        id: "@ViewBag.DependeDeId",
+        text:"@Html.Raw(ViewBag.DependeDeDescripcion)"
+    }
+    let DefaultDependeDe = new Option(DependeDe.text, DependeDe.id, true, false);
+    $("#DependeDeSelectUpdate").append(DefaultDependeDe).trigger("change");
+
+    $("#selectorUsuario .bootstrap-select").hide();
+    $("#UsuarioSelect").select2({
+        language: {
+            inputTooShort: function () {
+                return "Debe ingresar como mínimo 3 caracteres.";
+            },
+            errorLoading: function () {
+                return "Hubo un error al traer los Usuarios."
+            },
+            noResults: function () {
+                return 'No se encontraron Usuarios.';
+            },
+            searching: function () {
+                return 'Buscando...';
+            }
+        },
+        ajax: {
+            url: "/Core/Clientes/UsuarioCombo",
+            dataType: 'json',
+            data: function (params) {
+                return {
+                    term: params.term
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data
+                };
+            },
+        },
+        placeholder: 'Ingrese un Usuario',
+        minimumInputLength: 3
+    });
+    let Usuario = {
+        id: "@ViewBag.UsuarioId",
+        text:"@Html.Raw(ViewBag.UsuarioDescripcion)"
+    }
+    let DefaultUsuario = new Option(Usuario.text, Usuario.id, true, false);
+    $("#UsuarioSelect").append(DefaultUsuario).trigger("change");
+});
+</script>
+

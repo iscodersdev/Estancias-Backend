@@ -1,0 +1,82 @@
+﻿@model Commons.Models.Page<DAL.Models.LeyendaTipoMovimiento>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Leyenda Tipo Movimiento</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaLeyendaTipoMovimiento()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoLeyendaTipoMovimiento" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Nombre Tipo Movimiento
+                    </th>
+                    <th>
+                        Leyenda
+                    </th>
+                    <th>
+                        Estado
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.NombreMovimiento)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.TextoLeyenda)
+                        </td>
+                        <td>
+                            @if (item.Activo)
+                            {
+                                @Html.Raw("Habilitado");
+                            }
+                            else
+                            {
+                                @Html.Raw("Deshabilitado");
+                            }
+                        </td>
+                        <td>
+                            <a onclick="editLeyendaTipoMovimiento('@item.Id')" title="Editar Leyenda Tipo Movimiento" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                            @if (item.Activo)
+                            {
+
+                                <a asp-action="_Disabled" asp-route-id="@item.Id" confirm-icon="Warning" confirm-no="Cancelar" confirm-yes="Deshabilitar" confirm="¿Esta seguro de quiere Deshabilitar esta Leyenda Tipo Movimiento?" class="btn btn-danger btn-xs"><i class="fa fa-remove"></i></a>
+                            }
+                            else
+                            {
+
+                                <a asp-action="_Enabled" asp-route-id="@item.Id" confirm-icon="Warning" confirm-no="Cancelar" confirm-yes="Habilitar" confirm="¿Esta seguro de borrar esta Leyenda Tipo Movimiento?" class="btn btn-success btn-xs"><i class="fa fa-check"></i></a>
+                            }
+                            <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar esta Leyenda Tipo Movimiento?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Nueva Leyenda Tipo Movimiento" callback-modal="true" function="nuevaLeyendaTipoMovimiento" load-url="/Core/LeyendaTipoMovimiento/_Create/" size="Medium"></modal>
+<modal title="Edición de Leyenda Tipo Movimiento" callback-modal="true" function="editLeyendaTipoMovimiento" load-url="/Core/LeyendaTipoMovimiento/_Update/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoLeyendaTipoMovimiento').DataTable({
+            "columnDefs": [{ "width": "30%", "targets": 0 }, { "width": "70%", class: "text-center", "searchable": false, "orderable": false, "targets": 1 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

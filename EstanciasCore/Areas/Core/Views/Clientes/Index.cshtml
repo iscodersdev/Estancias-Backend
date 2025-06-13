@@ -1,0 +1,108 @@
+﻿@using Commons.HtmlHelpers
+@{
+    ViewData["Title"] = "Clientes";
+}
+<div class="row">
+    <div class="col-md-12">
+        <div class="box box-info">
+            <div class="box-header with-border filtro-grilla">
+                <div class="row">
+                    <div class="col-md-2"><h4>Listado de Clientes</h4></div>
+                    <div class="col-md-10">
+                        <a asp-controller="Clientes" asp-action="_Create" asp- class="pull-right btn btn-info btn-sm">
+                            <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="box-body">
+                <table class="table table-hover table-bordered table-responsive" id="ClienteDataTable"></table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<modal title="Cargar Foto del Cliente" callback-modal="true" function="imgCliente" load-url="/Core/Clientes/_Image/" size="Medium"></modal>
+
+<div class="modal modal-default fade " id="ModalValdiarCliente" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Validar Cliente</h4>
+            </div>
+            <form action="Clientes/ValdiarCliente" method="post">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="text-center">
+                            <h4>¿Está Seguro que Desea validar este Cliente?</h4>
+                        </div>
+                    </div>
+                    <input type="hidden" id="ValdiarClienteId" name="ValdiarClienteId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <input type="submit" value="Aceptar" class="btn btn-primary pull-right" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    var table = $('#ClienteDataTable').DataTable({
+                serverSide: true,
+                processing: true,
+                 "language": {
+                    'url': '@Url.Content("~/lib/arg.json")'
+                },
+                ajax: {
+                    url: '@Url.Action("ClienteDataTable")',
+                    type: "POST",
+                    },
+                rowId: 'Id',
+                columns: [
+                    { data: "Tipo", title: "Tipo Cliente"},
+                    { data: "NombreCompleto", title: "Nombre Completo"},
+                    { data: "CUIL", title: "CUIL"},
+                    { data: "RazonSocial", title: "Razon Social"},
+                    { data: "Empresa", title: "Empresa"},
+                    { data: "FechaIngreso", title: "Fecha Ingreso"},
+                    {
+                        "title": "Estado",
+                        class: "text-center",
+                        "sortable": false,
+                        "render": function (data, type, row) {
+                            var estado = '';
+                            if (row['Estado'])
+                                estado = estado + `<span class='pull-right-container'><small class='label bg-green'>Validado</small></span> `;
+                            else
+                                estado = estado + `<span class='pull-right-container'><small class='label bg-yellow'>Pendiente</small></span> `;
+                            return estado;
+                        }
+                    },
+
+                    {
+                        "title": "Acciones",
+                        class: "text-center",
+                        "sortable": false,
+                        "render": function(data, type, row) {
+                                var action = '';
+                                    action = action + `<a datatoggle='tooltip' title='Editar Cliente' href="/Core/Clientes/_Update/${row['Id']}" class="btn btn-primary btn-xs"><i class=" fa fa-file-text-o"></i></a> `;
+                                    action = action + `<a datatoggle='tooltip' title='Cargar Foto del Cliente' onclick="imgCliente('${row['Id']}')" class="btn btn-warning btn-xs"><i class=" fa fa-file-image-o"></i></a> `;
+                                    if (!row['Estado'])
+                                        action = action + `<a datatoggle='tooltip' title='Validar Cliente' onclick="validCliente('${row['Id']}')" class="btn btn-success btn-xs"><i class=" fa fa-check"></i></a> `;
+                                    return action;
+                                }
+                    }]
+
+    });
+})
+
+    function validCliente(id) {
+        $("#ModalValdiarCliente").modal("show");
+        $("#ValdiarClienteId").val(id);
+    }
+</script>

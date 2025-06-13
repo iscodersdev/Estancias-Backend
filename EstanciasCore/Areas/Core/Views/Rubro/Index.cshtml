@@ -1,0 +1,65 @@
+﻿@{
+    ViewData["Title"] = "Rubros";
+}
+
+@using DAL.Models.Core
+@model IEnumerable<Rubro>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Rubros</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevoRubro()" class="btn btn-info btn-sm" title="Nuevo Rubro">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoRubro" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Nombre
+                    </th>
+                    <th>
+                        Descripcion
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.ToList())
+                {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Nombre)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Descripcion)
+                    </td>
+                    <td>
+                        <a onclick="editRubro(@item.Id)" title="Editar Rubro" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                        <a title="Borrar Rubro" asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar el Rubro @item.Nombre?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Edición de Rubro" callback-modal="true" function="editRubro" load-url="/Core/Rubro/_Update/" size="Medium"></modal>
+<modal title="Nuevo Rubro" callback-modal="true" function="nuevoRubro" load-url="/Core/Rubro/_Create/" size="Medium"></modal>
+<script>
+    $(document).ready(function () {
+        $('#listadoRubro').DataTable(
+        {
+            "columnDefs": [{ "width": "20%", "targets": 0 }, { "width": "65%", class: "text-center","targets": 1 }, { "width": "15%",class:"text-center","searchable": false,"orderable": false,"targets": 2}],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        }
+    );
+    });
+</script>

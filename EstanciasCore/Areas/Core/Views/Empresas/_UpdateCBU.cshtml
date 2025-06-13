@@ -1,0 +1,51 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.DatosEstructura
+@{
+    ViewData["Title"] = "Editar Datos Bancarios ";
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="_UpdateCBU">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Información")) { }
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="form-group">
+                        <label asp-for="Telefono" class="control-label"></label>
+                        <input asp-for="Telefono" class="form-control" />
+                        <span asp-validation-for="Telefono" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="CUIT" class="control-label"></label>
+                        <input asp-for="CUIT" class="form-control" />
+                        <span asp-validation-for="CUIT" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="CBU" class="control-label"></label>
+                        <input asp-for="CBU" class="form-control" />
+                        <span asp-validation-for="CBU" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Alias" class="control-label"></label>
+                        <input asp-for="Alias" class="form-control" />
+                        <span asp-validation-for="Alias" class="text-danger"></span>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a asp-action="Index" class="btn btn-default">Cancelar</a>
+                    <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.colorpickerDiv').colorpicker()
+    });
+</script>

@@ -1,0 +1,40 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Core.MovimientoBilletera
+@{
+    ViewData["Title"] = "Editar Movimiento de Billetera";
+}
+<form method="post" asp-action="_Update" asp-controller="MovimientoBilletera" asp-area="Core" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    @using (Html.BoxDefault(BoxColor.Info))
+    {
+        using (Html.BoxBody())
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input asp-for="@Model.Id" type="hidden" />
+
+            <div class="form-group">
+                <label asp-for="TipoMovimiento" class="control-label"></label>
+                <select asp-items="@ViewBag.TipoMovimientoBilletera" asp-for="TipoMovimiento.Id" class="form-control" searchable="true"></select>
+                <span asp-validation-for="TipoMovimiento" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Monto" class="control-label"></label>
+                <input asp-for="Monto" class="form-control" />
+                <span asp-validation-for="Monto" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="CBU" class="control-label"></label>
+                <input asp-for="CBU" class="form-control" />
+                <span asp-validation-for="CBU" class="text-danger"></span>
+            </div>
+        }
+        @using (Html.BoxFooter())
+        {
+            <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+            <button type="submit" class="btn btn-info pull-right">Guardar</button>
+        }
+    }
+</form>
+

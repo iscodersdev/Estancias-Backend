@@ -1,0 +1,82 @@
+﻿@using Commons.Extensions
+
+@{
+    ViewData["Title"] = "Usuarios";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-9 label-form"><label for="estadoId">Listado de Usuarios</label></div>
+                <div class="col-md-3" style="text-align-last: right;">
+                    <div class="col-md-12">
+                      @*   <a onclick="NuevoUsuario()" title="Crear Usuario" class="btn btn-primary btn-sm"><i class="fa fa-user"></i>&nbsp Crear Usuario</a> *@
+                        <a onclick="NuevoUsuario()" title="Nuevo Usuario" class="btn btn-primary btn-sm"><i class="fa fa-user"></i>&nbsp Nuevo Usuario</a>
+                        &nbsp
+                        <a href="/Administracion/Usuarios/BorrarUsuario" title="Borrar Usuario" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i>&nbsp Borrar Usuario</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="box-body">
+        <table class="table table-hover table-bordered table-responsive borde_interno" id="usersTable"></table>
+    </div>
+</div>
+
+<modal title="Usuario" function="verUsuario" load-url="/Admin/Usuario/_DetalleUsuario" size="Large"></modal>
+<modal callback-modal="true" title="Creacion de Usuario" function="crearUsuarioNumeroDocumento" load-url="/Admin/Usuario/_BuscarPersonaPorDocumento" size="Medium"></modal>
+<modal title="Modificar roles" load-url="/SecurityRoles/_Assign" function="Roles"></modal>
+<modal callback-modal="true" title="Reportes" load-url="/Admin/Usuario/_ReportesUsuario" function="Reportes" size="Large"></modal>
+@* <modal callback-modal="true" title="Nuevo Usuario" load-url="/Administracion/Usuarios/Create" function="NuevoUsuario" size="Medium"></modal> *@
+
+<modal callback-modal="true" title="Nuevo Usuario" load-url="/Administracion/Usuarios/CreateUserEstancia" function="NuevoUsuario" size="Medium"></modal> 
+
+<modal title="Editar Usuario" callback-modal="true" function="editUser" load-url="/Administracion/Usuarios/Update/" size="Medium"></modal>
+<modal title="Modificar contraseña usuario" callback-modal="true" function="_ChangePassword" load-url="/Administracion/Usuarios/_ChangePassword/" size="Medium"></modal>
+
+<script>
+    $(function () {
+        var usersTable = $('#usersTable').DataTable({
+            serverSide: true,
+            processing: true,
+            ajax: {
+                url: '@Url.Action("UsuariosDataTable")',
+                type: "POST"
+            },
+            rowId: 'Id',
+            columns: [
+                { data: "NroDocumento", title: "Nro Documento", responsivePriority: 1 },
+                { data: "Usuario", title: "Usuario", responsivePriority: 2 },
+                { data: "Nombre", title: "Nombre", responsivePriority: 3 },
+                //{ data: "Empresa", title: "Empresa", responsivePriority: 4 },
+                //{ data: "AdministradorTexto", title: "Lector de QR", responsivePriority: 5 },
+                {
+                    title: "Actions",
+                    sortable: false,
+                    responsivePriority: 1,
+                    render: function (data, type, row) {
+                        var action = '';
+                        action += `<a onclick="Roles('${row['Id']}')" title="Asignar Roles" class="btn btn-primary btn-xs"><i class="fa fa-plus"></i></a> &nbsp`;
+                        action += `<a onclick="editUser('${row['Id']}')" title="Editar Usuario" class="btn btn-info btn-xs"><i class="fa fa-pencil"></i></a> &nbsp`;
+                        action += `<a onclick="_ChangePassword('${row['Id']}')" title="Modificar Contraseña Usuario" class="btn bg-green btn-xs"><i class="fa fa-lock"></i></a> &nbsp`;
+
+                        // if (row.Administrador) {
+                        //     action += `<a href="/Administracion/Usuarios/_DisabledAdmin?id=${row['Id']}" title="Módulo QR" confirm-icon="Warning" confirm-no="Cancelar" confirm-yes="Deshabilitar" confirm="¿Está seguro de que quiere Deshabilitar esta Leyenda Tipo Movimiento?" class="btn btn-danger btn-xs"><i class="fa fa-qrcode"></i></a> &nbsp`;
+                        // } else {
+                        //     action += `<a href="/Administracion/Usuarios/_EnabledAdmin?id=${row['Id']}"  title="Módulo QR" confirm-icon="Warning" confirm-no="Cancelar" confirm-yes="Habilitar" confirm="¿Está seguro de que quiere borrar esta Leyenda Tipo Movimiento?" class="btn btn-success btn-xs"><i class="fa fa-qrcode"></i></a> &nbsp`;
+                        // }
+                        return action;
+                    }
+                }
+            ],
+            deferRender: true, // Enable deferred rendering
+            paging: true, // Enable paging
+            pageLength: 10, // Set initial page length
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]], // Set length menu options
+            responsive: true, // Enable responsive design
+        });
+    });
+</script>

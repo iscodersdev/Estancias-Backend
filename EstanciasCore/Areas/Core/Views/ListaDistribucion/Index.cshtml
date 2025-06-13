@@ -1,0 +1,10 @@
+﻿@{
+    ViewData["Title"] = "Listada de Distribución";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+<load id="tablaListaDistribucion" load-url="/Core/ListaDistribucion/_ListadoDistribucion"></load>
+
+@if(ViewBag.ListaId!=null)
+{
+    <load id="tablaListaDestinatarios" load-url="/Core/ListaDistribucion/_ListadoDestinatarios/@ViewBag.ListaId"></load>
+}

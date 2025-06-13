@@ -1,0 +1,141 @@
+﻿@using DAL.Models.Core;
+@model Commons.Models.Page<DAL.Models.Core.PagoTarjeta>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Comprobantes</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 900px;    min-width: 200px;">
+@*             <a onclick="exportarPagosTarjeta()" class="btn btn-success btn-sm">
+                <i class="fa fa-download"><span class="hidden-xs"> Exportar</span></i>
+            </a> *@
+            <a class="btn btn-success btn-sm" style="margin-right: 2%;" href="/Reportes/PagoTarjetaReportes/ExportarExcel?fechaDesdeFiltro=@(ViewBag.fechaDesdeFiltro)&fechaHastaFiltro=@(ViewBag.fechaHastaFiltro)&estadoFiltro=@(ViewBag.estadoFiltro)&nroDocumentoFiltro=@(ViewBag.NroDocumento)&montoFiltro=@(ViewBag.montoFiltro)&nombreApellidoNotificacion=@(ViewBag.nombreApellidoNotificacion)">
+                <i class="fa fa-file-excel-o"><span class="hidden-xs">.xlsx</span></i>
+            </a>
+
+            <a class="btn btn-success btn-sm" style="margin-right: 2%;" href="/Reportes/PagoTarjetaReportes/ExportarCSV?fechaDesdeFiltro=@(ViewBag.fechaDesdeFiltro)&fechaHastaFiltro=@(ViewBag.fechaHastaFiltro)&estadoFiltro=@(ViewBag.estadoFiltro)&nroDocumentoFiltro=@(ViewBag.NroDocumento)&montoFiltro=@(ViewBag.montoFiltro)&nombreApellidoNotificacion=@(ViewBag.nombreApellidoNotificacion)">
+                <i class="fa fa-file"><span class="hidden-xs"> .csv</span></i>
+            </a>
+
+            <a class="btn btn-default btn-sm" href="/Reportes/PagoTarjetaReportes/ExportarTXT?fechaDesdeFiltro=@(ViewBag.fechaDesdeFiltro)&fechaHastaFiltro=@(ViewBag.fechaHastaFiltro)&estadoFiltro=@(ViewBag.estadoFiltro)&nroDocumentoFiltro=@(ViewBag.NroDocumento)&montoFiltro=@(ViewBag.montoFiltro)&nombreApellidoNotificacion=@(ViewBag.nombreApellidoNotificacion)">
+                <i class="fa fa-file-text-o"><span class="hidden-xs"> .txt</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <input name="fechaDesdeFiltro" id="fechaDesdeFiltro" value="@ViewBag.fechaDesdeFiltro" type="hidden">
+        <input name="fechaHastaFiltro" id="fechaHastaFiltro" value="@ViewBag.fechaHastaFiltro" type="hidden">
+        <input name="estadoFiltro" id="estadoFiltro" value="@ViewBag.estadoFiltro" type="hidden">
+        <input name="nroDocumentoFiltro" id="nroDocumentoFiltro" value="@ViewBag.NroDocumentoFiltro" type="hidden">
+        <input name="montoFiltro" id="montoFiltro" value="@ViewBag.montoFiltro" type="hidden">
+        <table id="listadoPagosReport" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th hidden>
+                        Id
+                    </th>
+                    <th>
+                        Cliente
+                    </th>
+                    <th>
+                        Nro Documento
+                    </th>
+                    <th>
+                        Fecha Vencimiento
+                    </th>
+                    <th>
+                        Fecha Comprobante
+                    </th>
+                    <th>
+                        Monto Próxima Cuota
+                    </th>
+                    <th>
+                        EstadoPago
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in (List<PagoTarjeta>)ViewBag.listPagos)
+                {
+                    <tr>
+                        <td hidden>
+                            @Convert.ToInt32(item.FechaComprobante?.ToString("yyyyMMdd"))
+                        </td>
+                        <td>
+                            @item.Persona.Apellido @item.Persona.Nombres
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Persona.NroDocumento)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.FechaVencimiento)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.FechaComprobante)
+                        </td>
+                        <td>
+                            @item.MontoAdeudado.ToString().Replace(".", ",")
+                        </td>
+                        <td>
+                            @if (item.EstadoPago==EstadoPago.Pendiente)
+                            {
+                                <small class="label bg-yellow">Pendiente</small>
+                            }
+                            else if (item.EstadoPago==EstadoPago.Pagado)
+                            {
+                                <small class="label bg-blue">Pagado</small>
+                            }
+                            else if (item.EstadoPago==EstadoPago.Aprobado)
+                            {
+                                <small class="label bg-green">Aprobado</small>
+                            }
+                            else if (item.EstadoPago==EstadoPago.Rechazado)
+                            {
+                                <small class="label bg-red">Rechazado</small>
+                            }
+                        </td>
+                        <td>
+                            @if (item.ComprobantePago!=null)
+                            {
+                                <a onclick="VerComprobante('@item.Id')" title="Ver Comprobante" class="btn btn-warning btn-xs"><i class="fa fa-file-photo-o"></i></a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Ver Comprobante" callback-modal="true" function="VerComprobante" load-url="/Core/PagoTarjeta/_VerComprobante/" size="Large"></modal>
+<modal title="Exportar Listado" callback-modal="true" function="exportarPagosTarjeta" load-url="/Reportes/PagoTarjetaReportes/_Exportar?fechaDesdeFiltro=@(ViewBag.fechaDesdeFiltro)&fechaHastaFiltro=@(ViewBag.fechaHastaFiltro)&estadoFiltro=@(ViewBag.estadoFiltro)&nroDocumentoFiltro=@(ViewBag.nroDocumentoFiltro)&montoFiltro=@(ViewBag.montoFiltro)" size="Small"></modal>
+
+
+
+<script>
+    $(document).ready(function () {
+        $('#listadoPagosReport').DataTable({
+            "columnDefs": [
+                { "searchable": false, "orderable": false, "targets": 0, visible: false, },
+                { "searchable": true, "orderable": false, "targets": 1 },
+                { "width": "10%", class: "text-center", "searchable": true, "orderable": false, "targets": 2 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 3 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 4 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 5 },
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 6 },         
+                { "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 7 }            
+            ],
+            "stateSave": true,
+            "cache": false,
+            "order": [[0, 'desc']],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+
+
+
+
+</script>

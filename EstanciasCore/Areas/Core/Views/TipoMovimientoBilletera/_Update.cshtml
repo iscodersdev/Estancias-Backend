@@ -1,0 +1,55 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Core.TipoMovimientoBilletera
+@{
+    ViewData["Title"] = "Editar Tipo de Movimiento de Billetera";
+}
+<form method="post" asp-action="_Update" asp-controller="TipoMovimientoBilletera" asp-area="Core" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    @using (Html.BoxDefault(BoxColor.Info))
+    {
+        using (Html.BoxBody())
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input asp-for="@Model.Id" type="hidden" />
+            <div class="form-group">
+                <label asp-for="Nombre" class="control-label"></label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div><div class="form-group">
+                <label class="control-label">Tipo:</label>
+                <div class="radio">
+                    <label>
+                        @if (Model.Credito)
+                        {
+                            <input type="radio" name="optionsRadios" id="optionsRadios1" value="0" checked>
+                        }
+                        else
+                        {
+                            <input type="radio" name="optionsRadios" id="optionsRadios1" value="0" >
+                        }
+                        Crédito
+                    </label>
+                </div>
+                <div class="radio">
+                    <label>
+                        @if (Model.Debito)
+                        {
+                            <input type="radio" name="optionsRadios" id="optionsRadios2" value="1" checked>
+                        }
+                        else
+                        {
+                            <input type="radio" name="optionsRadios" id="optionsRadios2" value="1">
+                        }
+                        Débito
+                    </label>
+                </div>
+            </div>
+        }
+        @using (Html.BoxFooter())
+        {
+            <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+            <button type="submit" class="btn btn-info pull-right">Guardar</button>
+        }
+    }
+</form>
+

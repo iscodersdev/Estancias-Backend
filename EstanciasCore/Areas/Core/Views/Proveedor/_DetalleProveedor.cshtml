@@ -1,0 +1,41 @@
+﻿@model DAL.Models.Core.Proveedor
+@{
+    ViewData["Title"] = "Proveedor";
+    ViewData["BackArrow"] = "/Core/Proveedor/Index";
+}
+<div class="row">
+    <div class="col-md-3">
+        <box color="Primary">
+            <box-body class="box-profile">
+                <h3 class="profile-username text-center">@Model.Nombre</h3>
+                <strong><i class="fa fa-list margin-r-5"></i> Detalle</strong>
+                <p>
+                    <ul class="list-unstyled">
+                        <li>
+                            CUIT<a class="pull-right">@Model.CUIT</a>
+                        </li>
+                        <li>
+                            Razon Social<a class="pull-right">@Model.RazonSocial</a>
+                        </li>
+                        <li>
+                            Domicilio<a class="pull-right">@Model.Domicilio</a>
+                        </li>
+                        <li>
+                            Empresa<a class="pull-right">@Model.Empresa?.RazonSocial</a>
+                        </li>
+                        <li>
+                            Rubros:@foreach (DAL.Models.Core.Rubro r in Model.Rubros.Select(x => x.Rubro).ToList())
+                            {
+                                <a class="pull-right">@r.Nombre</a><br />
+                            }
+                        </li>
+                    </ul>
+                </p>
+            </box-body>
+        </box>
+    </div>
+    <div class="col-md-9">
+        <load id="DetalleProductos" load-url="/Core/Productos/_ListaProductos/@Model.Id">
+        </load>
+    </div>
+</div>

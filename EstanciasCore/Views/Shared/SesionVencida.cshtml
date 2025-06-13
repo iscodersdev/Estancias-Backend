@@ -1,0 +1,21 @@
+﻿@using Commons.HtmlHelpers
+<div class="row">
+    <div class="col-md-12">
+        <form asp-area="Identity" asp-page="/Account/Login" method="post" id="logoutForm">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Sesión Vencida")) { }
+                using (Html.BoxBody())
+                {
+                    <div class="form-group">
+                        <span class="text-info">No posee acceso a este recurso debido a que su sesión se encuentra vencida, por favor vuelva a ingresar al sistema.</span>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <input type="submit" value="Salir" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>

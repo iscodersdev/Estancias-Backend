@@ -1,0 +1,195 @@
+﻿
+hr {
+    margin: 13px;
+    padding: 0px;
+    color: green;
+}
+
+.box-header.abm-familiar {
+    padding: 5px;
+}
+
+span.txt-titulo-box{
+    font-size:1.5em;
+}
+
+.txt-boton-grilla {
+    font-family: Tahoma;
+}
+
+.titulo_grilla {
+    margin-bottom: 5px;
+    margin-top:0px;
+    padding-bottom:10px;
+    padding-top:0px;
+}
+
+.combo-grilla {
+    width: 200px;
+}
+
+.error {
+    color: red;
+}
+
+ul.ui-autocomplete {
+}
+
+.pac-container.pac-logo {
+    z-index: 1100;
+}
+
+.filtro-grilla {
+    font-size: 0.9em;
+}
+
+.label-form {
+    margin-top: 5px;
+}
+
+.txt_label {
+    font-family: Tahoma,Verdana;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.txt_label_datos {
+    font-family: Tahoma,Verdana;
+    font-size: 0.9em;
+}
+
+.txt_destacado {
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.txt_estado_legajo {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #FFFFFF;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin: 0px 0px 10px 0px;
+    border: solid 1px #000000;
+    /*border-radius: 90px 90px;*/
+}
+
+.txt_600 {
+    font-weight: 600;
+}
+
+.txt_estado_primary {
+    background-color: #367FA9;
+}
+
+.txt_estado_success {
+    background-color: #00a65a;
+}
+
+.txt_estado_danger {
+    background-color: #D73925;
+}
+
+.borde_bottom_primary {
+    border-bottom: solid 1px #367FA9;
+}
+
+.borde_bottom_success {
+    border-top: solid 1px #00a65a;
+    border-bottom: solid 1px #00a65a;
+}
+
+.borde_bottom_danger {
+    border-top: solid 1px #D73925;
+    border-bottom: solid 1px #D73925;
+}
+
+.txt_nombre_legajo {
+    font-size: 1.2em;
+    font-weight: 600;
+    padding-bottom: 5px;
+}
+
+.box {
+    border-right: 1px solid #000000;
+    border-left: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+}
+
+.fila_roja {
+    background-color: #FDEDEC;
+    color: #CB4335;
+}
+
+.fila_verde {
+    background-color: #E9F7EF;
+    color: #145A32;
+}
+
+.fila_azul {
+    background-color: #EBF5FB;
+    color: #1B4F72;
+}
+
+.fila_amarilla {
+    background-color: #FEF9E7;
+    color: #7D6608;
+}
+
+
+table.borde_interno {
+    border-color: #000000;
+}
+
+    table.borde_interno > tbody > tr > td {
+        /*font-weight:600;*/
+        border: 1px solid;
+    }
+
+div.head-detalle {
+    margin: inherit;
+    margin-bottom: 5px;
+    border-bottom: solid 1px black;
+}
+
+div.row-detalle {
+    margin: inherit;
+    margin-bottom: 2px;
+}
+
+hr.separador-detalle {
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+div.titulo-detalle {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.boton-detalle{
+    margin-top:5px;
+    margin-bottom:10px;
+}
+
+.campo-validado {
+    background-color: #FEF9E7;
+}
+
+    .campo-validado > button {
+        background-color: #FEF9E7;
+    }
+.val-item{
+    margin-left:15px;
+}
+
+.marb-10 {
+    margin-bottom:10px;
+}
+
+table {
+    width: 100% !important;
+}
+
+@import url(https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin);

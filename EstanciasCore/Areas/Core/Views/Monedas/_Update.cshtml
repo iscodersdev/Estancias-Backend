@@ -1,0 +1,21 @@
+﻿@model DAL.Models.Monedas
+@{
+    ViewData["Title"] = "Editar Moneda";
+}
+<form method="post" asp-action="_Update" asp-controller="Monedas" asp-area="Core" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    <div class="box-body">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input asp-for="@Model.Id" type="hidden" />
+        <div class="form-group">
+            <label asp-for="Nombre" class="control-label"></label>
+            <input asp-for="Nombre" class="form-control" />
+            <span asp-validation-for="Nombre" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="box-footer">
+        <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+        <button type="submit" class="btn btn-info pull-right">Guardar</button>
+    </div>
+</form>
+

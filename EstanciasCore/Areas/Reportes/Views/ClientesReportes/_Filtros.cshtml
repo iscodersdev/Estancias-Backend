@@ -1,0 +1,78 @@
+﻿@* Nombre de tu vista Razor, ej: PagoTarjetaReporte.cshtml *@
+@using DAL.Models.Core
+@model Commons.Models.Page<DAL.Models.Core.PagoTarjeta>
+
+@{
+    ViewData["Title"] = "Reporte de Pagos con Tarjeta"; // Opcional: Define un título para la página
+}
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Filtros</span>
+    </div>
+    <div class="box-body">
+        @* No es estrictamente necesario un form si manejas todo con JS *@
+        <div class="row">
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="fechaIngresoFiltro">Fecha de Ingreso Desde</label>
+                    <input type="date" class="form-control" id="fechaIngresoDesdeFiltro" name="fechaIngresoDesdeFiltro">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="fechaIngresoFiltro">Fecha de Ingreso Hasta</label>
+                    <input type="date" class="form-control" id="fechaIngresoHastaFiltro" name="fechaIngresoHastaFiltro">
+                </div>
+            </div>
+            <div class="form-group col-md-2" style="padding-top: 25px;">
+                <button class="btn bg-orange btn-sm" id="botonFiltrarReporte">
+                    <i class="fa fa-search"><span class="hidden-xs"> Filtrar</span></i>
+                </button>
+                <a class="btn btn-danger btn-sm" id="botonLimpiarFiltro" href="javascript:void(0);" style="margin-left: 5px;">
+                    <i class="fa fa-undo"><span class="hidden-xs"> Limpiar</span></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="divContenido"></div>
+
+    <script>
+       $(document).ready(function () {
+
+        $('#botonFiltrarReporte').on('click', function (e) { // <-- Añadido 'e'
+        var fechaIngresoDesdeFiltro = $('#fechaIngresoDesdeFiltro').val();
+        var fechaIngresoHastaFiltro = $('#fechaIngresoHastaFiltro').val();
+
+            // Muestra el spinner de carga
+            //$("#ContenedorProyectos").hide();
+          $("#divContenido").html('<div style="text-align-last: center;"><img src="/images/loading.gif" class="loading-spinner" style="width: 7%;" /></div>');
+
+            // Realizar la petición AJAX con los parámetros
+            $("#divContenido").load("/Reportes/ClientesReportes/_ListadoClientes/", {
+            fechaIngresoDesdeFiltro: fechaIngresoDesdeFiltro,
+            fechaIngresoHastaFiltro: fechaIngresoHastaFiltro,
+            }, function (response, status, xhr) {
+                if (status == "error") {
+                    var msg = "Error al cargar la página: ";
+                    $("#ContenedorProyectos").html(msg + xhr.status + " " + xhr.statusText);
+                }
+            });
+        
+        });
+
+        $("#botonLimpiarFiltro").on("click", function()
+        {
+           $("#fechaIngresoHastaFiltro").val('');
+           $("#fechaIngresoDesdeFiltro").val('');
+           $("#divContenido").empty()
+           
+        });
+
+     });
+
+
+
+    </script>

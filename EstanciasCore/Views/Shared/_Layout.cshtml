@@ -1,0 +1,84 @@
+﻿@{
+    var applicationName = "Estancias";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@applicationName - @ViewBag.Title</title>
+
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+
+
+    @await Component.InvokeAsync("RegisterCommonsOffline")
+
+    <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="~/css/site.css" />
+    <link rel="stylesheet" type="text/css" href="~/css/Estancias.css" />
+    <link rel="stylesheet" type="text/css" href="~/css/bootstrap-colorpicker.css">
+    <link rel="stylesheet" type="text/css" href="~/css/select2.min.css" />
+
+    <!-- COLORPICKER JS -->
+    <script src="~/js/bootstrap-colorpicker.js"></script>
+    <script type="text/javascript" src="~/js/select2.min.js"></script>
+    <script type="text/javascript" src="~/js/moment.js"></script>
+    <!-- SWEET ALERT JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
+</head>
+
+
+
+
+@*BODY TAG OPTIONS:
+    =================
+    Apply one or more of the following classes to get the
+    desired effect
+    |---------------------------------------------------------|
+    | SKINS         | skin-blue                               |
+    |               | skin-black                              |
+    |               | skin-purple                             |
+    |               | skin-yellow                             |
+    |               | skin-red                                |
+    |               | skin-green                              |
+    |---------------------------------------------------------|
+    |LAYOUT OPTIONS | fixed                                   |
+    |               | layout-boxed                            |
+    |               | layout-top-nav                          |
+    |               | sidebar-collapse                        |
+    |               | sidebar-mini                            |
+    |---------------------------------------------------------|*@
+
+<body class="hold-transition skin-green sidebar-mini">
+    <div class="wrapper">
+        <!-- Main Header -->
+        @await Component.InvokeAsync("Header")
+        <!-- Left side column. contains the logo and sidebar -->
+        @await Component.InvokeAsync("Sidebar")
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            <!-- Content Header (Page header) -->
+            <section class="content-header">
+                @await Component.InvokeAsync("PageHeader")
+                @await Component.InvokeAsync("Breadcrumb")
+            </section>
+            <!-- Main content -->
+            <section class="content container-fluid">
+                @await Component.InvokeAsync("PageAlert")
+                <section class="content no-padding">
+                    @RenderBody()
+                </section>
+                @await Component.InvokeAsync(name: "ConfirmModal")
+            </section>
+        </div>
+        @await Component.InvokeAsync("Footer")
+        @await Component.InvokeAsync("ControlSidebar")
+
+    </div>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

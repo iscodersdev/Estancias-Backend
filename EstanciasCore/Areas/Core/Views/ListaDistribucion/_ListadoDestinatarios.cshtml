@@ -1,0 +1,75 @@
+﻿@model Commons.Models.Page<DAL.Models.Core.DistribucionDestinatarios>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Destinatarios - @ViewBag.Lista</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevoDestinatario(@ViewBag.ListaId)" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoDestinatario" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Destinatario
+                    </th>
+                    <th>
+                        Usuario
+                    </th>
+                    <th>
+                        Nro Documento
+                    </th>
+                    <th>
+                        Valido para Notificaciones
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            @item.Destinatario.Personas.Apellido @item.Destinatario.Personas.Nombres
+                        </td>
+                        <td>
+                            @item.Destinatario.UserName
+                        </td>
+                        <td>
+                            @item.Destinatario.Personas.NroDocumento
+                        </td>
+                        <td>
+                            @if(item.Destinatario.DeviceId!=null){
+                                <small class="label bg-green">Valido</small>
+                            }
+                            else
+                            {
+                                <small class="label bg-red">Requiere loguearse de nuevo</small>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="DeleteDestinatarios" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar este Destinatario?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Nuevo Destinatario" callback-modal="true" function="nuevoDestinatario" load-url="/Core/ListaDistribucion/_CreateDestinatario/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoDestinatario').DataTable({
+            "columnDefs": [{ "width": "30%", class: "text-center", "targets": 0 }, { "width": "40%", class: "text-center", "searchable": false, "orderable": false, "targets": 1 }, { class: "text-center", "searchable": false, "orderable": false, "targets": 2 }, { class: "text-center", "searchable": false, "orderable": false, "targets": 3 }, { class: "text-center", "searchable": false, "orderable": false, "targets": 4 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

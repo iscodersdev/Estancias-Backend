@@ -1,0 +1,59 @@
+﻿@using DAL.Models
+@model Commons.Models.Page<DAL.Models.Novedades>
+
+<box-header title="Listado">
+    <box-search update-div="tablaNovedades">
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaNovedad()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </box-search>
+</box-header>
+<box-body table="true">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    Fecha
+                </th>
+                <th>
+                    Titulo
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items.OrderBy(x => x.Fecha))
+            {
+             <tr>
+                 <td>
+                     @item.Fecha.ToString("dd/MM/yyyy")
+                 </td>
+                 <td>
+                     @Html.DisplayFor(modelItem => item.Titulo)
+                 </td>
+                 <td>
+                     <a onclick="editNovedad(@item.Id)" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                     @if (item.Foto == null)
+                     {
+                         <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                             <i class="fa fa-image"></i>
+                             <i class="fa fa-exclamation"></i>
+                         </a>
+                     }
+                     else
+                     {
+                         <a onclick="imagen(@item.Id)" title="Editar Foto" class="btn btn-primary btn-xs"><i class="fa fa-image"></i></a>
+                         @*<a asp-action="Notificacion" asp-route-id="@item.Id" onclick="return confirm('Esta seguro de Difundir Esta Novedad?');" class="btn btn-primary btn-xs"><i class="fa fa-phone"></i></a>*@
+                     }
+                 </td>
+             </tr>
+            }
+        </tbody>
+    </table>
+
+</box-body>
+<box-footer page-update-div="tablaNovedades"></box-footer>
+<modal title="Edicion de Novedad" function="editNovedad" load-url="/Core/Novedades/Update/" size="Medium"></modal>
+<modal title="Nueva Novedad" function="nuevaNovedad" load-url="/Core/Novedades/Create/" size="Medium"></modal>
+<modal title="Cambiar Foto" function="imagen" load-url="/Core/Novedades/_CambiarImagen/" size="Medium"></modal>

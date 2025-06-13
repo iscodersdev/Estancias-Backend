@@ -1,0 +1,143 @@
+﻿@using Commons.HtmlHelpers
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model DAL.DTOs.ProductoAdjuntosDTO
+@{
+    ViewData["Title"] = "Cargar Foto del Producto";
+}
+
+<form asp-action="_Image" enctype="multipart/form-data">
+    <div class="form-group" style="text-align-last: center;">
+        <label for="imagenes">Seleccionar Imágenes</label>
+        <input type="file" id="imagenes" name="FotoProducto" multiple class="form-control-file">
+        <input asp-for="ProductoId" value="@Model.ProductoId" class="form-control" type="hidden">
+    </div>
+    <button type="submit" class="btn btn-primary pull-right">Cargar Imágenes</button>
+    <br />
+    <hr />
+</form>
+
+@if (Model.ProductoAdjuntos.Count()>0)
+{
+    <h2 style="text-align-last: center;">Miniaturas de Imágenes Cargadas</h2>
+    <br />
+    <div class="row">
+        @foreach (var imagen in Model.ProductoAdjuntos)
+        {
+            <div class="col-md-3" id="imagenDiv_@(imagen.Id)">
+                <div class="thumbnail">
+                    <img src="data:image;base64,@(Convert.ToBase64String(imagen.Foto))" alt="@imagen.Nombre" style="height:110px;width:110px" />
+                    <button onclick="EliminarFoto(@imagen.Id)" class="btn btn-danger pull-right" style="width:110px;">Eliminar</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+    
+
+<script>
+        let ShowSuccess = (mensaje) => {
+            Swal.fire({
+                position: 'top-end',
+                icon: 'success',
+                title: mensaje,
+                showConfirmButton: false,
+                timer: 1500
+            })
+        }
+
+        let ShowError = (mensaje) => {
+            Swal.fire({
+                position: 'top-end',
+                icon: 'error',
+                title: mensaje,
+                showConfirmButton: false,
+                timer: 1500
+            })
+        }
+
+        let EliminarFoto = (id) => {
+            fetch("/Core/Productos/EliminarFotoProducto?Id=" + id)
+                .then(response => {
+                    if (!response.ok) {
+                        ShowError(response.status)
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    ShowSuccess("La foto se borro correctamente.")
+                    $("#imagenDiv_" + id).remove();
+                })
+                .catch(error => {
+                    ShowError("Error al borrar la foto.")
+                });
+        }
+   
+    
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@*
+<form asp-action="_Image" enctype="multipart/form-data">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="control-label">Seleccione una Foto para el Producto:</label>
+                    <input class="preview" type="file" name="FotoProducto" data-div="FotoProductoUpdate" />
+                    <span id="alertaFondoProducto" class="text-danger"></span>
+                </div>
+                <div class="col-md-6" style=" text-align: center; ">
+                    <div id="FotoProductoUpdate">
+                        @if (@ViewBag.Foto != null)
+                        {
+                            <img src="data:image/gif;base64,@ViewBag.Foto" style="height:80px;width:80px" />
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+
+</form>
+
+<script>
+    $(function () {
+        $(".preview").on("change", function (e) {
+            let reader = new FileReader();
+            reader.readAsDataURL(e.target.files[0]);
+            reader.onload = function () {
+                let preview = document.getElementById(e.target.attributes[3].value),
+                image = document.createElement('img');
+                image.style.width = "80px";
+                image.style.height = "80px";
+                image.src = reader.result;
+                preview.innerHTML = '';
+                preview.append(image);
+            };
+        });
+    });
+</script>*@

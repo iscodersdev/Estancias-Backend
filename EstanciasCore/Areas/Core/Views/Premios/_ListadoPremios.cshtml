@@ -1,0 +1,110 @@
+﻿@model Commons.Models.Page<DAL.Models.Premios>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Premios</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevoPremio()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoPremios" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Nombre
+                    </th>
+                    <th>
+                        Descripción
+                    </th>
+                    <th>
+                        Stock
+                    </th>
+                    <th>
+                        Canjes Totales
+                    </th>
+                    <th>
+                        Puntos
+                    </th>
+                    <th>
+                        Categoría
+                    </th>
+                    <th>
+                        Fecha
+                    </th>
+                    <th>
+                        Activo
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Nombre)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Descripcion)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Stock)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.StockActual)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Puntos)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Categoria.Nombre)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Fecha)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Activo)
+                        </td>
+                        <td>
+                            <a onclick="editPremio('@item.Id')" title="Editar País" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+
+                            @if (true)
+                            {
+                                <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                                    <i class="fa fa-image"></i>
+                                    <i class="fa fa-exclamation"></i>
+                                </a>
+                            }
+                            else
+                            {
+                                <a onclick="imagen(@item.Id)" title="Editar Foto" class="btn btn-primary btn-xs"><i class="fa fa-image"></i></a>
+                                @*<a title ="Enviar Notificaciones" asp-action="Notificacion" asp-route-id="@item.Id" onclick="return confirm('Esta seguro de Difundir Esta Promoción?');" class="btn btn-primary btn-xs"><i class="fa fa-phone"></i></a>*@
+                            }
+
+                            <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar este Premio?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Nuevo Premio" callback-modal="true" function="nuevoPremio" load-url="/Core/Premios/_Create/" size="Medium"></modal>
+<modal title="Edición de Premio" callback-modal="true" function="editPremio" load-url="/Core/Premios/_Update/" size="Medium"></modal>
+<modal title="Cambiar Foto" function="imagen" load-url="/Core/Premios/_CambiarImagen/" size="Large"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoPremios').DataTable({
+            "columnDefs": [{ "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 7 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

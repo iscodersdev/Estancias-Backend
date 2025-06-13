@@ -1,0 +1,219 @@
+﻿@using DAL.Models
+@model Commons.Models.Page<DAL.Models.Banners>
+
+<box-header title="Listado">
+    <box-search update-div="tablaBanners">
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevoBanner()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </box-search>
+</box-header>
+<box-body table="true">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    Titulo
+                </th>
+                <th>
+                    Fecha Desde
+                </th>
+                <th>
+                    Fecha Desde
+                </th>
+                <th>
+                    Orden
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items.OrderBy(x => x.Fecha))
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Titulo)
+                    </td>
+                 <td>
+                     @item.FechaDesde.ToString("dd/MM/yyyy")
+                 </td>
+                <td class=" pull-center">
+                    @if (item.Vencimiento)
+                    {
+                        @Html.DisplayFor(modelItem => item.FechaHasta)
+                    }
+                    else
+                    {
+                        @Html.Raw("Sin Dato")
+                    }
+                </td>
+                 <td>
+                     @Html.DisplayFor(modelItem => item.Orden)
+                 </td>
+                 <td>
+                     <a onclick="editBanner(@item.Id)" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                     <a onclick="cambiarOrdenPromocion(@item.Id)" title="Cambiar Orden" class="btn btn-primary btn-xs"><i class="fa fa-sort-numeric-asc"></i></a>
+
+                        @if (item.EsVideo)
+                        {
+                            if (item.Video != null)
+                            {
+                                <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                                    <i class="fa fa-image"></i>
+                                    <i class="fa fa-exclamation"></i>
+                                </a>
+                                <a onclick="video(@item.Id)" title="Editar Video" class="btn btn-primary btn-xs"><i class="fa fa-film"></i></a>
+                            }
+                            else
+                            {
+                                <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                                    <i class="fa fa-image"></i>
+                                    <i class="fa fa-exclamation"></i>
+                                </a>
+                                <a onclick="video(@item.Id)" title="No ha ingresado un Video" class="btn btn-danger btn-xs">
+                                    <i class="fa fa-film"></i>
+                                    <i class="fa fa-exclamation"></i>
+                                </a>
+
+                            }
+
+                        }
+                        else
+                        {
+                            
+                            if(item.Foto != null)
+                            {
+                                <a onclick="imagen(@item.Id)" title="Editar Foto" class="btn btn-primary btn-xs"><i class="fa fa-image"></i></a>
+                                         <a onclick="video(@item.Id)" title="No ha ingresado un Video" class="btn btn-danger btn-xs">
+                                <i class="fa fa-film"></i>
+                                <i class="fa fa-exclamation"></i>
+                                </a> 
+                            }
+                            else
+                            {
+                                <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                                    <i class="fa fa-image"></i>
+                                    <i class="fa fa-exclamation"></i>
+                                </a>
+                                <a onclick="video(@item.Id)" title="No ha ingresado un Video" class="btn btn-danger btn-xs">
+                                    <i class="fa fa-film"></i>
+                                    <i class="fa fa-exclamation"></i>
+                                </a> 
+                            }
+                        }   
+                     <a onclick="borrarBanner(@item.Id)" title="Borrar Banner" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
+                 </td>
+             </tr>
+            }
+        </tbody>
+    </table>
+
+</box-body>
+<box-footer page-update-div="tablaBanners"></box-footer>
+<modal title="Edición de Banner" function="editBanner" load-url="/Core/Banners/Update/" size="Medium"></modal>
+<modal title="Nuevo Banner" function="nuevoBanner" load-url="/Core/Banners/Create/" size="Medium"></modal>
+<modal title="Cambiar Foto" function="imagen" load-url="/Core/Banners/_CambiarImagen/" size="Medium"></modal>
+<modal title="Cambiar Video" function="video" load-url="/Core/Banners/_CambiarVideo/" size="Medium"></modal>
+
+
+<script>
+
+    borrarBanner = (id) => {
+        Swal.fire({
+            title: "¿Desea Borrar el Banner?",
+            showDenyButton: true,
+            showCancelButton: true,
+            showConfirmButton: false,
+            confirmButtonText: "Save",
+            cancelButtonText: "Cancelar",
+            denyButtonText: `Borrar`
+        }).then((result) => {
+           if (result.isDenied) {
+                $.ajax({
+                    url: '/Core/Banners/Delete/' + id,  // Ruta del controlador y método
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+                        console.log(response)
+                        if(response){
+                            //Swal.fire("Borrado con éxito.", "", "success");
+                            location.reload();
+                        }else{
+
+                            Swal.fire("Error al borrar.", "", "warning");
+                        }
+                    },
+                    error: function (error) {
+                        // Manejo de errores
+                        Swal.fire("Error al borrar.", "", "warning");
+                    }
+                });
+
+                
+            }
+        });
+    }
+
+    cambiarOrdenPromocion = (id) => {
+
+        Swal.fire({
+            title: '¿Modificar orden del Banner?',
+            text: 'Ingrese un número de orden',
+            input: 'text',
+            inputPlaceholder: 'Escriba su observación aquí...',
+            showCancelButton: true,
+            showConfirmButton: true,
+            confirmButtonText: 'SI',
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            icon: 'question',
+            iconColor: 'LightSkyBlue',
+            showCancelButton: true,
+            cancelButtonText: 'No',
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                if (result.value) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/Core/Banners/ModificarOrden',
+                        data: { Id: id, Orden: result.value },
+                        success: function (data) {
+                            Swal.fire({
+                                title: 'Correcto!',
+                                text: 'Se Modificó el Orden',
+                                icon: 'success',
+                                showConfirmButton: true,
+                            }).then(function (result) {
+                                window.location.href = '/Core/Banners/'
+                            });
+                        },
+                        error: function (XHR) {
+                            if (XHR.status === 500) {
+                                Swal.fire({
+                                    text: "Error 500",
+                                    icon: 'error',
+                                    showConfirmButton: true,
+                                });
+                            } else {
+                                Swal.fire({
+                                    text: "Error " + XHR.status,
+                                    icon: 'error',
+                                    showConfirmButton: true,
+                                });
+                            }
+                        }
+                    })
+                } else {
+                    Swal.fire({
+                        text: "Debe Ingresar una Observación",
+                        icon: 'warning',
+                        showConfirmButton: true,
+                    });
+                }
+            }
+
+        });
+
+    }
+</script>

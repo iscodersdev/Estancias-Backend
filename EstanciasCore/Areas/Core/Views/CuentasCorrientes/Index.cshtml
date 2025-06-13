@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Cuentas Corrientes";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="box box-info">
+            <div class="box-header with-border filtro-grilla">
+                <div class="row">
+                    <div class="col-md-3"><span class="txt-titulo-box">Listado de Cuentas Corrientes</span></div>
+                    <div class="col-md-9">
+                        <a onclick="nuevaCuentaCorriente()" class="pull-right btn btn-info btn-sm">
+                            <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="box-body">
+                <table class="table table-hover table-bordered table-responsive" id="CuentasCorrientesDataTable"></table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<modal title="Edición de Cuentas Corrientes" callback-modal="true" function="editCuentaCorriente" load-url="/Core/CuentasCorrientes/_Update/" size="Medium"></modal>
+<modal title="Nueva Cuenta Corriente" callback-modal="true" function="nuevaCuentaCorriente" load-url="/Core/CuentasCorrientes/_Create/" size="Medium"></modal>
+
+<script type="text/javascript">
+$(function () {
+    var table = $('#CuentasCorrientesDataTable').DataTable({
+                serverSide: true,
+                processing: true,
+                "language": {
+                    'url': '@Url.Content("~/lib/arg.json")'
+                },
+                ajax: {
+                    url: '@Url.Action("CuentasCorrientesDataTable")',
+                    type: "POST",
+                    },
+                rowId: 'Id',
+                columns: [
+                    { data: "ClienteNombre", title: "Cliente"},
+                    { data: "Fecha", title: "Fecha"},
+                    { data: "Vencimiento", title: "Vencimiento" },
+                    { data: "Saldo", title: "Saldo" },
+                    {
+                        "title": "Acciones",
+                        class: "text-center",
+                        "sortable": false,
+                        "render": function(data, type, row) {
+                            var action = '';
+                                action = action + `<a datatoggle='tooltip' title='Editar Cuenta Corriente' onclick="editCuentaCorriente('${row['Id']}')" class="btn btn-primary btn-xs"><i class=" fa fa-file-text-o"></i></a> `;
+                                return action;
+                        }
+                }]
+    });
+})
+</script>

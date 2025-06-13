@@ -1,0 +1,36 @@
+﻿@model DAL.Models.Provincia
+@{
+    ViewData["Title"] = "Editar Provincia";
+}
+<form method="post" asp-action="_Update" asp-controller="Provincias" asp-area="Core" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    <div class="box-body">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input asp-for="@Model.Id" type="hidden" />
+        <div class="form-group">
+            <label asp-for="Descripcion" class="control-label"></label>
+            <input asp-for="Descripcion" class="form-control" />
+            <span asp-validation-for="Descripcion" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="DescripcionCompleta" class="control-label"></label>
+            <input asp-for="DescripcionCompleta" class="form-control" />
+            <span asp-validation-for="DescripcionCompleta" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Latitud" class="control-label"></label>
+            <input asp-for="Latitud" class="form-control" />
+            <span asp-validation-for="Latitud" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Longitud" class="control-label"></label>
+            <input asp-for="Longitud" class="form-control" />
+            <span asp-validation-for="Longitud" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="box-footer">
+        <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+        <button type="submit" class="btn btn-info pull-right">Guardar</button>
+    </div>
+</form>
+

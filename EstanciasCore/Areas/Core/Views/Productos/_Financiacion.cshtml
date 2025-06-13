@@ -1,0 +1,104 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.DTOs.ListFinanciacionDTO
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="_Financiacion">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Financiación de " + Model.ProductoNombre)) { }
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="ProductoId"/>
+                    <input type="hidden" asp-for="PrecioProducto"/>
+                    <div class="row">
+                        <div class="col-md-2"></div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="CantidadCuotasAdd" class="control-label"></label>
+                                <input asp-for="CantidadCuotasAdd" class="form-control" title="Numero de Cuotas" placeholder="Ingrese el numero de cuotas" />
+                                <span asp-validation-for="CantidadCuotasAdd" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="InteresCoutasAdd" class="control-label"></label>
+                                <input asp-for="InteresCoutasAdd" class="form-control" title="Interes por Cuota" placeholder="Ingrese el Interes por Cuota" />
+                                <span asp-validation-for="InteresCoutasAdd" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4"></div>
+                        <div class="col-md-4 text-center">
+                            <input type="submit" value="Agregar" class="btn btn-primary" />
+                        </div>
+                        <div class="col-md-4"></div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <div class="col-md-12">
+                            <table id="listadoFinanciaciones" class="table table-hover table-bordered table-responsive" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Cantidad de Cuotas</th>
+                                        <th scope="col">Interes por Cuota</th>
+                                        <th scope="col">Valor por Cuota</th>
+                                        <th scope="col"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (DAL.DTOs.FinanciacionDTO x in Model.ListaFinanciacion)
+                                    {
+                                        <tr id="financiacion_@x.FinaciacionId">
+                                            <th scope="col">@x.CantidadCuotas</th>
+                                            <th scope="col">@x.InteresCuota</th>
+                                            <th scope="col">@x.ValorCuota</th>
+                                            <th scope="col">
+                                                <a title="Eliminar Financiación" onclick="EliminarFinanciacion('@x.FinaciacionId')" class="btn btn-danger btn-xs"><i class="fa fa-remove"></i></a>
+                                            </th>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a class="btn btn-danger pull-right" data-dismiss="modal">Cerrar</a>
+                }
+            }
+        </form>
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        $('#listadoFinanciaciones').DataTable({
+            "columnDefs": [{
+                "searchable": false,
+                "orderable": false,
+                "targets": 3
+            }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+    function EliminarFinanciacion(Id) {
+        $.ajax({
+            url: "/Core/Productos/DeleteFinanciacion",
+            data: {
+                id: Id
+            },
+            type: "DELETE",
+            success: function (data) {
+                console.log(data);
+                if (data == 200) {
+                    $("#financiacion_" + Id).remove();
+                }
+            }
+        });
+    };
+</script>

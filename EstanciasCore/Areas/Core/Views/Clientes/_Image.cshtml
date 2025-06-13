@@ -1,0 +1,56 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Clientes
+@{
+    ViewData["Title"] = "Cargar Foto";
+}
+
+<form asp-action="_Image" enctype="multipart/form-data">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="control-label">Seleccione una Foto para el Cliente:</label>
+                    <input class="preview" type="file" name="FotoCliente" data-div="FotoClienteUpdate" />
+                    <span id="alertaFondoCliente" class="text-danger"></span>
+                </div>
+                <div class="col-md-6" style=" text-align: center; ">
+                    <div id="FotoClienteUpdate">
+                        @if (@ViewBag.Foto != null)
+                        {
+                            <img src="data:image/gif;base64,@ViewBag.Foto" style="height:80px;width:80px" />
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+
+</form>
+
+<script>
+
+    $(function () {
+        $(".preview").on("change", function (e) {
+            let reader = new FileReader();
+            reader.readAsDataURL(e.target.files[0]);
+            reader.onload = function () {
+                let preview = document.getElementById(e.target.attributes[3].value),
+                image = document.createElement('img');
+                image.style.width = "80px";
+                image.style.height = "80px";
+                image.src = reader.result;
+                preview.innerHTML = '';
+                preview.append(image);
+            };
+        });
+    });
+</script>

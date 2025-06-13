@@ -1,0 +1,112 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Promociones
+@{
+    ViewData["Title"] = "Editar Promociones: " + Model.Titulo;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="Update">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Información")) { }
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="form-group">
+                        <label asp-for="Fecha" class="control-label"></label>
+                        <input type="date" asp-for="Fecha" class="form-control" />
+                        <span asp-validation-for="Fecha" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="fechaHastaCheck" name="TieneFechaVencimiento" />
+                            ¿Tiene una fecha de Vencimiento?
+                        </label>
+                    </div>
+
+                    <div id="fechaHastaDiv" style="display:none;">
+                        <div class="form-group">
+                            <label asp-for="FechaDesde" class="control-label">Fecha Desde</label>
+                            <input type="date" asp-for="FechaDesde" class="form-control" />
+                            <span asp-validation-for="FechaDesde" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="FechaHasta" class="control-label">Vencimiento</label>
+                            <input type="date" asp-for="FechaHasta" class="form-control" />
+                            <span asp-validation-for="FechaHasta" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Titulo" class="control-label"></label>
+                        <input asp-for="Titulo" class="form-control" />
+                        <span asp-validation-for="Titulo" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Subtitulo" class="control-label"></label>
+                        <input asp-for="Subtitulo" class="form-control" />
+                        <span asp-validation-for="Subtitulo" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Link" class="control-label"></label>
+                        <input asp-for="Link" class="form-control" />
+                        <span asp-validation-for="Link" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="TextoBoton" class="control-label"></label>
+                        <input asp-for="TextoBoton" class="form-control" />
+                        <span asp-validation-for="TextoBoton" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Texto" class="control-label"></label>
+                        <textarea asp-for="Texto" rows="10" class="form-control" style="text-wrap:normal" type="text" placeholder="Describa el Texto de la Promoción"></textarea>
+                        <span asp-validation-for="Texto" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputEmail3" class="col-sm-2 control-label">Color</label>
+                        <div class="col-sm-10">
+                            <select asp-items="@ViewBag.Colores" name="colorId" class="form-control"></select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Publica" class="control-label"></label>
+                        <input asp-for="Publica" type="checkbox" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label">Promoción Fija</label>
+                        <select name="PromocionFija" class="form-control">
+                            <option value="0">No</option>
+                            <option value="1" selected>Si</option>
+                        </select>
+                        <span asp-validation-for="PromocionFija" class="text-danger"></span>
+                    </div>
+                }
+                using (Html.BoxFooter())
+                {
+                    <a asp-action="Index" class="btn btn-default">Cancelar</a>
+                   @* <a asp-action="Delete" asp-route-id="@Model.Id" onclick="return confirm('Esta seguro de borrar este registro?');" class="btn btn-danger">Borrar</a>*@
+                    <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        $('#fechaHastaDiv').hide();
+        $('#fechaHastaCheck').change(function () {
+            if ($(this).is(':checked')) {
+                $('#fechaHastaDiv').show();
+            } else {
+                $('#fechaHastaDiv').hide();
+            }
+        });
+        var valor = $.parseJSON("@Html.Raw(Model.Vencimiento)".toLowerCase());
+        if (valor) {
+            $('#fechaHastaCheck').prop('checked', true);
+            $('#fechaHastaDiv').show();
+        }
+    
+    });
+
+</script>

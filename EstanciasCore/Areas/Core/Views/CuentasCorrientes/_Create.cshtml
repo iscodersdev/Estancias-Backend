@@ -1,0 +1,98 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.CuentaCorriente
+@{
+    ViewData["Title"] = "Crear Cuenta Corriente";
+}
+<form asp-action="_Create">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="form-group">
+            <label asp-for="Fecha" class="control-label"></label>
+            <input asp-for="Fecha" class="form-control" />
+            <span asp-validation-for="Fecha" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Vencimiento" class="control-label"></label>
+            <input asp-for="Vencimiento" class="form-control" />
+            <span asp-validation-for="Vencimiento" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Observaciones" class="control-label"></label>
+            <input asp-for="Observaciones" class="form-control" />
+            <span asp-validation-for="Observaciones" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Importe" class="control-label"></label>
+            <input asp-for="Importe" class="form-control" />
+            <span asp-validation-for="Importe" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Saldo" class="control-label"></label>
+            <input asp-for="Saldo" class="form-control" />
+            <span asp-validation-for="Saldo" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Concepto" class="control-label"></label>
+            <select asp-items="@ViewBag.Conceptos" asp-for="Concepto.Id" class="form-control" searchable="true"></select>
+            <span asp-validation-for="Concepto" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <div class="form-group" id="selectorCliente">
+                <label asp-for="Cliente" class="control-label"></label>
+                <select id="ClienteSelect" name="Cliente.Id"></select>
+                <span asp-validation-for="Cliente.Id" class="text-danger"></span>
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+
+</form>
+<script>
+$(document).ready(function () {
+    $("#selectorCliente .bootstrap-select").hide();
+    $("#ClienteSelect").select2({
+        language: {
+            inputTooShort: function () {
+                return "Debe ingresar como mínimo 3 caracteres.";
+            },
+            errorLoading: function () {
+                return "Hubo un error al traer los Clientes."
+            },
+            noResults: function () {
+                return 'No se encontraron Clientes.';
+            },
+            searching: function () {
+                return 'Buscando...';
+            }
+        },
+        ajax: {
+            url: "/Core/Clientes/ClienteCombo",
+            dataType: 'json',
+            data: function (params) {
+                return {
+                    term: params.term
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data
+                };
+            },
+        },
+        placeholder: 'Ingrese un Cliente',
+        minimumInputLength: 3
+    });
+    let Cliente = {
+        id: "@ViewBag.ClienteId",
+        text:"@Html.Raw(ViewBag.ClienteDescripcion)"
+    }
+    let DefaultCliente = new Option(Cliente.text, Cliente.id, true, false);
+    $("#ClienteSelect").append(DefaultCliente).trigger("change");
+});
+</script>

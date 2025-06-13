@@ -1,0 +1,144 @@
+﻿@using DAL.Models
+@model Commons.Models.Page<DAL.Models.ImagenIntro>
+
+<box-header title="Listado">
+    <box-search update-div="tablaImagenIntro">
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaImagenIntro()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </box-search>
+</box-header>
+<box-body table="true">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    Fecha
+                </th>
+                <th>
+                    Titulo
+                </th>
+                <th>
+                    Orden
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items.OrderBy(x => x.Fecha))
+            {
+             <tr>
+                 <td>
+                     @item.Fecha.ToString("dd/MM/yyyy")
+                 </td>
+                 <td>
+                     @Html.DisplayFor(modelItem => item.Titulo)
+                 </td>
+                 <td>
+                     @Html.DisplayFor(modelItem => item.Orden)
+                 </td>
+                 <td>
+                     <a onclick="editImagenIntro(@item.Id)" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+
+        @*             @if (item.EsVideo)
+                    {
+                        if (item.Foto != null)
+                        {
+                            <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                                <i class="fa fa-image"></i>
+                                <i class="fa fa-exclamation"></i>
+                            </a>
+                            <a onclick="video(@item.Id)" title="Editar Video" class="btn btn-primary btn-xs"><i class="fa fa-film"></i></a>
+                        }
+                        else
+                        {
+                            <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                                <i class="fa fa-image"></i>
+                                <i class="fa fa-exclamation"></i>
+                            </a>
+                            <a onclick="video(@item.Id)" title="No ha ingresado un Video" class="btn btn-danger btn-xs">
+                                <i class="fa fa-film"></i>
+                                <i class="fa fa-exclamation"></i>
+                            </a>
+                                
+                        }
+
+                    }
+                    else
+                    { *@
+                        @if (item.Foto != null)
+                        {
+                            <a onclick="imagen(@item.Id)" title="Editar Foto" class="btn btn-primary btn-xs"><i class="fa fa-image"></i></a>
+                    @*         <a onclick="video(@item.Id)" title="No ha ingresado un Video" class="btn btn-danger btn-xs">
+                                <i class="fa fa-film"></i>
+                                <i class="fa fa-exclamation"></i>
+                            </a> *@
+                        }
+                        else
+                        {
+                            <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                                <i class="fa fa-image"></i>
+                                <i class="fa fa-exclamation"></i>
+                            </a>
+                     @*        <a onclick="video(@item.Id)" title="No ha ingresado un Video" class="btn btn-danger btn-xs">
+                                <i class="fa fa-film"></i>
+                                <i class="fa fa-exclamation"></i>
+                            </a> *@
+                        }
+                    @* } *@  
+                     <a onclick="borrarImagenIntro(@item.Id)" title="Borrar Imagen Intro" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
+                 </td>
+             </tr>
+            }
+        </tbody>
+    </table>
+
+</box-body>
+<box-footer page-update-div="tablaImagenIntro"></box-footer>
+<modal title="Edición Imagen Intro" function="editImagenIntro" load-url="/Core/ImagenIntro/Update/" size="Medium"></modal>
+<modal title="Nueva Imagen Intro" function="nuevaImagenIntro" load-url="/Core/ImagenIntro/Create/" size="Medium"></modal>
+<modal title="Cambiar Foto" function="imagen" load-url="/Core/ImagenIntro/_CambiarImagen/" size="Medium"></modal>
+
+
+<modal title="Cambiar Video" function="video" load-url="/Core/ImagenIntro/_CambiarVideo/" size="Medium"></modal>
+
+<script>
+
+    borrarBanner = (id) => {
+        Swal.fire({
+            title: "¿Desea Borrar la Imagen Intro?",
+            showDenyButton: true,
+            showCancelButton: true,
+            showConfirmButton: false,
+            confirmButtonText: "Save",
+            cancelButtonText: "Cancelar",
+            denyButtonText: `Borrar`
+        }).then((result) => {
+           if (result.isDenied) {
+                $.ajax({
+                    url: '/Core/ImagenIntro/Delete/' + id,  // Ruta del controlador y método
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+                        console.log(response)
+                        if(response){
+                            //Swal.fire("Borrado con éxito.", "", "success");
+                            location.reload();
+                        }else{
+
+                            Swal.fire("Error al borrar.", "", "warning");
+                        }
+                    },
+                    error: function (error) {
+                        // Manejo de errores
+                        Swal.fire("Error al borrar.", "", "warning");
+                    }
+                });
+
+                
+            }
+        });
+    }
+
+</script>

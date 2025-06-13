@@ -1,0 +1,121 @@
+﻿@model DAL.DTOs.PremiosImagenDTO
+
+<style>
+    /* Tus estilos CSS aquí */
+</style>
+
+<form method="post" enctype="multipart/form-data" asp-controller="Premios" asp-action="_CambiarImagen">
+    <div class="box-body">
+        <div class="row">
+            <input type="hidden" name="Id" id="Id" value="@Model.Id" />
+            <div class="col-md-4">
+                <div class="imagen-con-boton">
+                    <img src="~/images/foto.png" alt="..." class="margin" id="imagenACambiar1" style="margin: 0px !important;display: block;width: 100%; height: 320px;">
+                    <input type="file" id="selectorArchivo1" style="display: none;" name="Imagenes[0]">
+                    <button type="button" class="btn btn-success btn-block btn-xs" onclick="document.getElementById('selectorArchivo1').click()">Cambiar</button>
+                    <button type="button" class="btn btn-danger btn-block btn-xs" id="borrarImagen1" style="display: none;" onclick="borrarImagen('imagenACambiar1', 'borrarImagen1')">Borrar</button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="imagen-con-boton">
+                    <img src="~/images/foto.png" alt="..." class="margin" id="imagenACambiar2" style="margin: 0px !important;display: block;width: 100%; height: 320px;">
+                    <input type="file" id="selectorArchivo2" style="display: none;" name="Imagenes[1]">
+                    <button type="button" class="btn btn-success btn-block btn-xs" onclick="document.getElementById('selectorArchivo2').click()">Cambiar</button>
+                    <button type="button" class="btn btn-danger btn-block btn-xs" id="borrarImagen2" style="display: none;" onclick="borrarImagen('imagenACambiar2', 'borrarImagen2')">Borrar</button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="imagen-con-boton">
+                    <img src="~/images/foto.png" alt="..." class="margin" id="imagenACambiar3" style="margin: 0px !important;display: block;width: 100%; height: 320px;">
+                    <input type="file" id="selectorArchivo3" style="display: none;" name="Imagenes[2]">
+                    <button type="button" class="btn btn-success btn-block btn-xs" onclick="document.getElementById('selectorArchivo3').click()">Cambiar</button>
+                    <button type="button" class="btn btn-danger btn-block btn-xs" id="borrarImagen3" style="display: none;" onclick="borrarImagen('imagenACambiar3', 'borrarImagen3')">Borrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="box-footer">
+        <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+        <button type="submit" class="btn btn-primary pull-right">Guardar</button>
+    </div>
+</form>
+
+<script>
+    const premiosImagenDTO = {
+        Imagenes: @if (Model.Imagenes != null && Model.Imagenes.Any())
+    {
+        @Html.Raw(Json.Serialize(Model.Imagenes))
+    }
+    else
+    {
+        @:[]
+    }
+        };
+
+    cargarImagenesDesdeDTO(premiosImagenDTO.Imagenes);
+
+    function cambiarImagen(idSelectorArchivo, idImagen, idBotonBorrar) {
+        document.getElementById(idSelectorArchivo).addEventListener('change', function (event) {
+            const archivo = event.target.files[0];
+            if (archivo) {
+                const lector = new FileReader();
+                lector.onload = function (e) {
+                    document.getElementById(idImagen).src = e.target.result;
+                    document.getElementById(idBotonBorrar).style.display = 'block';
+                }
+                lector.readAsDataURL(archivo);
+            }
+        });
+    }
+
+    function borrarImagen(idImagen, idBotonBorrar) {
+        document.getElementById(idImagen).src = '/images/foto.png'; // O la ruta completa a tu imagen de marcador de posición
+        document.getElementById(idBotonBorrar).style.display = 'none';
+    }
+
+    cambiarImagen('selectorArchivo1', 'imagenACambiar1', 'borrarImagen1');
+    cambiarImagen('selectorArchivo2', 'imagenACambiar2', 'borrarImagen2');
+    cambiarImagen('selectorArchivo3', 'imagenACambiar3', 'borrarImagen3');
+
+
+    const formulario = document.querySelector('form');
+
+    formulario.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const formData = new FormData(formulario);
+
+
+        for (let i = 1; i <= 3; i++) {
+            const imagen = document.getElementById('imagenACambiar' + i);
+            if (imagen.src.startsWith('data:')) {
+                fetch(imagen.src)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        formData.append('Imagenes', blob, 'imagen' + i + '.png');
+                    });
+            }
+        }
+        console.log("aaaaaaaaaaaaa")
+        fetch(formulario.action, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                // Manejar la respuesta del servidor aquí, por ejemplo, mostrar un mensaje de éxito o error
+            })
+            .catch(error => {
+                console.error('Error al enviar el formulario:', error);
+            });
+    });
+
+    function cargarImagenesDesdeDTO(imagenes) {
+        for (let i = 0; i < imagenes.length && i < 3; i++) {
+            const imagen = document.getElementById('imagenACambiar' + (i + 1));
+            if (imagen) {
+                imagen.src = `data:image/png;base64,${imagenes[i]}`;
+                document.getElementById('borrarImagen' + (i + 1)).style.display = 'block';
+            }
+        }
+    }
+</script>

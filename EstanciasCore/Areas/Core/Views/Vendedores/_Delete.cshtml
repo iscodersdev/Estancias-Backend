@@ -1,0 +1,65 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.Vendedores
+@{
+    ViewData["Title"] = "Borrar Vendedor";
+}
+<form asp-action="Delete">
+
+    @using (Html.BoxBody())
+    {
+        <input asp-for="@Model.Id" type="hidden" />
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-2">
+                    <label asp-for="Persona.TipoDocumento" class="control-label"></label>
+                    <select asp-items="@ViewBag.TiposDocumento" asp-for="Persona.TipoDocumento.Id" class="form-control" disabled></select>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.NroDocumento" class="control-label"></label>
+                    <input asp-for="Persona.NroDocumento" class="form-control" disabled/>
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="Persona.Pais" class="control-label"></label>
+                    <select asp-items="@ViewBag.Paises" asp-for="Persona.Pais.Id" class="form-control" disabled></select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <label asp-for="Persona.Nombres" class="control-label"></label>
+                    <input asp-for="Persona.Nombres" class="form-control" disabled/>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.Apellido" class="control-label"></label>
+                    <input asp-for="Persona.Apellido" class="form-control" disabled/>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.Cuil" class="control-label"></label>
+                    <input asp-for="Persona.Cuil" class="form-control" disabled/>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Persona.FechaNacimiento" class="control-label"></label>
+                    <input asp-for="Persona.FechaNacimiento" class="form-control" disabled/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <label asp-for="Domicilio" class="control-label"></label>
+                    <input asp-for="Domicilio" class="form-control" disabled/>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Telefono" class="control-label"></label>
+                    <input asp-for="Telefono" class="form-control" disabled/>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Mail" class="control-label"></label>
+                    <input asp-for="Mail" class="form-control" disabled/>
+                </div>
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Borrar" class="btn btn-primary pull-right" />
+    }
+</form>

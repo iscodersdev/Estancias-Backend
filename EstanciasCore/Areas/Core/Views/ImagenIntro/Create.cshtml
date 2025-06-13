@@ -1,0 +1,38 @@
+﻿@using Commons.HtmlHelpers
+@model DAL.Models.ImagenIntro
+@{
+    ViewData["Title"] = "Crear Imagen Intro";
+}
+<form asp-action="Create">
+
+    @using (Html.BoxDefault(BoxColor.Info))
+    {
+        using (Html.BoxHeader("Nueva"))
+        {
+        }
+        using (Html.BoxBody())
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Fecha" class="control-label"></label>
+                <input asp-for="Fecha" class="form-control" />
+                <span asp-validation-for="Fecha" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Titulo" class="control-label"></label>
+                <input asp-for="Titulo" class="form-control" />
+                <span asp-validation-for="Titulo" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Orden" class="control-label"></label>
+                <input asp-for="Orden" class="form-control" />
+                <span asp-validation-for="Orden" class="text-danger"></span>
+            </div>            
+        }
+        using (Html.BoxFooter())
+        {
+            <a class="btn btn-default" asp-action="Index">Cancelar</a>
+            <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+        }
+    }
+</form>

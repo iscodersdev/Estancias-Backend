@@ -1,0 +1,101 @@
+﻿@model Commons.Models.Page<DAL.Models.Catalogo>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Catálogo</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevoCatalogo()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoCatalogo" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Nombre
+                    </th>
+                    <th>
+                        Link
+                    </th>
+                    <th>
+                        Estado
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Nombre)
+                        </td>
+                        <td>
+                            <a href="@item.Link" target="_blank">
+                                @Html.DisplayFor(modelItem => item.Link)
+                            </a>
+                        </td>
+                        <td>
+                            @if (item.Activo)
+                            {
+                                <small class="label pull-center bg-green">Habilitado</small>
+                            }
+                            else
+                            {
+                                <small class="label pull-center bg-red">Deshabilitado</small>
+                            }
+                        </td>
+                        <td>
+                            @if (!item.Activo)
+                            {
+                                <a onclick="ActivarCatalogo('@item.Id')" title="Activar Catálogo" class="btn btn-success btn-xs"><i class="fa fa-check"></i></a>
+                            }
+                            <a onclick="editCatalogo('@item.Id')" title="Editar Catálogo" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar este Catálogo?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<modal title="Nuevo Catálogo" callback-modal="true" function="nuevoCatalogo" load-url="/Core/Catalogo/_Create/" size="Medium"></modal>
+<modal title="Edición de Catálogo" callback-modal="true" function="editCatalogo" load-url="/Core/Catalogo/_Update/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        var tablaCatalogo = $('#listadoCatalogo').DataTable({
+            "columnDefs": [
+                { "width": "10%", "targets": 0 },
+                { "width": "40%","searchable": false, "orderable": false, "targets": 1 },
+                { "width": "40%", class: "text-center", "searchable": false, "orderable": false, "targets": 2 },
+                { "width": "20%", class: "text-center", "searchable": false, "orderable": false, "targets": 3 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+
+    function ActivarCatalogo(id) {
+        $.ajax({
+            type: "GET",
+            url: "/Core/Catalogo/ActivarCatalogo",
+            data: { id: id },
+            dataType: "json",
+            success: function (data) {
+                if (data) {
+                    //location.reload("/Core/Catalogo/");
+                    $(location).attr('href', '/Core/Catalogo/');
+                }
+            },
+            error: function (error) {
+                console.error("Error al obtener detalle:", error);
+            }
+        });
+    }
+   
+</script>

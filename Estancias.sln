@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32630.194
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EstanciasCore", "EstanciasCore\EstanciasCore.csproj", "{B1B60682-A82B-4FCB-B617-E7B749ADD24D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DAL", "DAL\DAL.csproj", "{26C891C0-7B80-47A1-BD5E-B3DA8C4DB882}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B1B60682-A82B-4FCB-B617-E7B749ADD24D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1B60682-A82B-4FCB-B617-E7B749ADD24D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1B60682-A82B-4FCB-B617-E7B749ADD24D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1B60682-A82B-4FCB-B617-E7B749ADD24D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26C891C0-7B80-47A1-BD5E-B3DA8C4DB882}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26C891C0-7B80-47A1-BD5E-B3DA8C4DB882}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26C891C0-7B80-47A1-BD5E-B3DA8C4DB882}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26C891C0-7B80-47A1-BD5E-B3DA8C4DB882}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FD71C6DB-EC25-41BB-9403-23B1F6DD8FA9}
+	EndGlobalSection
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 3
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = https://dev.azure.com/iscoderswhgroup
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = EstanciasCore\\EstanciasCore.csproj
+		SccProjectName1 = EstanciasCore
+		SccLocalPath1 = EstanciasCore
+		SccProjectUniqueName2 = DAL\\DAL.csproj
+		SccProjectName2 = DAL
+		SccLocalPath2 = DAL
+	EndGlobalSection
+EndGlobal
