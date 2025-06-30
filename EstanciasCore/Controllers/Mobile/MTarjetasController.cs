@@ -33,7 +33,7 @@ namespace EstanciasCore.API.Controllers.Billetera
         }
 
         [HttpPost("Alta")]
-        public async Task<IActionResult> Alta([FromBody] AltaTarjetaDTO altaTarjetaDTO)
+        public async Task<IActionResult> Alta([FromBody] DAL.DTOs.API.AltaTarjetaDTO altaTarjetaDTO)
         {
             try
             {
