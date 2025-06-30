@@ -59,6 +59,7 @@ namespace EstanciasCore
             services.AddCommonsLibraryViews();
             services.AddHttpContextAccessor();
             services.AddTransient<NotificacionAPIService>();
+            services.AddTransient<MercadoPagoServices>();
 
 			services.AddSession();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)

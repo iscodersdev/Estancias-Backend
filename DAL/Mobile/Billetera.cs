@@ -104,12 +104,13 @@ namespace DAL.Mobile
         public string Monto { get; set; }
         public string TipoMovimiento { get; set; }
         public string Fecha { get; set; }
-        //public string Recargo { get; set; }
+        public string Recargo { get; set; }
     }
 
 	public class ListDetalleCuotaDTO
 	{
 		public string Monto { get; set; }
+		public string Recargo { get; set; }
 		public string Fecha { get; set; }
 	}
 

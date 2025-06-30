@@ -42,22 +42,19 @@ namespace EstanciasCore.Controllers
     {
         private readonly UserService<Usuario> _userService;
         private readonly SignInManager<Usuario> _signInManager;
-        private readonly UserManager<Usuario> _userManager;
         public EstanciasContext _context;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly IServiceProvider _serviceProvider;
         public bool test = false;
         public string CorreTest = "jorgecutuli@hotmail.com";
-        public MUsuarioController(EstanciasContext context, UserService<Usuario> userService, SignInManager<Usuario> signInManager, UserManager<Usuario> userManager, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider)
+        public MUsuarioController(EstanciasContext context, UserService<Usuario> userService, SignInManager<Usuario> signInManager, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider)
         {
             _context = context;
             _userService = userService;
             _signInManager = signInManager;
             _viewEngine = viewEngine;
             _serviceProvider = serviceProvider;
-            _userManager = userManager;
         }
-
         [HttpPost]
         [Route("Login")]
         [EnableCors("CorsPolicy")]
@@ -231,8 +228,6 @@ namespace EstanciasCore.Controllers
                 _context.Clientes.Update(cliente);
                 UAT uat = new UAT();
                 uat.Cliente = cliente;
-                uat.Persona = cliente.Persona;
-                uat.Usuario = cliente.Usuario;
                 uat.Token = Login.UAT;
                 uat.FechaHora = DateTime.Now;
                 _context.UAT.Add(uat);
@@ -310,7 +305,7 @@ namespace EstanciasCore.Controllers
 
             var result = _userService.CreateAsync(user, Registro.Password1.ToString());
 
-            var provincia = _context.Provincia.First( x => x.Id == localidad.IdProvincia);
+            var provincia = _context.Provincia.First(x => x.Id == localidad.IdProvincia);
 
             Clientes nuevocliente = new Clientes()
             {
@@ -430,68 +425,30 @@ namespace EstanciasCore.Controllers
         [Route("ActualizaDatosPersona")]
         [EnableCors("CorsPolicy")]
         [AllowAnonymous]
-        public async Task<MActualizaDatosPersonaDTO> ActualizaDatosPersona([FromBody] MActualizaDatosPersonaDTO uat)
+        public MActualizaDatosPersonaDTO ActualizaDatosPersona([FromBody] MActualizaDatosPersonaDTO uat)
         {
-            try
-            {
-                if (uat==null)
-                {
-                    uat = new MActualizaDatosPersonaDTO();
-                    uat.Status = 400;
-                    uat.Mensaje = "La solicitud no puede estar vacía.";
-                    return uat;
-                }
-
-                var Uat = _context.UAT.FirstOrDefault(x => x.Token == uat.UAT);
-                if (Uat == null)
-                {
-                    uat.Status = 500;
-                    uat.Mensaje = "UAT Invalida";
-                    return uat;
-                }
-               
-                uat.Status = 200;
-                uat.Mensaje = "Datos Actualizados Correctamente!!!";
-                var cliente = Uat.Cliente;
-
-                cliente.Domicilio = uat.Domicilio!=""? uat.Domicilio:cliente.Domicilio;
-                cliente.Celular = uat.Celular!="" ? uat.Celular : cliente.Celular;
-                cliente.Persona.Nombres = uat.Nombre!="" ? uat.Nombre : cliente.Persona.Nombres;
-                cliente.Persona.Apellido = uat.Apellido!="" ? uat.Apellido : cliente.Persona.Apellido;
-                cliente.Persona.FechaNacimiento = uat.FechaNacimiento!=null?Convert.ToDateTime(uat.FechaNacimiento):cliente.Persona.FechaNacimiento;
-
-                if (uat.Password1 != "")
-                {
-                    if (uat.Password1 != null & uat.Password1 != uat.Password2)
-                    {
-                        uat.Status = 500;
-                        uat.Mensaje = "Passwords deben Coincidir";
-                        return uat;
-                    }
-                    else
-                    {
-                        var token = await _userManager.GeneratePasswordResetTokenAsync(cliente.Usuario);
-                        IdentityResult result = await _userManager.ResetPasswordAsync(cliente.Usuario, token, uat.Password1);
-                        if (!result.Succeeded)
-                        {
-                            uat.Status = 500;
-                            uat.Mensaje = "Error al Cambiar la Contraseña.";
-                            return uat;
-                        }
-                        cliente.Password = uat.Password1;
-                    }
-                }                
-                _context.Personas.Update(cliente.Persona);
-                _context.Clientes.Update(cliente);
-                _context.SaveChanges();
-                return uat;
-            }
-            catch (Exception e)
+            var Uat = _context.UAT.FirstOrDefault(x => x.Token == uat.UAT);
+            if (uat == null)
             {
                 uat.Status = 500;
-                uat.Mensaje = "Error - "+e.Message;
+                uat.Mensaje = "UAT Invalida";
                 return uat;
             }
+            if (uat.Password1 != null & uat.Password1 != uat.Password2)
+            {
+                uat.Status = 500;
+                uat.Mensaje = "Passwords deben Coincidir";
+                return uat;
+            }
+            uat.Status = 200;
+            uat.Mensaje = "Datos Actualizados Correctamente!!!";
+            var cliente = Uat.Cliente;
+            cliente.Domicilio = uat.Domicilio;
+            cliente.Celular = uat.Celular;
+            cliente.Persona.FechaNacimiento = Convert.ToDateTime(uat.FechaNacimiento);
+            _context.Clientes.Update(cliente);
+            _context.SaveChanges();
+            return uat;
         }
         [HttpPost]
         [Route("ActualizaDatosLocalidad")]
@@ -1286,6 +1243,8 @@ namespace EstanciasCore.Controllers
 
         }
 
+
+
         [HttpPost]
         [Route("RegistraPersona20")]
         [EnableCors("CorsPolicy")]
@@ -1294,25 +1253,27 @@ namespace EstanciasCore.Controllers
         public async Task<MRegistraPersonaDTO> RegistraPersona20([FromBody] MRegistraPersonaDTO Registro) //Utilizado por la App Mobile
         {
             try
-            {
-                var empresa = _context.Empresas.FirstOrDefault(x => x.Id == 3);
-                var personaLoan = getPersonaloanByNroTarjeta(Registro.NroTarjeta.ToString());
-                var personaLocalTajeta = _context.Usuarios.Where(x => x.Personas.NroTarjeta != null).Where(x => x.Personas.NroTarjeta.TrimStart('0')==Registro.NroTarjeta.TrimStart('0')).FirstOrDefault();
-                int token = common.NiumeroRandom(100000, 999999);
-                if (personaLocalTajeta!=null) //Ya existe usuario cpn ese Nro tarjeta
                 {
-                    if (personaLocalTajeta.UserName==Registro.Mail)
+
+                //var empresa = _context.Empresas.FirstOrDefault(x => x.Id == Registro.EmpresaId);
+                var empresa = _context.Empresas.FirstOrDefault(x => x.Id == 3);
+                var user = await _userService.FindByEmailAsync(Registro.Mail.ToString().Trim());
+                var personaLoan = getPersonaloanByNroTarjeta(Registro.NroTarjeta.ToString());
+                //var persona = Personaloan(Registro.NumeroDocumento.ToString());
+                //var cliente = _context.Clientes.FirstOrDefault(x => x.Usuario.Personas.NroDocumento  == Registro.NumeroDocumento.ToString());
+                if (user!=null && Registro.NroTarjeta!=null)
+                {
+                    if (user.Personas!=null)
                     {
-                        Registro.Status = 500;
-                        Registro.Mensaje = "Socio Ya Ingresado, debera recuperar contraseña";
+                        user.Personas.NroTarjeta = Registro.NroTarjeta;
+                        _context.Usuarios.Update(user);
+                        _context.SaveChanges();
                     }
-                    else
-                    {
-                        Registro.Status = 500;
-                        Registro.Mensaje = "La tarjeta ya esta asociada al usuario "+personaLocalTajeta.Email;
-                    }
-                    return Registro;
                 }
+
+                var personalocal = _context.Personas.FirstOrDefault(x => x.Email == Registro.Mail.ToString().Trim());
+                var clienteLocal = _context.Clientes.FirstOrDefault(x => x.Persona.Email == Registro.Mail.ToString().Trim());
+                int token = common.NiumeroRandom(100000, 999999);
 
                 if (Registro.Password1 != Registro.Password2 || Registro.Password1 == null)
                 {
@@ -1328,40 +1289,113 @@ namespace EstanciasCore.Controllers
                     return Registro;
                 }
 
-                if (personaLoan==null)
+                if (clienteLocal!=null)
                 {
-                    Registro.Status = 404;
-                    Registro.Mensaje = "El número de tarjeta no le pertenece a ningun socio";
-                    return Registro;
+                    if (clienteLocal.Persona!=null) // Si la persona Existe
+                    {
+                        if (user!=null)
+                        {
+                            if (clienteLocal.Id == user.Clientes.Id)
+                            {
+                                Registro.Status = 200;
+                                Registro.Mensaje = "Socio Ya Ingresado, debera recuperar contraseña";
+                                return Registro;
+                            }
+                            else
+                            {
+                                clienteLocal.RegistroMobile = true;
+                                CreateOrUpdateUser(user, clienteLocal, Registro.Mail.Trim(), token, Registro.Password1);
+                                var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
+                            }
+                        }
+                        else
+                        {
+                            clienteLocal.RegistroMobile = true;
+                            CreateOrUpdateUser(user, clienteLocal, Registro.Mail.Trim(), token, Registro.Password1);
+                            //var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
+                        }
+                    }
+                    else
+                    {
+                        clienteLocal.Persona = new Persona()
+                        {
+                            NroDocumento = Registro.NumeroDocumento.ToString(),
+                            Apellido = Registro.Apellido,
+                            Nombres = Registro.Nombres,
+                            FechaNacimiento = Convert.ToDateTime(personaLoan.FechaNacimiento),
+                            Email = Registro.Mail.Trim(),
+                            NroTarjeta = Registro.NroTarjeta.TrimStart('0')
+                        };
+
+                        if (Registro.NroTarjeta!=null)
+                        {
+                            var persona = getPersonaloanByNroTarjeta(Registro.NroTarjeta.ToString());
+                            if (persona!=null)
+                            {
+                                clienteLocal.Persona.NroDocumento = persona.NroDocumento;
+                            }
+                            clienteLocal.Persona.FechaNacimiento = Convert.ToDateTime(personaLoan.FechaNacimiento);
+                        }
+
+                        clienteLocal.RegistroMobile = true;
+                        CreateOrUpdateUser(user, clienteLocal, Registro.Mail.Trim(), token, Registro.Password1);
+                        var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
+
+                    }
                 }
-
-                Clientes cliente = new Clientes();
-                cliente.Empresa = _context.Empresas.FirstOrDefault();
-                cliente.TipoCliente = _context.TiposClientes.Find(1);
-                cliente.Celular = (Registro.Celular != null) ? Registro.Celular : "";
-                cliente.Localidad = _context.Localidad.Find(24860);
-                cliente.Provincia = _context.Provincia.Find(6);
-
-                cliente.Persona = new Persona()
+                else
                 {
-                    NroDocumento = personaLoan.NroDocumento.ToString(),
-                    Apellido = Registro.Apellido,
-                    Nombres = Registro.Nombres,
-                    FechaNacimiento = personaLoan.FechaNacimiento!="" ? Convert.ToDateTime(personaLoan.FechaNacimiento) : Convert.ToDateTime("01/01/1111"),
-                    Email = Registro.Mail.Trim(),
-                    NroTarjeta = Registro.NroTarjeta.TrimStart('0')
-                };
+                    Clientes cliente = new Clientes();
+                    cliente.Empresa = _context.Empresas.FirstOrDefault();
+                    cliente.TipoCliente = _context.TiposClientes.Find(1);
+                    cliente.Celular = (Registro.Celular != null) ? Registro.Celular : "";
+                    cliente.Localidad = _context.Localidad.Find(24860);
+                    cliente.Provincia = _context.Provincia.Find(6);
 
-                Usuario userCreate = CreateOrUpdateUser(null, cliente, Registro.Mail.Trim(), token, Registro.Password1);
-                var result = await _userService.ChangePasswordAsync(userCreate, token.ToString(), Registro.Password1);
+                    Persona personaLocal = _context.Personas.Where(x => x.Email==Registro.Mail.Trim()).FirstOrDefault();
 
-                if (userCreate !=null)
+                    if (personaLocal!=null)
+                    {
+                        cliente.Persona = personaLocal;
+                        cliente.RegistroMobile = true;
+                        user = CreateOrUpdateUser(user, cliente, Registro.Mail.Trim(), token, Registro.Password1);
+                        var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
+                    }
+                    else
+                    {
+                        cliente.Persona = new Persona()
+                        {
+                            NroDocumento = Registro.NumeroDocumento.ToString(),
+                            Apellido = Registro.Apellido,
+                            Nombres = Registro.Nombres,
+                            FechaNacimiento = personaLoan.FechaNacimiento!=""?Convert.ToDateTime(personaLoan.FechaNacimiento): Convert.ToDateTime("01/01/1111"),
+                            Email = Registro.Mail.Trim(),
+                            NroTarjeta = Registro.NroTarjeta.TrimStart('0')
+                        };
+                        if (Registro.NroTarjeta!=null)
+                        {
+                            var persona = getPersonaloanByNroTarjeta(Registro.NroTarjeta.ToString());
+                            if (persona!=null)
+                            {
+                                cliente.Persona.NroDocumento = persona.NroDocumento;
+                            }
+                        }
+
+                        cliente.RegistroMobile = true;
+                        user = CreateOrUpdateUser(user, cliente, Registro.Mail.Trim(), token, Registro.Password1);
+                        var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
+                    }
+                }
+                user = await _userService.FindByEmailAsync(Registro.Mail.ToString().Trim());
+                if (user !=null)
                 {
-                    userCreate.EmailConfirmed = true;
-                    userCreate.Password = Registro.Password1;
-                    userCreate.Clientes.Password = Registro.Password1;
-                    _context.Clientes.Update(userCreate.Clientes);
-                    _context.Usuarios.Update(userCreate);
+                    user.EmailConfirmed = true;
+                    user.Password = Registro.Password1;
+
+                    // Generar un token de reseteo de contraseña
+                    var tokenReset = await _userService.GeneratePasswordResetTokenAsync(user);
+                    var result = await _userService.ResetPasswordAsync(user, tokenReset, Registro.Password1);
+                    _context.Usuarios.Update(user);
                     _context.SaveChanges();
                     Registro.Status = 200;
                     Registro.Mensaje = "Registro con Éxito.";
@@ -1373,219 +1407,16 @@ namespace EstanciasCore.Controllers
                     Registro.Mensaje = "Error al Registrar al Socio.";
                     return Registro;
                 }
+
             }
             catch (Exception e)
             {
                 Registro.Status = 500;
-                Registro.Mensaje = "Error - "+e.Message;
+                Registro.Mensaje = e.Message;
                 return Registro;
             }
+
         }
-
-
-
-        //[HttpPost]
-        //[Route("RegistraPersona20")]
-        //[EnableCors("CorsPolicy")]
-        //[AllowAnonymous]
-
-        //public async Task<MRegistraPersonaDTO> RegistraPersona20([FromBody] MRegistraPersonaDTO Registro) //Utilizado por la App Mobile
-        //{
-        //    try
-        //        {
-
-        //        //var empresa = _context.Empresas.FirstOrDefault(x => x.Id == Registro.EmpresaId);
-        //        var empresa = _context.Empresas.FirstOrDefault(x => x.Id == 3);
-        //        var user = await _userService.FindByEmailAsync(Registro.Mail.ToString().Trim());
-        //        var personaLoan = getPersonaloanByNroTarjeta(Registro.NroTarjeta.ToString());
-        //        //var persona = Personaloan(Registro.NumeroDocumento.ToString());
-        //        //var cliente = _context.Clientes.FirstOrDefault(x => x.Usuario.Personas.NroDocumento  == Registro.NumeroDocumento.ToString());
-        //        if (user!=null && Registro.NroTarjeta!=null)
-        //        {
-        //            if (user.Personas!=null)
-        //            {
-        //                user.Personas.NroTarjeta = Registro.NroTarjeta;
-        //                _context.Usuarios.Update(user);
-        //                _context.SaveChanges();
-        //            }
-        //        }
-
-        //        var personalocal = _context.Personas.FirstOrDefault(x => x.Email == Registro.Mail.ToString().Trim());
-        //        var clienteLocal = _context.Clientes.FirstOrDefault(x => x.Persona.Email == Registro.Mail.ToString().Trim());
-        //        int token = common.NiumeroRandom(100000, 999999);
-
-        //        if (personalocal==null)
-        //        {
-        //            var personaLocalTajeta = _context.Personas.Where(x => x.NroTarjeta != null).Where(x => x.NroTarjeta.TrimStart('0')==Registro.NroTarjeta.TrimStart('0')).FirstOrDefault();
-        //            if (personaLocalTajeta!=null)
-        //            {
-        //                Registro.Status = 500;
-        //                Registro.Mensaje = "La tarjeta ya esta asociada al usuario "+personaLocalTajeta.Email;
-        //                return Registro;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Registro.Status = 500;
-        //            Registro.Mensaje = "Socio Ya Ingresado, debera recuperar contraseña";
-        //            return Registro;
-        //        }
-        //        if (Registro.Password1 != Registro.Password2 || Registro.Password1 == null)
-        //        {
-        //            Registro.Status = 500;
-        //            Registro.Mensaje = "Password No Coincidentes o Requeridas!!!";
-        //            return Registro;
-        //        }
-
-        //        if (Registro.Password1 != Registro.Password2 || Registro.Password1 == null)
-        //        {
-        //            Registro.Status = 500;
-        //            Registro.Mensaje = "Password No Coincidentes o Requeridas!!!";
-        //            return Registro;
-        //        }
-
-        //        if (empresa == null)
-        //        {
-        //            Registro.Status = 500;
-        //            Registro.Mensaje = "Empresa Inexistente!!!";
-        //            return Registro;
-        //        }
-
-        //        if (clienteLocal!=null)
-        //        {
-        //            if (clienteLocal.Persona!=null) // Si la persona Existe
-        //            {
-        //                if (user!=null)
-        //                {
-        //                    if (clienteLocal.Id == user.Clientes.Id)
-        //                    {
-        //                        Registro.Status = 200;
-        //                        Registro.Mensaje = "Socio Ya Ingresado, debera recuperar contraseña";
-        //                        return Registro;
-        //                    }
-        //                    else
-        //                    {
-        //                        clienteLocal.RegistroMobile = true;
-        //                        CreateOrUpdateUser(user, clienteLocal, Registro.Mail.Trim(), token, Registro.Password1);
-        //                        var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    clienteLocal.RegistroMobile = true;
-        //                    CreateOrUpdateUser(user, clienteLocal, Registro.Mail.Trim(), token, Registro.Password1);
-        //                    //var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
-        //                }
-        //            }
-        //            else
-        //            {
-        //                clienteLocal.Persona = new Persona()
-        //                {
-        //                    NroDocumento = Registro.NumeroDocumento.ToString(),
-        //                    Apellido = Registro.Apellido,
-        //                    Nombres = Registro.Nombres,
-        //                    FechaNacimiento = Convert.ToDateTime(personaLoan.FechaNacimiento),
-        //                    Email = Registro.Mail.Trim(),
-        //                    NroTarjeta = Registro.NroTarjeta.TrimStart('0')
-        //                };
-
-        //                if (Registro.NroTarjeta!=null)
-        //                {
-        //                    var persona = getPersonaloanByNroTarjeta(Registro.NroTarjeta.ToString());
-        //                    if (persona!=null)
-        //                    {
-        //                        clienteLocal.Persona.NroDocumento = persona.NroDocumento;
-        //                    }
-        //                    clienteLocal.Persona.FechaNacimiento = Convert.ToDateTime(personaLoan.FechaNacimiento);
-        //                }
-
-        //                clienteLocal.RegistroMobile = true;
-        //                CreateOrUpdateUser(user, clienteLocal, Registro.Mail.Trim(), token, Registro.Password1);
-        //                var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
-
-        //            }
-        //        }
-        //        else
-        //        {
-        //            if (personaLoan==null)
-        //            {
-        //                Registro.Status = 404;
-        //                Registro.Mensaje = "El número de tarjeta no le pertenece a ningun socio";
-        //                return Registro;
-        //            }
-
-        //            Clientes cliente = new Clientes();
-        //            cliente.Empresa = _context.Empresas.FirstOrDefault();
-        //            cliente.TipoCliente = _context.TiposClientes.Find(1);
-        //            cliente.Celular = (Registro.Celular != null) ? Registro.Celular : "";
-        //            cliente.Localidad = _context.Localidad.Find(24860);
-        //            cliente.Provincia = _context.Provincia.Find(6);
-
-        //            Persona personaLocal = _context.Personas.Where(x => x.Email==Registro.Mail.Trim()).FirstOrDefault();
-
-        //            if (personaLocal!=null)
-        //            {
-        //                cliente.Persona = personaLocal;
-        //                cliente.RegistroMobile = true;
-        //                user = CreateOrUpdateUser(user, cliente, Registro.Mail.Trim(), token, Registro.Password1);
-        //                var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
-        //            }
-        //            else
-        //            {
-        //                cliente.Persona = new Persona()
-        //                {
-        //                    NroDocumento = Registro.NumeroDocumento.ToString(),
-        //                    Apellido = Registro.Apellido,
-        //                    Nombres = Registro.Nombres,
-        //                    FechaNacimiento = personaLoan.FechaNacimiento!=""?Convert.ToDateTime(personaLoan.FechaNacimiento): Convert.ToDateTime("01/01/1111"),
-        //                    Email = Registro.Mail.Trim(),
-        //                    NroTarjeta = Registro.NroTarjeta.TrimStart('0')
-        //                };
-        //                if (Registro.NroTarjeta!=null)
-        //                {
-        //                    var persona = getPersonaloanByNroTarjeta(Registro.NroTarjeta.ToString());
-        //                    if (persona!=null)
-        //                    {
-        //                        cliente.Persona.NroDocumento = persona.NroDocumento;
-        //                    }
-        //                }
-
-        //                cliente.RegistroMobile = true;
-        //                user = CreateOrUpdateUser(user, cliente, Registro.Mail.Trim(), token, Registro.Password1);
-        //                var result = await _userService.ChangePasswordAsync(user, "xahs567g", Registro.Password1);
-        //            }
-        //        }
-        //        user = await _userService.FindByEmailAsync(Registro.Mail.ToString().Trim());
-        //        if (user !=null)
-        //        {
-        //            user.EmailConfirmed = true;
-        //            user.Password = Registro.Password1;
-
-        //            // Generar un token de reseteo de contraseña
-        //            var tokenReset = await _userService.GeneratePasswordResetTokenAsync(user);
-        //            var result = await _userService.ResetPasswordAsync(user, tokenReset, Registro.Password1);
-        //            _context.Usuarios.Update(user);
-        //            _context.SaveChanges();
-        //            Registro.Status = 200;
-        //            Registro.Mensaje = "Registro con Éxito.";
-        //            return Registro;
-        //        }
-        //        else
-        //        {
-        //            Registro.Status = 500;
-        //            Registro.Mensaje = "Error al Registrar al Socio.";
-        //            return Registro;
-        //        }
-
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Registro.Status = 500;
-        //        Registro.Mensaje = e.Message;
-        //        return Registro;
-        //    }
-
-        //}
 
 
 

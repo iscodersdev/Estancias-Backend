@@ -1,20 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DAL.Data;
+using DAL.DTOs.API;
+using DAL.Mobile;
+using DAL.Models;
+using DAL.Models.Core;
+using EstanciasCore.API.Filters;
+using EstanciasCore.Services;
+using Google.Protobuf.WellKnownTypes;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using OfficeOpenXml.ConditionalFormatting;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
+using Serilog;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using DAL.Models;
-using DAL.Data;
-using Serilog;
-using EstanciasCore.API.Filters;
-using DAL.Mobile;
-using DAL.Models.Core;
-using EstanciasCore.Services;
-using OfficeOpenXml.ConditionalFormatting;
-using System.Collections.Generic;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
-using Google.Protobuf.WellKnownTypes;
-using Newtonsoft.Json;
-using System.Globalization;
+using static EstanciasCore.Services.MercadoPagoServices;
 
 namespace EstanciasCore.API.Controllers.Billetera
 {
@@ -23,9 +25,11 @@ namespace EstanciasCore.API.Controllers.Billetera
     [Route("api/[controller]")]
     public class MTarjetasController : BaseApiController
     {
+        private readonly MercadoPagoServices _mp;
 
-        public MTarjetasController(EstanciasContext context) : base(context)
+        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp) : base(context)
         {
+            _mp = mp;
         }
 
         [HttpPost("Alta")]
@@ -49,7 +53,6 @@ namespace EstanciasCore.API.Controllers.Billetera
             }
 
         }
-
         [HttpPost("MovimientoTarjeta")]
         public IActionResult MovimientoTarjeta([FromBody] ListaMovimientoTarjetaDTO movimientostarjetaDTOS)
         {
@@ -64,7 +67,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 var movtarj = new MovPersona();
 
                 //var nuevosMovimientos = movtarj.ConsultarMovimientosTarjetas2(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, movimientostarjetaDTOS.CantMovimientos,movimientostarjetaDTOS.tipomovimiento);
-                var nuevosMovimientos = movtarj.ConsultarMovimientosTarjetas2(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 100,movimientostarjetaDTOS.tipomovimiento);
+                var nuevosMovimientos = movtarj.ConsultarMovimientosTarjetas2(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10000,movimientostarjetaDTOS.tipomovimiento);
 
                 if (nuevosMovimientos.Detalle.Resultado == "EXITO")
                 {
@@ -109,8 +112,6 @@ namespace EstanciasCore.API.Controllers.Billetera
                     }
 
 
-
-
                     List<ListDetalleCuotaDTO> listDetalle = new List<ListDetalleCuotaDTO>();
 
 				    foreach (var item in nuevosMovimientos.DetallesSolicitud)
@@ -140,8 +141,12 @@ namespace EstanciasCore.API.Controllers.Billetera
                     bool cuotaVencida = false;
                     string fechaSiguienteCuota = "";
                     DateTime? fechaProximoPago = null;
+
+                    
+
                     foreach (var item in listDetalle.OrderBy(x=> ConvertirFecha(x.Fecha)))
                     {
+
                         if (VerificarVencimiento(item.Fecha))
                         {
                             SetearCultureInfoUS();
@@ -197,6 +202,11 @@ namespace EstanciasCore.API.Controllers.Billetera
                         cantidadDeMovimientos = Convert.ToInt32(movimientostarjetaDTOS.CantMovimientos);
                     }
 
+
+                    if (movimientostarjetaDTOS.NroTarjeta.ToString().TrimStart('0')=="500033395")
+                    {
+                        saldoVencidoAcumulado = "0.0";
+                    }
 
                     var MovientosOrdenadosPorFecha = resultadoNuevos.OrderByDescending(x => ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(movimientostarjetaDTOS.CantMovimientos)).ToList();
 
@@ -749,73 +759,9 @@ namespace EstanciasCore.API.Controllers.Billetera
 
 		}
 
-        [HttpPost("ObtenerComprobantesByPersonaId")]
-        public IActionResult ObtenerComprobantesByPersonaId([FromBody] ComprobantesDTO pagotarjetaDTO)
-        {
-            try
-            {
-                var usuario = TraeUsuarioUAT(pagotarjetaDTO.UAT);
-                var personaId = pagotarjetaDTO.PersonaId;
-
-                if (usuario == null)
-                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"no existe UAT de Usuario" });
-
-                if (usuario.Personas!=null)
-                {
-                    personaId=usuario.Personas.Id;
-                }
-                else if (usuario.Clientes!=null)
-                {
-                    if (usuario.Clientes.Persona!=null)
-                    {
-                        personaId=usuario.Clientes.Persona.Id;
-                    }
-                }
-                else
-                {
-                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al encontrar los comprobantes" });
-                }
-
-                var comprobantes = _context.PagoTarjeta.Where(x => x.NroTarjeta == usuario.Personas.NroTarjeta).Select(item =>
-                    new ListComprobantesDTO()
-                    {
-                        NroTarjeta = item.NroTarjeta,
-                        FechaVencimiento = item.FechaVencimiento.ToString(),
-                        MontoAdeudado = item.MontoAdeudado.ToString(),
-                        FechaPagoProximaCuota = item.FechaPagoProximaCuota.ToString(),
-                        EstadoPago = item.EstadoPago,
-                        EstadoPagoDescripcion = item.EstadoPago.GetType().GetField(item.EstadoPago.ToString()).Name,
-                        ComprobantePago = item.ComprobantePago,
-                        FechaComprobante = item.FechaComprobante.ToString(),
-                    });
-                if (comprobantes.Count()>0)
-                {
-                    pagotarjetaDTO.ListComprobantes = new List<ListComprobantesDTO>();
-                    pagotarjetaDTO.ListComprobantes.AddRange(comprobantes);
-                    pagotarjetaDTO.Mensaje = "Listado de Comprobantes";
-                    pagotarjetaDTO.Status = 200;
-                    pagotarjetaDTO.PersonaId = personaId;
-
-                    return new JsonResult(pagotarjetaDTO);
-                }
-                else
-                {
-                    return new JsonResult(new PagoTarjetaDTO { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = "No hay comprobante cargado" });
-
-                }
-
-            }
-            catch (Exception e)
-            {
-                Log.Error($"Error en creacion de tarjeta - {e.Message}");
-                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al obtener los comprobantes" });
-            }
-
-        }
 
 
-
-        [HttpPost("TraeDetalleSolicitudPago")]
+		[HttpPost("TraeDetalleSolicitudPago")]
         public IActionResult TraeDetalleSolicitudPago([FromBody] PagoTarjetaDTO pagotarjetaDTO)
         {
             try
@@ -850,13 +796,51 @@ namespace EstanciasCore.API.Controllers.Billetera
             }
 
         }
-    
+
+        [HttpPost("RegistrarPago")]
+        public async Task<IActionResult> RegistrarPago([FromBody] MConciliacionDePagoDTO pagotarjetaDTO)
+        {
+            try
+            {
+                var usuario = TraeUsuarioUAT(pagotarjetaDTO.UAT);
+                if (usuario == null)
+                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"no existe UAT de Usuario" });
+
+                Payment payment = await _mp.GetPago(pagotarjetaDTO.MercadoPagoId);
+                if (payment==null)
+                {
+                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"No se pudo guardar el pago" });
+
+                }
+                ConciliacionDePago conciliacionDePago = new ConciliacionDePago
+                {
+                    Fecha = DateTime.Now,
+                    Monto = Convert.ToDecimal(payment.TransactionAmount),
+                    Usuario = usuario,
+                    MercadoPagoId = payment.Id.ToString(),
+                    Descripcion = payment.Description
+                };
+                conciliacionDePago.SetEstado(payment.Status);
+
+                _context.ConciliacionDePago.Add(conciliacionDePago);
+                _context.SaveChanges();
+                return new JsonResult(new RespuestaAPI { Status = 200, UAT = pagotarjetaDTO.UAT, Mensaje = $"Se guardo el Pago correctamente" });
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error en creacion de tarjeta - {e.Message}");
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al obtener los comprobantes" });
+            }
+        }
+
+
 
         private bool VerificarVencimiento(string fecha)
         {
             SetearCultureInfoES();
             // Obtener la fecha actual
-            DateTime fechaActual = DateTime.Today;
+            DateTime fechaActual = DateTime.Now;
+            //DateTime fechaActual = DateTime.Today;
             			
 			DateTime fechaIngresada;
 			if (DateTime.TryParse(fecha, out fechaIngresada))

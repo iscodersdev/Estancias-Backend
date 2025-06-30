@@ -126,6 +126,7 @@ namespace DAL.Data
 
 
         public DbSet<Configuracion> Configuracion { get; set; }
+        public DbSet<ConciliacionDePago> ConciliacionDePago { get; set; }
 
 
 
