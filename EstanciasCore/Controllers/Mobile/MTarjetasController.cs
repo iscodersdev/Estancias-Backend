@@ -797,6 +797,50 @@ namespace EstanciasCore.API.Controllers.Billetera
 
         }
 
+        //[HttpPost("RegistrarPago")]
+        //[SkipChequeaUatApi]
+        //public async Task<IActionResult> RegistrarPago([FromBody] PaymentNotification pagotarjetaDTO)
+        //{
+        //    try
+        //    {
+        //        if(pagotarjetaDTO==null)
+        //            return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"no se recibieron datos" });
+
+        //        if (pagotarjetaDTO.Data==null)
+        //            return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"data se encuentra vacio" });
+
+        //        var usuario = TraeUsuarioUAT(pagotarjetaDTO.Data.UAT);
+        //        if (usuario == null)
+        //            return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"no existe UAT de Usuario" });
+
+        //        Payment payment = await _mp.GetPago(pagotarjetaDTO.Data.Id);
+        //        if (payment==null)
+        //        {
+        //            return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"No se pudo guardar el pago" });
+
+        //        }
+        //        ConciliacionDePago conciliacionDePago = new ConciliacionDePago
+        //        {
+        //            Fecha = DateTime.Now,
+        //            Monto = Convert.ToDecimal(payment.TransactionAmount),
+        //            Usuario = usuario,
+        //            MercadoPagoId = pagotarjetaDTO.Data.Id.ToString(),
+        //            Descripcion = payment.Description
+        //        };
+        //        conciliacionDePago.SetEstado(payment.Status);
+
+        //        _context.ConciliacionDePago.Add(conciliacionDePago);
+        //        _context.SaveChanges();
+        //        return new JsonResult(new RespuestaAPI { Status = 200, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"Se guardo el Pago correctamente" });
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Log.Error($"Error en creacion de tarjeta - {e.Message}");
+        //        return new JsonResult(new RespuestaAPI { Status = 500, Mensaje = $"Error - "+ e });
+        //    }
+        //}
+
+
         [HttpPost("RegistrarPago")]
         public async Task<IActionResult> RegistrarPago([FromBody] MConciliacionDePagoDTO pagotarjetaDTO)
         {
@@ -817,7 +861,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                     Fecha = DateTime.Now,
                     Monto = Convert.ToDecimal(payment.TransactionAmount),
                     Usuario = usuario,
-                    MercadoPagoId = payment.Id.ToString(),
+                    MercadoPagoId = pagotarjetaDTO.MercadoPagoId.ToString(),
                     Descripcion = payment.Description
                 };
                 conciliacionDePago.SetEstado(payment.Status);

@@ -509,26 +509,33 @@ namespace EstanciasCore.Controllers
             {
                 int token = common.NiumeroRandom(100000, 999999);
                 Persona persona = new Persona();
-                try
-                {
-                    persona = _context.Personas.FirstOrDefault(x => x.NroDocumento == uat.NumeroDocumento.ToString());
-                }
-                catch
-                {
-                    uat.Status = 500;
-                    uat.Mensaje = "Dni no regsitrado";
-                    return uat;
-                }
-                if (persona == null)
+                //try
+                //{
+                //    persona = _context.Personas.FirstOrDefault(x => x.NroDocumento == uat.NumeroDocumento.ToString());
+                //}
+                //catch
+                //{
+                //    uat.Status = 500;
+                //    uat.Mensaje = "Dni no regsitrado";
+                //    return uat;
+                //}
+                //if (persona == null)
+                //{
+                //    uat.Status = 500;
+                //    uat.Mensaje = "Persona Inexistente";
+                //    return uat;
+                //}
+                //var user = await _userService.FindByEmailAsync(cliente.Usuario.UserName.ToString());
+                //string pass = common.Encrypt(cliente.Persona.NroDocumento.ToString() + DateTime.Now.ToString(), "Estancias");
+
+                Usuario user = _context.Users.Where(x => x.UserName==uat.email).FirstOrDefault();
+
+                if (user.Personas == null)
                 {
                     uat.Status = 500;
                     uat.Mensaje = "Persona Inexistente";
                     return uat;
                 }
-                //var user = await _userService.FindByEmailAsync(cliente.Usuario.UserName.ToString());
-                //string pass = common.Encrypt(cliente.Persona.NroDocumento.ToString() + DateTime.Now.ToString(), "Estancias");
-
-                Usuario user = _context.Users.Where(x => x.Personas.Id==persona.Id).FirstOrDefault();
 
                 string pass = await _userService.GeneratePasswordResetTokenAsync(user);
                 if (user == null)
@@ -599,10 +606,10 @@ namespace EstanciasCore.Controllers
         [AllowAnonymous]
         public async Task<MValidarPasswordDTO> ValidarPassword([FromBody] MValidarPasswordDTO uat)
         {
-            Clientes cliente = new Clientes();
+            Usuario user = new Usuario();
             try
             {
-                cliente = _context.Clientes.FirstOrDefault(x => x.Persona.NroDocumento == uat.NumeroDocumento.ToString());
+                user = _context.Usuarios.Where(x => x.UserName == uat.eMail).FirstOrDefault();
             }
             catch
             {
@@ -610,7 +617,7 @@ namespace EstanciasCore.Controllers
                 uat.Mensaje = "Persona Sin Correo Declarado";
                 return uat;
             }
-            if (cliente == null)
+            if (user == null)
             {
                 uat.Status = 500;
                 uat.Mensaje = "Persona Inexistente";
@@ -623,14 +630,20 @@ namespace EstanciasCore.Controllers
                 return uat;
             }
 
-            if (cliente.Usuario.Token == uat.Token)
+            if (user.Token == uat.Token)
             {
-                var user = await _userService.ResetPasswordAsync(cliente.Usuario, cliente.Password, uat.Password1.ToString());
-                if (user.Succeeded)
+                //var user2 = await _userService.ResetPasswordAsync(user, user.Password, uat.Password1.ToString());
+
+                var token = await _userService.GeneratePasswordResetTokenAsync(user);
+
+                // Resetear la contraseña del usuario
+                var result = await _userService.ResetPasswordAsync(user, token, uat.Password1.ToString());
+
+                if (result.Succeeded)
                 {
-                    cliente.Usuario.Password = uat.Password1.ToString();
-                    _context.Usuarios.Update(cliente.Usuario);
-                    _context.SaveChanges();
+                    //user.Password = uat.Password1.ToString();
+                    //_context.Usuarios.Update(user);
+                    //_context.SaveChanges();
                     uat.Status = 200;
                     uat.Mensaje = "Exito contraseña cambiada correctamente  ";
                 }

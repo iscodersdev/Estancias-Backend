@@ -1,21 +1,22 @@
-﻿using System;  
-using DAL.Data;
-using System.Net.Http;
-using System.Linq;
+﻿using DAL.Data;
 using DAL.Models;
-using MimeKit;
-using MimeKit.Text;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Configuration;
+using MimeKit;
+using MimeKit.Text;
+using Org.BouncyCastle.Utilities.Encoders;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
-using System.IO;
+using System;  
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
-using Microsoft.Extensions.Configuration;
-using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 namespace EstanciasCore.Services
 {
     public class MercadoPagoServices
@@ -35,8 +36,8 @@ namespace EstanciasCore.Services
             using (HttpClient client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", toke);
-
-                HttpResponseMessage response = await client.GetAsync(Url+Id);
+                string fullUrl = Url + Id;
+                HttpResponseMessage response = await client.GetAsync(fullUrl);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -62,7 +63,7 @@ namespace EstanciasCore.Services
 
         public class Payment
         {
-            public long Id { get; set; }
+            public string Id { get; set; }
 
             [JsonPropertyName("date_created")]
             public DateTime DateCreated { get; set; }
@@ -95,7 +96,7 @@ namespace EstanciasCore.Services
             public string Description { get; set; }
 
             [JsonPropertyName("collector_id")]
-            public int CollectorId { get; set; }
+            public long CollectorId { get; set; }
 
             [JsonPropertyName("payer")]
             public Payer Payer { get; set; }
@@ -132,7 +133,7 @@ namespace EstanciasCore.Services
         public class Payer
         {
             [JsonPropertyName("id")]
-            public int Id { get; set; }
+            public string Id { get; set; }
 
             [JsonPropertyName("email")]
             public string Email { get; set; }
@@ -170,6 +171,43 @@ namespace EstanciasCore.Services
             public decimal InstallmentAmount { get; set; }
         }
 
+
+        //Respuesta
+
+        public class PaymentNotification
+        {
+            [JsonPropertyName("action")]
+            public string Action { get; set; }
+
+            [JsonPropertyName("api_version")]
+            public string ApiVersion { get; set; }
+
+            [JsonPropertyName("data")]
+            public PaymentData Data { get; set; }
+
+            [JsonPropertyName("date_created")]
+            public DateTimeOffset DateCreated { get; set; }
+
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
+
+            [JsonPropertyName("live_mode")]
+            public bool LiveMode { get; set; }
+
+            [JsonPropertyName("type")]
+            public string Type { get; set; }
+
+            [JsonPropertyName("user_id")]
+            public long UserId { get; set; }
+        }
+
+        public class PaymentData
+        {
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
+            [JsonPropertyName("uat")]
+            public string UAT { get; set; }
+        }
 
     }
 }
