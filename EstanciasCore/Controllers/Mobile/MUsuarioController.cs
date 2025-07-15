@@ -49,13 +49,14 @@ namespace EstanciasCore.Controllers
         private readonly IDatosTarjetaService _datosServices;
         public bool test = false;
         public string CorreTest = "jorgecutuli@hotmail.com";
-        public MUsuarioController(EstanciasContext context, UserService<Usuario> userService, SignInManager<Usuario> signInManager, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider)
+        public MUsuarioController(EstanciasContext context, UserService<Usuario> userService, SignInManager<Usuario> signInManager, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider, IDatosTarjetaService datosServices)
         {
             _context = context;
             _userService = userService;
             _signInManager = signInManager;
             _viewEngine = viewEngine;
             _serviceProvider = serviceProvider;
+            _datosServices = datosServices;
         }
         [HttpPost]
         [Route("Login")]

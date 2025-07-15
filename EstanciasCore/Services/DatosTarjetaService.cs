@@ -2,6 +2,7 @@
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
+using EstanciasCore.Controllers;
 using EstanciasCore.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,8 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Serilog.Core;
 using System;  
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,16 +36,18 @@ namespace EstanciasCore.Services
         private EstanciasContext _context { get; set; }
         private readonly IRazorViewEngine _razorViewEngine;
         private readonly ITempDataProvider _tempDataProvider;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider; 
+        private readonly ILogger<DatosTarjetaService> _logger;
 
 
-        public DatosTarjetaService(IConfiguration configuration, EstanciasContext context, IRazorViewEngine razorViewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider)
+        public DatosTarjetaService(IConfiguration configuration, EstanciasContext context, IRazorViewEngine razorViewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider, ILogger<DatosTarjetaService> logger)
         {
             _Configuration = configuration;
             _context=context;
             _razorViewEngine = razorViewEngine;
             _tempDataProvider = tempDataProvider;
             _serviceProvider = serviceProvider;
+            _logger = logger;
         }
 
         private async Task<string> ObtenerDatos(string usuario, string clave, long documento, long numeroTarjeta, long cantidadMovimientos)
@@ -357,16 +362,32 @@ namespace EstanciasCore.Services
                 var cronometro = Stopwatch.StartNew();
                 IQueryable<Usuario> listUsuario = _context.Usuarios;
 
+                bool hayCambiosParaGuardar = false;
+                bool nuevasEntidadesParaGuardar = false;
                 foreach (var usuario in listUsuario)
                 {
-                    bool hayCambiosParaGuardar = false;
-                    bool nuevasEntidadesParaGuardar = false;
                     DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
-                    CombinedData data = await ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(usuario.Personas.NroTarjeta), 100, 0);
+
+                    if (usuario.Personas==null) continue;
+
+                    if (usuario.Personas.NroDocumento == "" || usuario.Personas.NroTarjeta=="") continue;
+
+                    string numeroTarjetaConError = usuario.Personas.NroTarjeta;
+                    if (!long.TryParse(numeroTarjetaConError, out long resultado))
+                    {
+                        _logger.LogWarning($"El número de tarjeta '{numeroTarjetaConError}' no es válido y será omitido.");
+                        continue;
+                    }
+
+                    CombinedData data = await ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, resultado, 100, 0);
                     List<Periodo> listaDePeriodos = await _context.Periodo.ToListAsync();
 
+                    _logger.LogInformation("Usuario - " + usuario.UserName);
                     // --- MARCAR MOVIMIENTOS COMO PAGADOS ---
                     // 1. Crear un HashSet con las claves únicas (Solicitud+Cuota) que vienen del servicio.
+
+                    if (data.Detalle.Resultado != "EXITO") continue;
+
                     var cuotasExternas = data.DetallesSolicitud.SelectMany(detalle => detalle.DetallesCuota.Select(cuota => new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota))).ToHashSet();
 
                     // 2. Obtener movimientos no están pagados.
@@ -416,12 +437,19 @@ namespace EstanciasCore.Services
 
                             }
 
+                            if (!decimal.TryParse(cuota.Monto, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out decimal monto))
+                            {
+                                // Si falla, loguea la cuota problemática y sáltala.
+                                _logger.LogWarning($"El monto '{cuota.Monto}' no tiene un formato decimal válido. Se omite la cuota.");
+                                continue;
+                            }
+
                             _context.MovimientoTarjeta.Add(new MovimientoTarjeta
                             {
                                 NroSolicitud = detalle.NumeroSolicitud,
                                 NombreComercio = detalle.NombreComercio,
                                 NroCuota = cuota.NumeroCuota,
-                                Monto = Convert.ToDecimal(cuota.Monto, CultureInfo.InvariantCulture),
+                                Monto = monto,
                                 Fecha = fechaMovimiento,
                                 Usuario = usuario,
                                 Periodo = periodo,
@@ -430,13 +458,13 @@ namespace EstanciasCore.Services
                             });
                             contNew++;
                         }
-                    }
+                    }                
+                }
 
-                    // 5. GUARDAR TODOS LOS CAMBIOS UNA SOLA VEZ
-                    if (hayCambiosParaGuardar)
-                    {
-                        await _context.SaveChangesAsync();
-                    }                  
+                // 5. GUARDAR TODOS LOS CAMBIOS UNA SOLA VEZ
+                if (hayCambiosParaGuardar)
+                {
+                    await _context.SaveChangesAsync();
                 }
                 cronometro.Stop();
 
