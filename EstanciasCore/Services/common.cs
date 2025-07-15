@@ -555,6 +555,27 @@ namespace EstanciasCore.Services
 
         }
 
+        private static void SetearCultureInfoES()
+        {
+            CultureInfo cultura = new CultureInfo("es-ES");
+            CultureInfo.CurrentCulture = cultura;
+            CultureInfo.CurrentUICulture = cultura;
+        }
+
+        public static DateTime ConvertirFecha(string fecha)
+        {
+            SetearCultureInfoES();
+            DateTime fechaIngresada;
+            if (DateTime.TryParse(fecha, out fechaIngresada))
+            {
+                return fechaIngresada;
+            }
+            else
+            {
+                return fechaIngresada;
+            }
+        }
+
         //public static HttpStatusCode EnviaNotificationWonderPushId(string title, string message, string[] deviceId)
         //{
         //	HttpClient _httpClient = new HttpClient();
@@ -1022,26 +1043,7 @@ namespace EstanciasCore.Services
             }
             return returnValue;
         }
-        private void SetearCultureInfoES()
-        {
-            CultureInfo cultura = new CultureInfo("es-ES");
-            CultureInfo.CurrentCulture = cultura;
-            CultureInfo.CurrentUICulture = cultura;
-        }
 
-        public DateTime ConvertirFecha(string fecha)
-        {
-            SetearCultureInfoES();
-            DateTime fechaIngresada;
-            if (DateTime.TryParse(fecha, out fechaIngresada))
-            {
-                return fechaIngresada;
-            }
-            else
-            {
-                return fechaIngresada;
-            }
-        }
-
+        
     }
 }

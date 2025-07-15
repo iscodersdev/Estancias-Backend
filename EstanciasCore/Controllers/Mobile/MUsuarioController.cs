@@ -1,39 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Cors;
-using DAL.Data;
-using DAL.Models;
-using System.Linq;
-using Microsoft.AspNetCore.Authorization;
-using System.Threading.Tasks;
+﻿using Commons.Controllers;
 using Commons.Identity.Services;
-using Commons.Controllers;
-using EstanciasCore.Services;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.CodeAnalysis;
-using DAL.Models.Core;
-using DAL.Mobile;
-using Newtonsoft.Json;
-using System.Net.Http;
-using System.Text;
-using DAL.DTOs.Servicios;
+using DAL.Data;
 using DAL.DTOs;
-using System.IO;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.ViewEngines;
+using DAL.DTOs.Servicios;
+using DAL.Mobile;
+using DAL.Models;
+using DAL.Models.Core;
+using DataTablesParser;
+using EstanciasCore.Areas.Administracion.ViewModels;
+using EstanciasCore.Interface;
+using EstanciasCore.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
-using MySql.Data.MySqlClient.Memcached;
 using Microsoft.Win32;
-using RestSharp;
+using MySql.Data.MySqlClient.Memcached;
 using MySqlX.XDevAPI.Common;
-using EstanciasCore.Areas.Administracion.ViewModels;
-using DataTablesParser;
+using Newtonsoft.Json;
+using RestSharp;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace EstanciasCore.Controllers
 {
@@ -45,6 +46,7 @@ namespace EstanciasCore.Controllers
         public EstanciasContext _context;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IDatosTarjetaService _datosServices;
         public bool test = false;
         public string CorreTest = "jorgecutuli@hotmail.com";
         public MUsuarioController(EstanciasContext context, UserService<Usuario> userService, SignInManager<Usuario> signInManager, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider)
@@ -338,6 +340,7 @@ namespace EstanciasCore.Controllers
             }
             return Registro;
         }
+
         [HttpPost]
         [Route("TraeEmpresas")]
         [EnableCors("CorsPolicy")]
@@ -450,6 +453,7 @@ namespace EstanciasCore.Controllers
             _context.SaveChanges();
             return uat;
         }
+
         [HttpPost]
         [Route("ActualizaDatosLocalidad")]
         [EnableCors("CorsPolicy")]
@@ -499,6 +503,7 @@ namespace EstanciasCore.Controllers
             _context.SaveChanges();
             return uat;
         }
+
         [HttpPost]
         [Route("RecuperaPassword")]
         [EnableCors("CorsPolicy")]
@@ -598,8 +603,6 @@ namespace EstanciasCore.Controllers
             }
         }
 
-
-
         [HttpPost]
         [Route("ValidarPassword")]
         [EnableCors("CorsPolicy")]
@@ -665,6 +668,7 @@ namespace EstanciasCore.Controllers
 
             return uat;
         }
+
         [HttpPost]
         [Route("PreLogin")]
         [EnableCors("CorsPolicy")]
@@ -723,6 +727,7 @@ namespace EstanciasCore.Controllers
             }
             return Login;
         }
+
         [Route("PreLogin20")]
         [EnableCors("CorsPolicy")]
         [AllowAnonymous]
@@ -829,7 +834,6 @@ namespace EstanciasCore.Controllers
             }
         }
 
-
         [HttpPost]
         [Route("TraeCredenciales")]
         [EnableCors("CorsPolicy")]
@@ -878,7 +882,6 @@ namespace EstanciasCore.Controllers
             return uat;
         }
 
-
         [HttpPost]
         [Route("ObtenerMailCPE")]
         [EnableCors("CorsPolicy")]
@@ -916,6 +919,30 @@ namespace EstanciasCore.Controllers
                 return preregistro;
             }
         }
+
+
+        [HttpGet("SincronizarMovimientos")]
+        [EnableCors("CorsPolicy")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RegistrarPago()
+        {
+            try
+            {
+                var procedimiento = _context.Procedimientos.Where(x => x.Codigo=="SynchronizeMovement").FirstOrDefault();
+                if (procedimiento.Activo)
+                {
+                    var result = await _datosServices.ActualizarMovimientosAsync();
+                    return result;
+                }
+                return new JsonResult(new { mesanje = "Procedimiento Desactivado", code = 200 });
+
+            }
+            catch (Exception e)
+            {
+                return new JsonResult(new { mesanje = "Error - "+e.Message, code = 500 });
+            }
+        }
+
 
 
         private void UpdateUser(Usuario usuario, Clientes cliente)

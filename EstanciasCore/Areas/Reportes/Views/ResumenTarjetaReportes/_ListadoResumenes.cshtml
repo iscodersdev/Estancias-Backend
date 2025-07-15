@@ -1,0 +1,49 @@
+@model List<DAL.DTOs.Reportes.ResumenTarjetaDTO>
+
+<div class="box box-primary">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Comprobantes</span>
+    </div>
+    <div class="box-body">
+        <div class="table-responsive">
+            <table id="tablaResumenes" class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Período</th>
+                        <th>Fecha Vencimiento</th>
+                        <th>Monto Adeudado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null)
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.Periodo</td>
+                                <td>@item.FechaVencimiento</td>
+                                <td>@item.MontoAdeudado.ToString("C", new System.Globalization.CultureInfo("es-AR"))</td>
+                                <td>
+                                    <a href="@Url.Action("DescargarResumen", "ResumenTarjetaReportes", new { area = "Reportes", periodoId = item.PeriodoId, usuarioId = item.UsuarioId })" class="btn btn-danger btn-sm" title="Descargar Resumen en PDF">
+                                        <i class="fa fa-file-pdf-o"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center">No se encontraron resultados para los filtros aplicados.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    // Si usas DataTables, puedes inicializarlo aquí.
+    // $('#tablaResumenes').DataTable();
+</script>

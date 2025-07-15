@@ -1,22 +1,34 @@
 ﻿using DAL.Data;
+using DAL.DTOs;
 using DAL.DTOs.API;
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
 using EstanciasCore.API.Filters;
+using EstanciasCore.Areas.Administracion.ViewModels;
+using EstanciasCore.Interface;
 using EstanciasCore.Services;
 using Google.Protobuf.WellKnownTypes;
+using iText.Html2pdf;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Razor.Internal;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OfficeOpenXml.ConditionalFormatting;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
+using Org.BouncyCastle.Ocsp;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using static EstanciasCore.Services.MercadoPagoServices;
+using PagoTarjetaDTO = DAL.Mobile.PagoTarjetaDTO;
 
 namespace EstanciasCore.API.Controllers.Billetera
 {
@@ -26,9 +38,11 @@ namespace EstanciasCore.API.Controllers.Billetera
     public class MTarjetasController : BaseApiController
     {
         private readonly MercadoPagoServices _mp;
+        private readonly IDatosTarjetaService _datosServices;
 
-        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp) : base(context)
+        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices) : base(context)
         {
+            _datosServices = datosServices;
             _mp = mp;
         }
 
@@ -53,6 +67,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             }
 
         }
+
         [HttpPost("MovimientoTarjeta")]
         public IActionResult MovimientoTarjeta([FromBody] ListaMovimientoTarjetaDTO movimientostarjetaDTOS)
         {
@@ -62,89 +77,85 @@ namespace EstanciasCore.API.Controllers.Billetera
                 if (usuario == null)
                     return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"no existe UAT de Usuario" });
 
-                DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
-                var tipomov = _context.TipoMovimientoTarjeta.Where(x=>x.Id == movimientostarjetaDTOS.tipomovimiento).FirstOrDefault();
-                var movtarj = new MovPersona();
-
-                //var nuevosMovimientos = movtarj.ConsultarMovimientosTarjetas2(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, movimientostarjetaDTOS.CantMovimientos,movimientostarjetaDTOS.tipomovimiento);
-                var nuevosMovimientos = movtarj.ConsultarMovimientosTarjetas2(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10000,movimientostarjetaDTOS.tipomovimiento);
-
-                if (nuevosMovimientos.Detalle.Resultado == "EXITO")
+                var procedimiento = _context.Procedimientos.Where(x => x.Codigo=="SynchronizeMovementIndividual").FirstOrDefault();
+                if (procedimiento.Activo)
                 {
-                    List<MovimientoTarjetaDTO> resultadoNuevos = new List<MovimientoTarjetaDTO>();
-                    List<MovimientoTarjetaDTO> resultadoNuevosCompras = new List<MovimientoTarjetaDTO>();
-                    if (movimientostarjetaDTOS.tipomovimiento == 0)
+                    _datosServices.ActualizarMovimientosAsync(usuario);
+                }
+
+                DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
+                var tipomov = _context.TipoMovimientoTarjeta.Where(x => x.Id == movimientostarjetaDTOS.tipomovimiento).FirstOrDefault();
+
+                var movimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, movimientostarjetaDTOS.CantMovimientos, movimientostarjetaDTOS.tipomovimiento).Result;
+
+                if (movimientos.Detalle.Resultado == "EXITO")
+                {
+                    List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+                    if (movimientostarjetaDTOS.tipomovimiento == 0) //Todos los movimientos
                     {
-                        resultadoNuevos = nuevosMovimientos.Movimientos.Where(x=>x.Descripcion=="PAGOS DE CUOTA REGULAR")
+                        comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
                         .GroupBy(m => new { m.Descripcion, m.Fecha })
                         .Select(g => new MovimientoTarjetaDTO
                         {
-                            //Monto = g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ","),
-                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
                             TipoMovimiento = g.Key.Descripcion,
                             Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
                         })
                         .ToList();
 
-                        resultadoNuevosCompras = nuevosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+                        comprasAgrupadas.AddRange(movimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
                         .Select(g => new MovimientoTarjetaDTO
                         {
                             Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
                             TipoMovimiento = g.Descripcion,
                             Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
-                        }).ToList();
-
-                        resultadoNuevos.AddRange(resultadoNuevosCompras);
+                        }).ToList());
                     }
                     else
                     {
-                        resultadoNuevos = nuevosMovimientos.Movimientos.Where(x => x.Descripcion == tipomov.Nombre)
+                        comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion == tipomov.Nombre)
                        .GroupBy(m => new { m.Descripcion, m.Fecha })
                        .Select(g => new MovimientoTarjetaDTO
                        {
-                           //Monto = g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ","),
                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
                            TipoMovimiento = g.Key.Descripcion,
                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
                        })
                        .ToList();
-
                     }
 
 
-                    List<ListDetalleCuotaDTO> listDetalle = new List<ListDetalleCuotaDTO>();
+                    List<ListDetalleCuotaDTO> movimientosDetalles = new List<ListDetalleCuotaDTO>();
 
-				    foreach (var item in nuevosMovimientos.DetallesSolicitud)
+                    //var movi = movimientos.DetallesSolicitud.Where(x=>x.DetallesCuota.Where(e=>e.Fecha))
+
+                    foreach (var item in movimientos.DetallesSolicitud)
                     {
                         foreach (var itemMovimiento in item.DetallesCuota)
                         {
-						    if (listDetalle.Any(x => x.Fecha == itemMovimiento.Fecha))
-						    {
-                                var detalle = listDetalle.Where(x => x.Fecha == itemMovimiento.Fecha).First();
+                            if (movimientosDetalles.Any(x => x.Fecha == itemMovimiento.Fecha))
+                            {
+                                var detalle = movimientosDetalles.Where(x => x.Fecha == itemMovimiento.Fecha).First();
                                 detalle.Monto = (Convert.ToDecimal(detalle.Monto) + Convert.ToDecimal(itemMovimiento.Monto)).ToString();
                             }
                             else
                             {
-                                listDetalle.Add(new ListDetalleCuotaDTO()
+                                movimientosDetalles.Add(new ListDetalleCuotaDTO()
                                 {
                                     Fecha = itemMovimiento.Fecha,
                                     Monto = itemMovimiento.Monto
                                 });
-						    }
-					    }
+                            }
+                        }
                     }
 
-
-
-                    string saldoVencidoAcumulado= "0.0";
-                    string sumaProximoVencimientoAcumulado="0.0";
+                    string saldoVencidoAcumulado = "0.0";
+                    string sumaProximoVencimientoAcumulado = "0.0";
                     bool cuotaVencida = false;
                     string fechaSiguienteCuota = "";
                     DateTime? fechaProximoPago = null;
 
-                    
-
-                    foreach (var item in listDetalle.OrderBy(x=> ConvertirFecha(x.Fecha)))
+                    foreach (var item in movimientosDetalles.OrderBy(x => ConvertirFecha(x.Fecha)))
                     {
 
                         if (VerificarVencimiento(item.Fecha))
@@ -159,7 +170,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                         {
                             if (fechaSiguienteCuota=="")
                                 fechaSiguienteCuota = item.Fecha;
-                            
+
                             if ((ConvertirFecha(item.Fecha).Month==(ConvertirFecha(fechaSiguienteCuota).Month)) && (ConvertirFecha(item.Fecha).Year==ConvertirFecha(fechaSiguienteCuota).Year))
                             {
                                 if (fechaProximoPago==null)
@@ -174,20 +185,20 @@ namespace EstanciasCore.API.Controllers.Billetera
 
                     }
                     SetearCultureInfoUS();
-                    sumaProximoVencimientoAcumulado = (Convert.ToDecimal(sumaProximoVencimientoAcumulado)+Convert.ToDecimal(saldoVencidoAcumulado)).ToString();                    
+                    sumaProximoVencimientoAcumulado = (Convert.ToDecimal(sumaProximoVencimientoAcumulado)+Convert.ToDecimal(saldoVencidoAcumulado)).ToString();
 
                     bool ContieneLeyenda = false;
                     string Leyenda = "";
                     var LeyendaTexto = _context.LeyendaTipoMovimiento.FirstOrDefault();
-                    
-                    if(resultadoNuevos.Where(x=>x.TipoMovimiento == LeyendaTexto.NombreMovimiento).Count()>0 && LeyendaTexto.Activo==true)
+
+                    if (comprasAgrupadas.Where(x => x.TipoMovimiento == LeyendaTexto.NombreMovimiento).Count()>0 && LeyendaTexto.Activo==true)
                     {
                         ContieneLeyenda = true;
                         Leyenda = LeyendaTexto.TextoLeyenda;
                     }
 
 
-                    List<MovimientoTarjetaDTO> MovimientosTarjeta = nuevosMovimientos.Movimientos
+                    List<MovimientoTarjetaDTO> MovimientosTarjeta = movimientos.Movimientos
                         .Select(mov => new MovimientoTarjetaDTO
                         {
                             TipoMovimiento = mov.Descripcion,
@@ -208,25 +219,27 @@ namespace EstanciasCore.API.Controllers.Billetera
                         saldoVencidoAcumulado = "0.0";
                     }
 
-                    var MovientosOrdenadosPorFecha = resultadoNuevos.OrderByDescending(x => ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(movimientostarjetaDTOS.CantMovimientos)).ToList();
+                    var MovientosOrdenadosPorFecha = comprasAgrupadas.OrderByDescending(x => ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(movimientostarjetaDTOS.CantMovimientos)).ToList();
 
                     return new JsonResult(
-                        new ListaMovimientoTarjetaDTO { 
-                            Status = 200, UAT = movimientostarjetaDTOS.UAT, 
+                        new ListaMovimientoTarjetaDTO
+                        {
+                            Status = 200,
+                            UAT = movimientostarjetaDTOS.UAT,
                             Mensaje = "Movimiento obtenidos",
-                            NroTarjeta = movimientostarjetaDTOS.NroTarjeta, 
-                            NroDocumento = Convert.ToInt32(usuario.Personas.NroDocumento), 
-                            Direccion = nuevosMovimientos.Detalle.Direccion, 
-                            MontoAdeudado = saldoVencidoAcumulado.Replace(".", ","), 
+                            NroTarjeta = movimientostarjetaDTOS.NroTarjeta,
+                            NroDocumento = Convert.ToInt32(usuario.Personas.NroDocumento),
+                            Direccion = movimientos.Detalle.Direccion,
+                            MontoAdeudado = saldoVencidoAcumulado.Replace(".", ","),
                             ProximaFechaPago = fechaProximoPago?.ToString("dd/MM/yyyy"),
                             CuotaVencida = cuotaVencida,
-						    TotalProximaCuota = sumaProximoVencimientoAcumulado.Replace(".", ","), 
-                            CantMovimientos = movimientostarjetaDTOS.CantMovimientos, 
-                            Resultado = nuevosMovimientos.Detalle.Resultado, 
-                            Nombre = nuevosMovimientos.Detalle.Nombre, 
+                            TotalProximaCuota = sumaProximoVencimientoAcumulado.Replace(".", ","),
+                            CantMovimientos = movimientostarjetaDTOS.CantMovimientos,
+                            Resultado = movimientos.Detalle.Resultado,
+                            Nombre = movimientos.Detalle.Nombre,
                             FechaPagoProximaCuota = fechaProximoPago?.ToString("dd/MM/yyyy"),
                             MovimientosTarjeta = MovientosOrdenadosPorFecha,
-                            MontoDisponible = nuevosMovimientos.Detalle.MontoDisponible.Replace(".", ","),
+                            MontoDisponible = movimientos.Detalle.MontoDisponible.Replace(".", ","),
                             ContieneLeyenda = ContieneLeyenda,
                             Leyenda = Leyenda,
                             Telefono = empresa.Telefono
@@ -244,107 +257,59 @@ namespace EstanciasCore.API.Controllers.Billetera
 
         }
 
+        [HttpPost("TraePeriodos")]
+        public async Task<IActionResult> TraePeriodos(TraePeriodosDTO body)
+        {
+            TraePeriodosDTO traePeriodosDTO = new TraePeriodosDTO() { UAT = body.UAT };
 
+            var usuario = TraeUsuarioUAT(body.UAT);
+            if (usuario == null)
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = traePeriodosDTO.UAT, Mensaje = $"no existe UAT de Usuario" });
 
-		[HttpPost("MovimientoTarjetaOld")]
-		public IActionResult MovimientoTarjetaOld([FromBody] ListaMovimientoTarjetaDTO movimientostarjetaDTOS)
-		{
-			try
-			{
-				var usuario = TraeUsuarioUAT(movimientostarjetaDTOS.UAT);
-				if (usuario == null)
-					return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"no existe UAT de Usuario" });
+            var periodos = await _context.Periodo.Select(x=> new PeriodoDTO() { FechaDesde = x.FechaDesde, FechaHasta = x.FechaHasta, Id = x.Id, Nombre = x.Descripcion }).ToListAsync();
+            if (periodos == null || !periodos.Any())
+            {
+                return NotFound("No se encontraron periodos.");
+            }
+            traePeriodosDTO.Periodos = periodos.OrderByDescending(x => x.FechaDesde).ToList();
+            traePeriodosDTO.Status = 200;
+            traePeriodosDTO.Mensaje = "Periodos obtenidos con exito";
+            return new JsonResult(traePeriodosDTO);
+        }
 
-				DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
-				var tipomov = _context.TipoMovimientoTarjeta.Where(x => x.Id == movimientostarjetaDTOS.tipomovimiento).FirstOrDefault();
-				var movtarj = new MovPersona();
-				movimientostarjetaDTOS = movtarj.ConsultarMovimientosTarjetas(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, movimientostarjetaDTOS.CantMovimientos, movimientostarjetaDTOS.tipomovimiento);
-				if (movimientostarjetaDTOS.Resultado == "EXITO")
-				{
-					List<MovimientoTarjetaDTO> resultado = new List<MovimientoTarjetaDTO>();
-					if (movimientostarjetaDTOS.tipomovimiento == 0)
-					{
-						resultado = movimientostarjetaDTOS.MovimientosTarjeta
-						.GroupBy(m => new { m.TipoMovimiento, m.Fecha })
-						.Select(g => new MovimientoTarjetaDTO
-						{
-							Monto = g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ","),
-							//Monto = g.Sum(m => Convert.ToDecimal(m.Monto.ToString())).ToString(),
-							TipoMovimiento = g.Key.TipoMovimiento,
-							Fecha = g.Key.Fecha
-						})
-						.ToList();
-					}
-					else
-					{
-						resultado = movimientostarjetaDTOS.MovimientosTarjeta.Where(x => x.TipoMovimiento == tipomov.Nombre)
-					   .GroupBy(m => new { m.TipoMovimiento, m.Fecha })
-					   .Select(g => new MovimientoTarjetaDTO
-					   {
-						   Monto = g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ","),
-						   //Monto = g.Sum(m => Convert.ToDecimal(m.Monto.ToString())).ToString(),
-						   TipoMovimiento = g.Key.TipoMovimiento,
-						   Fecha = g.Key.Fecha
-					   })
-					   .ToList();
+        [HttpPost("DescargarResumen")]
+        public async Task<IActionResult> DescargarResumen(MovimientosTarjetaDTO body)
+        {
+            var usuario = TraeUsuarioUAT(body.UAT);
+            if (usuario == null)
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = body.UAT, Mensaje = $"no existe UAT de Usuario" });
 
-					}
+            var datosParaElResumen = await _datosServices.PrepararDatosDTO(body.PeriodoId, usuario.Id);
+            if (datosParaElResumen == null)
+            {
+                return NotFound(new { error = "No se encontraron datos para generar el resumen." });
+            }
 
-					//var resultado2 = resultado.Take(20).Sum(x => Convert.ToDouble(x.Monto));
-					var resultado2 = movimientostarjetaDTOS.DetalleMovimientosTarjeta.Where(y => y.Fecha <= Convert.ToDateTime(movimientostarjetaDTOS.FechaPagoProximaCuota)).ToList();////;
-																																													   //var resultado2 = movimientostarjetaDTOS.DetalleMovimientosTarjeta.ToList();
+            string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaElResumen);
+            byte[] pdfBytes;
+            using (var memoryStream = new MemoryStream())
+            {
+                HtmlConverter.ConvertToPdf(html, memoryStream);
+                pdfBytes = memoryStream.ToArray();
+            }
 
-					var resu = resultado2.Sum(x => Convert.ToDecimal(x.Monto.Replace(",", "."))).ToString().Replace(".", ",");
-					//var resu = resultado2.Sum(x => Convert.ToDecimal(x.Monto.Replace(".",",").ToString())).ToString();
-					bool ContieneLeyenda = false;
-					string Leyenda = "";
+            // --- 3. Devuelve un objeto JSON con los datos del archivo ---
+            string nombreArchivo = $"Resumen_{datosParaElResumen.Periodo.Descripcion.Replace(" ", "_")}.pdf";
 
-					var LeyendaTexto = _context.LeyendaTipoMovimiento.FirstOrDefault();
+            return Ok(new
+            {
+                FileName = nombreArchivo,
+                MimeType = "application/pdf",
+                FileContents = pdfBytes // Esto se enviará como un string Base64
+            });
+        }
 
-					if (resultado.Where(x => x.TipoMovimiento == LeyendaTexto.NombreMovimiento).Count()>1 && LeyendaTexto.Activo==true)
-					{
-						ContieneLeyenda = true;
-						Leyenda = LeyendaTexto.TextoLeyenda;
-					}
-
-					movimientostarjetaDTOS.MovimientosTarjetaSuma = resultado;
-					return new JsonResult(
-						new ListaMovimientoTarjetaDTO
-						{
-							Status = 200,
-							UAT = movimientostarjetaDTOS.UAT,
-							Mensaje = "Movimiento obtenidos",
-							NroTarjeta = movimientostarjetaDTOS.NroTarjeta,
-							NroDocumento = Convert.ToInt32(usuario.Personas.NroDocumento),
-							Direccion = movimientostarjetaDTOS.Direccion,
-							MontoAdeudado = resu,
-							ProximaFechaPago = movimientostarjetaDTOS.ProximaFechaPago,
-							CuotaVencida = VerificarVencimiento(movimientostarjetaDTOS.ProximaFechaPago),
-							TotalProximaCuota = movimientostarjetaDTOS.TotalProximaCuota,
-							CantMovimientos = movimientostarjetaDTOS.CantMovimientos,
-							Resultado = movimientostarjetaDTOS.Resultado,
-							Nombre = movimientostarjetaDTOS.Nombre,
-							FechaPagoProximaCuota = movimientostarjetaDTOS.FechaPagoProximaCuota,
-							MovimientosTarjeta = movimientostarjetaDTOS.MovimientosTarjetaSuma,
-							MontoDisponible = movimientostarjetaDTOS.MontoDisponible,
-							ContieneLeyenda = ContieneLeyenda,
-							Leyenda = Leyenda,
-							Telefono = empresa.Telefono
-						});
-				}
-				else
-					return new JsonResult(new ListaMovimientoTarjetaDTO { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No existe datos de la tarjeta" });
-
-			}
-			catch (Exception e)
-			{
-				Log.Error($"Error en creacion de tarjeta - {e.Message}");
-				return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"Error en creacion de terjeta" });
-			}
-
-		}
-
-		[HttpPost("SolicitarPagoTarjeta")]
+        [HttpPost("SolicitarPagoTarjeta")]
         public IActionResult SolicitarPagoTarjeta([FromBody] PagoTarjetaDTO pagotarjetaDTO)
         {
             try
@@ -510,6 +475,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             }
 
         }
+
         [HttpPost("SubirComprobantePagoTarjeta")]
         public IActionResult SubirComprobantePagoTarjeta([FromBody] PagoTarjetaDTO pagotarjetaDTO)
         {
@@ -691,7 +657,6 @@ namespace EstanciasCore.API.Controllers.Billetera
 
         }
 
-
 		[HttpPost("ObtenerComprobantes")]
 		public IActionResult ObtenerComprobantes([FromBody] ComprobantesDTO pagotarjetaDTO)
 		{
@@ -759,8 +724,6 @@ namespace EstanciasCore.API.Controllers.Billetera
 
 		}
 
-
-
 		[HttpPost("TraeDetalleSolicitudPago")]
         public IActionResult TraeDetalleSolicitudPago([FromBody] PagoTarjetaDTO pagotarjetaDTO)
         {
@@ -796,51 +759,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             }
 
         }
-
-        //[HttpPost("RegistrarPago")]
-        //[SkipChequeaUatApi]
-        //public async Task<IActionResult> RegistrarPago([FromBody] PaymentNotification pagotarjetaDTO)
-        //{
-        //    try
-        //    {
-        //        if(pagotarjetaDTO==null)
-        //            return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"no se recibieron datos" });
-
-        //        if (pagotarjetaDTO.Data==null)
-        //            return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"data se encuentra vacio" });
-
-        //        var usuario = TraeUsuarioUAT(pagotarjetaDTO.Data.UAT);
-        //        if (usuario == null)
-        //            return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"no existe UAT de Usuario" });
-
-        //        Payment payment = await _mp.GetPago(pagotarjetaDTO.Data.Id);
-        //        if (payment==null)
-        //        {
-        //            return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"No se pudo guardar el pago" });
-
-        //        }
-        //        ConciliacionDePago conciliacionDePago = new ConciliacionDePago
-        //        {
-        //            Fecha = DateTime.Now,
-        //            Monto = Convert.ToDecimal(payment.TransactionAmount),
-        //            Usuario = usuario,
-        //            MercadoPagoId = pagotarjetaDTO.Data.Id.ToString(),
-        //            Descripcion = payment.Description
-        //        };
-        //        conciliacionDePago.SetEstado(payment.Status);
-
-        //        _context.ConciliacionDePago.Add(conciliacionDePago);
-        //        _context.SaveChanges();
-        //        return new JsonResult(new RespuestaAPI { Status = 200, UAT = pagotarjetaDTO.Data.UAT, Mensaje = $"Se guardo el Pago correctamente" });
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Log.Error($"Error en creacion de tarjeta - {e.Message}");
-        //        return new JsonResult(new RespuestaAPI { Status = 500, Mensaje = $"Error - "+ e });
-        //    }
-        //}
-
-
+     
         [HttpPost("RegistrarPago")]
         public async Task<IActionResult> RegistrarPago([FromBody] MConciliacionDePagoDTO pagotarjetaDTO)
         {
@@ -875,8 +794,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 Log.Error($"Error en creacion de tarjeta - {e.Message}");
                 return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al obtener los comprobantes" });
             }
-        }
-
+        }       
 
 
         private bool VerificarVencimiento(string fecha)
@@ -884,13 +802,26 @@ namespace EstanciasCore.API.Controllers.Billetera
             SetearCultureInfoES();
             // Obtener la fecha actual
             DateTime fechaActual = DateTime.Now;
-            //DateTime fechaActual = DateTime.Today;
-            			
+            //DateTime fechaActual = DateTime.Today;            			
+
 			DateTime fechaIngresada;
-			if (DateTime.TryParse(fecha, out fechaIngresada))
+
+            var periodoActual = _context.Periodo
+                .FirstOrDefault(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta);
+
+
+            if (DateTime.TryParse(fecha, out fechaIngresada))
 			{
-				// Comparar la fecha ingresada con la fecha actual
-				if (fechaActual>fechaIngresada)
+
+                if (fechaIngresada<=periodoActual.FechaHasta)
+                {
+                    return true;
+                }
+                return false;
+
+
+                // Comparar la fecha ingresada con la fecha actual
+                if (fechaActual>fechaIngresada)
 				{
                     return true;
 				}
@@ -922,7 +853,6 @@ namespace EstanciasCore.API.Controllers.Billetera
             DateTime fecha = DateTime.Now.Date;
             return fecha;
         }
-
 
         private DateTime FechaActual2()
         {
@@ -962,7 +892,5 @@ namespace EstanciasCore.API.Controllers.Billetera
 
             return fechaReversa;
         }
-
-
     }
 }

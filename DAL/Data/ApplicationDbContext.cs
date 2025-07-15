@@ -21,17 +21,9 @@ namespace DAL.Data
         public DbSet<DatosEstructura> DatosEstructura { get; set; }
         public DbSet<Provincia> Provincia { get; set; }
         public DbSet<Localidad> Localidad { get; set; }
-        //public DbSet<Guarnicion> Guarniciones { get; set; }
         public DbSet<TipoDocumento> TipoDocumento { get; set; }
         public DbSet<Paises> Paises { get; set; }
         public DbSet<LeyendaTipoMovimiento> LeyendaTipoMovimiento { get; set; }
-        //public DbSet<EstadosCiviles> EstadosCiviles { get; set; }
-        //public DbSet<TiposPersonas> TiposPersonas { get; set; }
-        //public DbSet<Genero> Genero { get; set; }
-        //public DbSet<Organismo> Organismos { get; set; }
-        //public DbSet<CuotaSocial> CuotasSociales { get; set; }
-        //public DbSet<Inversor> Inversores { get; set; }
-        //public DbSet<TasaInversor> TasasInversores { get; set; }
 
         //CLIENTES
         public DbSet<Clientes> Clientes { get; set; }
@@ -43,27 +35,8 @@ namespace DAL.Data
         public DbSet<Grupos> Grupos { get; set; }
         public DbSet<Sucursales> Sucursales { get; set; }
 
-        //PRESTAMOS
-        //public DbSet<Prestamos> Prestamos { get; set; }
         public DbSet<Vendedores> Vendedores { get; set; }
-        //public DbSet<SistemasFinanciacion> SistemasFinanciacion { get; set; }
-        //public DbSet<FormasPago> FormasPago { get; set; }
         public DbSet<Monedas> Monedas { get; set; }
-        //public DbSet<LineasPrestamos> LineasPrestamos { get; set; }
-        //public DbSet<LineasPrestamosTiposPersonas> LineasPrestamosTiposPersonas { get; set; }
-        //public DbSet<LineasPrestamosPlanes> LineasPrestamosPlanes { get; set; }
-        //public DbSet<EstadosPrestamos> EstadosPrestamos { get; set; }
-        //public DbSet<DestinosFondos> DestinoFondos { get; set; }
-        //public DbSet<DestinosFondosRubros> DestinoFondosRubros { get; set; }
-        //public DbSet<TiposMovimientos> TiposMovimientos { get; set; }
-        //public DbSet<CuentasCorrientes> CuentasCorrientes { get; set; }
-    
-
-        //MATRIZ
-        //public DbSet<MatrizProbabilidades> MatrizProbabilidades { get; set; }
-        //public DbSet<MatrizConsecuencias> MatrizConsecuencias { get; set; }
-        //public DbSet<MatrizRiesgoCabecera> MatrizRiesgoCabeceras { get; set; }
-        //public DbSet<MatrizRiesgoRenglones> MatrizRiesgoRenglones { get; set; }
 
         //CORE
         public DbSet<UAT> UAT { get; set; }
@@ -84,7 +57,6 @@ namespace DAL.Data
         public DbSet<Horarios> Horarios { get; set; }
         public DbSet<CuentaCorriente> CuentaCorriente { get; set; }
         public DbSet<Conceptos> Conceptos { get; set; }
-        //public DbSet<Puestos> Puestos { get; set; }
         public DbSet<PuestosCodigos> PuestosCodigos { get; set; }
         public DbSet<Accesos> Accesos { get; set; }
         public DbSet<EstadosDeudas> EstadosDeudas { get; set; }
@@ -95,11 +67,6 @@ namespace DAL.Data
 
         //Billetera
         public DbSet<Billetera> Billeteras { get; set; }
-        //public DbSet<Tarjeta> Tarjetas { get; set; }
-        //public DbSet<CuentaBancaria> CuentasBancarias { get; set; }
-        //public DbSet<ServicioBilletera> ServiciosBilletera { get; set; }
-        //public DbSet<Banco> Bancos { get; set; }
-        //public DbSet<InstitucionFinanciera> InstitucionesFinancieras { get; set; }
         public DbSet<MovimientoBilletera> MovimientosBilletera { get; set; }
         public DbSet<TipoMovimientoBilletera> TipoMovimientoBilletera { get; set; }
         public DbSet<Compras> ComprasProductos { get; set; }
@@ -121,12 +88,15 @@ namespace DAL.Data
         public DbSet<HistorialDePuntos> HistorialDePuntos { get; set; }
         public DbSet<FotosPremios> FotosPremios { get; set; }
 
-
         public DbSet<Catalogo> Catalogo { get; set; }
-
-
         public DbSet<Configuracion> Configuracion { get; set; }
         public DbSet<ConciliacionDePago> ConciliacionDePago { get; set; }
+        public DbSet<Periodo> Periodo { get; set; }
+        public DbSet<MovimientoTarjeta> MovimientoTarjeta { get; set; }
+
+        //para ejecutar procedimientos almacenados o validaciones
+        public DbSet<Procedimientos> Procedimientos { get; set; }
+        public DbSet<LogProcedimientos> LogProcedimientos { get; set; }
 
 
 

@@ -101,7 +101,8 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                 reportes.TreeChild = new List<SidebarMenu>()
                 {
                     MenuHelpers.AddModule("Pagos Tarjeta", "/Reportes/PagoTarjetaReportes/"),
-                    MenuHelpers.AddModule("Clientes", "/Reportes/ClientesReportes/")
+                    MenuHelpers.AddModule("Clientes", "/Reportes/ClientesReportes/"),
+                    MenuHelpers.AddModule("Movimientos Tarjeta", "/Reportes/ResumenTarjetaReportes/")
                 };
 
                 sesion.TreeChild = new List<SidebarMenu>()

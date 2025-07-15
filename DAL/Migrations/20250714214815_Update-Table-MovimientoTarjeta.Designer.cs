@@ -4,14 +4,16 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(EstanciasContext))]
-    partial class EstanciasContextModelSnapshot : ModelSnapshot
+    [Migration("20250714214815_Update-Table-MovimientoTarjeta")]
+    partial class UpdateTableMovimientoTarjeta
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -752,33 +754,6 @@ namespace DAL.Migrations
                     b.ToTable("ListaDistribucion");
                 });
 
-            modelBuilder.Entity("DAL.Models.Core.LogProcedimientos", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("Codigo");
-
-                    b.Property<DateTime>("Fecha");
-
-                    b.Property<string>("Mesaje");
-
-                    b.Property<string>("Nombre");
-
-                    b.Property<int>("RegistrosActualizados");
-
-                    b.Property<int>("RegistrosNuevos");
-
-                    b.Property<string>("StatusCode");
-
-                    b.Property<long>("Tiempo");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("LogProcedimientos");
-                });
-
             modelBuilder.Entity("DAL.Models.Core.MovimientoBilletera", b =>
                 {
                     b.Property<int>("Id")
@@ -862,25 +837,6 @@ namespace DAL.Migrations
                     b.HasIndex("PersonaId");
 
                     b.ToTable("PagoTarjeta");
-                });
-
-            modelBuilder.Entity("DAL.Models.Core.Procedimientos", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<bool>("Activo");
-
-                    b.Property<string>("Codigo");
-
-                    b.Property<string>("Descripcion");
-
-                    b.Property<string>("Nombre");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Procedimientos");
                 });
 
             modelBuilder.Entity("DAL.Models.Core.Producto", b =>
@@ -1629,11 +1585,7 @@ namespace DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<string>("CantidadCuotas");
-
                     b.Property<DateTime>("Fecha");
-
-                    b.Property<DateTime>("FechaPago");
 
                     b.Property<decimal>("Monto");
 
@@ -1642,8 +1594,6 @@ namespace DAL.Migrations
                     b.Property<string>("NroCuota");
 
                     b.Property<string>("NroSolicitud");
-
-                    b.Property<bool>("Pagado");
 
                     b.Property<int?>("PeriodoId");
 

@@ -3,6 +3,8 @@ using Commons.Identity.DummyData;
 using Commons.Identity.Services;
 using DAL.Data;
 using DAL.Models;
+using EstanciasCore.Interface;
+using EstanciasCore.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +13,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using EstanciasCore.Services;
 using Newtonsoft.Json.Serialization;
 
 namespace EstanciasCore
@@ -59,6 +60,7 @@ namespace EstanciasCore
             services.AddCommonsLibraryViews();
             services.AddHttpContextAccessor();
             services.AddTransient<NotificacionAPIService>();
+            services.AddTransient<IDatosTarjetaService, DatosTarjetaService>();
             services.AddTransient<MercadoPagoServices>();
 
 			services.AddSession();

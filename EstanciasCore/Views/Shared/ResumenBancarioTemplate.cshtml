@@ -1,0 +1,233 @@
+@using System.Globalization
+@model DatosParaResumenDTO
+@{
+    Layout = null;
+    // Se define la cultura de Argentina para usarla en el formato de moneda.
+    var culturaAR = new CultureInfo("es-AR");
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Resumen de Cuenta</title>
+    <style>
+
+        /* Estilos sin cambios */
+                body {
+                        font-family: Arial, Helvetica, sans-serif;
+                        font-size: 9pt;
+                        color: #333;
+            margin: 0; /* Añadido para eliminar el margen por defecto del body */
+
+        }
+
+        /* --- INICIO DE NUEVOS ESTILOS --- */
+        .banner-superior {
+            background-color: #b4b4b4; /* Color azul verdoso del Banco Nación */
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-banco {
+            height: 40px; /* Ajusta la altura del logo según tu imagen */
+        }
+
+        .imagen-tarjeta {
+            height: 76px; /* Ajusta la altura de la tarjeta según tu imagen */
+        }
+        /* --- FIN DE NUEVOS ESTILOS --- */
+
+                .resumen-container {
+                        width: 100%;
+                        margin: 0 auto;
+            padding: 15px; /* Añadido para dar espacio al contenido principal */
+            box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+
+        }
+
+                .header-table {
+                        width: 100%;
+                        border-bottom: 1px solid #000;
+                        padding-bottom: 5px;
+                        margin-bottom: 10px;
+
+        }
+
+                    .header-table td {
+                            vertical-align: top;
+                            padding: 2px 0;
+
+        }
+
+                .header-right {
+                        text-align: right;
+
+        }
+
+                .data-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 15px;
+
+        }
+
+                    .data-table td {
+                            padding: 4px;
+
+        }
+
+                    .data-table .section-title td {
+                            font-weight: bold;
+                            border-bottom: 1px solid #999;
+                            padding-bottom: 5px;
+                            font-size: 10pt;
+
+        }
+
+                    .data-table .table-header td {
+                            font-weight: bold;
+
+        }
+
+                .text-right {
+                        text-align: right;
+
+        }
+
+                .text-center {
+                        text-align: center;
+
+        }
+
+                .summary-total-row td {
+                        font-weight: bold;
+                        border-top: 1px solid #999;
+                        padding-top: 5px;
+
+        }
+
+                .bold {
+                        font-weight: bold;
+
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="banner-superior">
+        <img src="http://portalestancias.com.ar/images/logo%20horizontal.png" alt="Logo Banco Nación" class="logo-banco" />
+
+        <img src="http://portalestancias.com.ar/images/TarjetaEstancia.png" alt="Tarjeta Mastercard" class="imagen-tarjeta" />
+    </div>
+    <div class="resumen-container">
+        <table class="header-table">
+            <tr>
+                <td>
+                    <div class="bold">@Model.Usuario.Personas.Nombres.ToUpper() @Model.Usuario.Personas.Apellido.ToUpper()</div>
+                    <div><span class="bold">Nº Documento:</span> @Model.Usuario.Personas.NroDocumento</div>
+                    <div class="bold">@Model.Usuario.Personas.Email.ToLower()</div>
+                    <div></div>
+                </td>
+                <td class="header-right">
+                   @*  <div>Hoja: 1 / 3</div> *@
+                    <div><span class="bold">Nº Socio: </span>@Model.Usuario.Id</div>
+                    <div><span class="bold">Nº Tarjeta:</span> @Model.Usuario.Personas.NroTarjeta</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="data-table">
+            <tr>
+                <td class="bold">Estado de cuenta al:</td>
+                <td>@Model.Periodo.FechaHasta.ToString("dd-MMM-yy")</td>
+                <td class="bold">Saldo actual:</td>
+                <td class="text-right">@Model.SaldoActual.ToString("C", culturaAR)</td>
+            </tr>
+            <tr>
+                <td class="bold">Vencimiento actual:</td>
+                <td >@Model.Periodo.FechaVencimiento.ToString("dd-MMM-yy")</td>
+               @*  <td class="bold">Pago Mínimo:</td>
+                <td class="text-right">@Model.PagoMinimo.ToString("C", culturaAR)</td> *@
+            </tr>
+            <tr>
+                <td class="bold">Próximo Cierre:</td>
+                <td >@Model.Periodo.FechaHasta.AddMonths(1).ToString("dd-MMM-yy")</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+
+        <table class="data-table">
+            <tr class="section-title">
+                <td colspan="2">RESUMEN CONSOLIDADO</td>
+            </tr>
+            <tr>
+                <td class="bold">SALDO ANTERIOR</td>
+                <td class="text-right">$ @Model.SaldoAnterior.ToString("N2", culturaAR)</td>
+            </tr>
+            @if (Model.Pagos != 0)
+            {
+                <tr>
+                    <td>SU PAGO</td>
+                    <td class="text-right">$ @Model.Pagos.ToString("N2", culturaAR)</td>
+                </tr>
+            }
+            <tr>
+                <td class="bold">TOTAL CONSUMOS DEL MES</td>
+                <td class="text-right">$ @Model.Movimientos.Sum(m => m.Monto).ToString("N2", culturaAR)</td>
+            </tr>
+            @if (Model.Intereses > 0)
+            {
+                <tr>
+                    <td>INTERESES</td>
+                    <td class="text-right">@Model.Intereses.ToString("N2", culturaAR)</td>
+                </tr>
+            }
+            @if (Model.Impuestos > 0)
+            {
+                <tr>
+                    <td>IMPUESTOS</td>
+                    <td class="text-right">@Model.Impuestos.ToString("N2", culturaAR)</td>
+                </tr>
+            }
+            <tr class="summary-total-row">
+                <td>SALDO ACTUAL</td>
+                <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
+            </tr>
+        </table>
+
+        <table class="data-table">
+            <tr class="section-title">
+                <td colspan="5">DETALLE DEL MES</td>
+            </tr>
+            <tr class="table-header">
+                <td>Fecha</td>
+                <td>Concepto</td>
+                <td class="text-center">N° Solicitud</td>
+                <td class="text-center">Cuota</td>
+                <td class="text-right">Pesos</td>
+            </tr>
+            <tr class="table-header">
+                <td colspan="5" style="background-color: #eee;">CUOTAS DEL MES</td>
+            </tr>
+            @foreach (var mov in Model.Movimientos)
+            {
+                <tr>
+                    <td>@mov.Fecha.ToString("dd-MMM-yy")</td>
+                    <td>@mov.NombreComercio</td>
+                    <td class="text-center">@mov.NroSolicitud</td>
+                    <td class="text-center">@mov.NroCuota/@mov.CantidadCuotas</td>
+                    <td class="text-right">$ @mov.Monto.ToString("N2", culturaAR)</td>
+                </tr>
+            }
+            <tr class="summary-total-row">
+                <td colspan="4">TOTAL TITULAR @Model.Usuario.Personas.Nombres @Model.Usuario.Personas.Apellido</td>
+                <td class="text-right">$ @Model.Movimientos.Sum(m => m.Monto).ToString("N2", culturaAR)</td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
