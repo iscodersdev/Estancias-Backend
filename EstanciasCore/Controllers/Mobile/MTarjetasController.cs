@@ -257,6 +257,40 @@ namespace EstanciasCore.API.Controllers.Billetera
 
         }
 
+
+        [HttpPost("MovimientoTarjetaNew")]
+        public IActionResult MovimientoTarjetaNew([FromBody] ListaMovimientoTarjetaDTO movimientostarjetaDTOS)
+        {
+            try
+            {
+                var usuario = TraeUsuarioUAT(movimientostarjetaDTOS.UAT);
+                if (usuario == null)
+                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"no existe UAT de Usuario" });
+
+                //var procedimiento = _context.Procedimientos.Where(x => x.Codigo=="SynchronizeMovementIndividual").FirstOrDefault();
+                //if (procedimiento.Activo)
+                //{
+                //    _datosServices.ActualizarMovimientosAsync(usuario);
+                //}
+
+                DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
+                var tipomov = _context.TipoMovimientoTarjeta.Where(x => x.Id == movimientostarjetaDTOS.tipomovimiento).FirstOrDefault();
+
+                // var movimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, movimientostarjetaDTOS.CantMovimientos, movimientostarjetaDTOS.tipomovimiento).Result;
+                var movimientos = _datosServices.LoginApiLoanAsync(empresa.UsernameWS, empresa.PasswordWS);
+
+                
+                return new JsonResult(new ListaMovimientoTarjetaDTO { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No existe datos de la tarjeta" });
+
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error en creacion de tarjeta - {e.Message}");
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"Error en creacion de tarjeta" + e });
+            }
+
+        }
+
         [HttpPost("TraePeriodos")]
         public async Task<IActionResult> TraePeriodos(TraePeriodosDTO body)
         {

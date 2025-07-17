@@ -79,7 +79,11 @@ public class ResumenTarjetaReportesController : EstanciasCoreController
             // Sincroniza los movimientos desde el servicio externo
             //await ActualizarMovimientosAsync(usuario);
 
-            DateTime fechaActual = DateTime.Now;
+
+           await _datosServices.ActualizarMovimientosAsyncModificado(usuario);
+
+
+            DateTime fechaActual = DateTime.Now.AddMonths(1);
 
             List<MovimientoTarjeta> movimientos = _context.MovimientoTarjeta.Where(x => x.Usuario.Id == usuario.Id && x.Periodo != null).Where(e=>e.Periodo.FechaHasta<fechaActual).ToList();
 
