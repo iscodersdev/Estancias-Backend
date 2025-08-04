@@ -1,6 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
+using DAL.DTOs.Servicios.DatosTarjeta;
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
@@ -37,7 +38,6 @@ namespace EstanciasCore.Services
 {
     public class DatosTarjetaService : IDatosTarjetaService
     {
-        private IConfiguration _Configuration { get; }
         private EstanciasContext _context { get; set; }
         private readonly IRazorViewEngine _razorViewEngine;
         private readonly ITempDataProvider _tempDataProvider;
@@ -45,12 +45,11 @@ namespace EstanciasCore.Services
         private readonly ILogger<DatosTarjetaService> _logger; 
         private readonly HttpClient _httpClient;
         // IMPORTANTE: Reemplaza esta URL por la URL base real de tu API.
-        private readonly string _apiBaseUrl = "https://loandivinf-serviciosapi.loancloudweb.com/";
+        private readonly string _apiBaseUrl = "https://sistema.cpecreditos.com.ar/Loan/ServiciosAPI/";
 
 
         public DatosTarjetaService(IConfiguration configuration, EstanciasContext context, IRazorViewEngine razorViewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider, ILogger<DatosTarjetaService> logger)
         {
-            _Configuration = configuration;
             _context=context;
             _razorViewEngine = razorViewEngine;
             _tempDataProvider = tempDataProvider;
@@ -58,6 +57,102 @@ namespace EstanciasCore.Services
             _logger = logger;
             _httpClient = new HttpClient();
         }
+
+
+        public async Task<ApiResponseObtenerPersonaDTO> ObtenerPersonaAsync(string documento)
+        {
+            DatosEstructura datosEstructura = await _context.DatosEstructura.FirstOrDefaultAsync();
+
+            // Creamos el cuerpo de la petición según la documentación.
+            var requestBody = new
+            {
+                LoginInterface = new LoginInterface
+                {
+                    Login = datosEstructura.UsernameWS.ToLower(),
+                    Clave = datosEstructura.PasswordWS.ToLower(),
+                    Token = "" // El token va vacío en la petición de login.
+                },
+                Documento = documento
+            };
+
+            var jsonSerializado = JsonConvert.SerializeObject(requestBody);
+
+            var jsonContent = new StringContent(jsonSerializado, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERPERSONA", jsonContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<ApiResponseObtenerPersonaDTO>(jsonResponse);
+            }
+            return null;
+        }
+
+
+
+        public async Task<ApiResponseObtenerCreditos> ObtenerCreditosAsync(string PersonaId)
+        {
+            DatosEstructura datosEstructura = await _context.DatosEstructura.FirstOrDefaultAsync();
+
+            // Creamos el cuerpo de la petición según la documentación.
+            var requestBody = new
+            {
+                LoginInterface = new LoginInterface
+                {
+                    Login = datosEstructura.UsernameWS.ToLower(),
+                    Clave = datosEstructura.PasswordWS.ToLower(),
+                    Token = "" // El token va vacío en la petición de login.
+                },
+                IdPersona = PersonaId
+            };
+
+            var jsonSerializado = JsonConvert.SerializeObject(requestBody);
+
+            var jsonContent = new StringContent(jsonSerializado, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERCREDITOS", jsonContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<ApiResponseObtenerCreditos>(jsonResponse);
+            }
+            return null;
+        }
+
+
+        public async Task<ApiResponseCreditoDetalles> ObtenerCreditoDetallesAsync(int SolicitudId)
+        {
+            DatosEstructura datosEstructura = await _context.DatosEstructura.FirstOrDefaultAsync();
+
+            // Creamos el cuerpo de la petición según la documentación.
+            var requestBody = new
+            {
+                LoginInterface = new LoginInterface
+                {
+                    Login = datosEstructura.UsernameWS.ToLower(),
+                    Clave = datosEstructura.PasswordWS.ToLower(),
+                    Token = "" // El token va vacío en la petición de login.
+                },
+                IdSolicitud = SolicitudId
+            };
+
+            var jsonSerializado = JsonConvert.SerializeObject(requestBody);
+
+            var jsonContent = new StringContent(jsonSerializado, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERCREDITODETALLES", jsonContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<ApiResponseCreditoDetalles>(jsonResponse);
+            }
+            return null;
+        }
+
+
 
         private async Task<string> ObtenerDatos(string usuario, string clave, long documento, long numeroTarjeta, long cantidadMovimientos)
         {
@@ -122,22 +217,22 @@ namespace EstanciasCore.Services
             XNamespace ns = "http://tempuri.org/";
 
             #region Guardar Archivo XML (opcional)
-            //------------------------------------//
-            // --- Para guardar el archivo de forma segura ---
+            ////------------------------------------//
+            //// --- Para guardar el archivo de forma segura ---
 
-            // 1. Obtiene la ruta a la carpeta del Escritorio del usuario actual.
+            //// 1. Obtiene la ruta a la carpeta del Escritorio del usuario actual.
             //string rutaEscritorio = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
-            // 2. Define el nombre del archivo.
+            //// 2. Define el nombre del archivo.
             //string nombreArchivo = "respuesta_tarjeta.xml";
 
-            // 3. Combina la ruta del escritorio y el nombre del archivo. 
-            //    Path.Combine se asegura de que la ruta sea correcta.
+            //// 3. Combina la ruta del escritorio y el nombre del archivo. 
+            ////    Path.Combine se asegura de que la ruta sea correcta.
             //string rutaCompleta = Path.Combine(rutaEscritorio, nombreArchivo);
 
-            // 4. Escribe el contenido en el archivo en el Escritorio.
+            //// 4. Escribe el contenido en el archivo en el Escritorio.
             // File.WriteAllText(rutaCompleta, soapResponse);
-            //------------------------------------//
+            ////------------------------------------//
             #endregion
 
             Detail detalles = new Detail();
@@ -209,669 +304,643 @@ namespace EstanciasCore.Services
             return combinedResults;
         }
 
-        public async Task<DatosParaResumenDTO> PrepararDatosDTO(int periodoId, string usuarioId)
-        {
-            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == usuarioId);
-            var periodoActual = await _context.Periodo.FindAsync(periodoId);
-            if (usuario == null || periodoActual == null) return null;
-
-            var movimientosDelPeriodo = await _context.MovimientoTarjeta
-                .Where(m => m.Usuario.Id == usuarioId && m.Periodo.Id == periodoId)
-                .OrderBy(m => m.Fecha).ToListAsync();
-
-            // Lógica de ejemplo para calcular saldos. Debes adaptarla a tu negocio.
-            decimal saldoAnterior = _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuarioId && m.Periodo.FechaDesde < periodoActual.FechaDesde && m.Pagado==false).Sum(x => x.Monto);
-            decimal pagos = 0; // TODO: Reemplazar con tu lógica para obtener pagos del mes.
-            decimal intereses = 0; // TODO: Reemplazar con tu lógica para obtener intereses.
-            decimal impuestos = 0; // TODO: Reemplazar con tu lógica para obtener impuestos.
-
-            decimal totalConsumos = movimientosDelPeriodo.Where(m => m.Monto > 0).Sum(m => m.Monto);
-            decimal saldoActual = saldoAnterior - pagos + totalConsumos + intereses + impuestos;
-            decimal pagoMinimo = saldoActual * 0.10m; // TODO: Reemplazar con tu lógica de cálculo de pago mínimo.
-
-            return new DatosParaResumenDTO
-            {
-                Usuario = usuario,
-                Periodo = periodoActual,
-                Movimientos = movimientosDelPeriodo,
-                SaldoAnterior = saldoAnterior,
-                Pagos = pagos,
-                Intereses = intereses,
-                Impuestos = impuestos,
-                SaldoActual = saldoActual,
-                PagoMinimo = pagoMinimo
-            };
-        }
-
-
-        public async Task ActualizarMovimientosAsyncModificado(Usuario usuario)
-        {
-            bool hayCambiosParaGuardar = false;
-            bool nuevasEntidadesParaGuardar = false;
-            int contNew = 0;
-            int contUpdate = 0;
-            long tiempo = 0;
-            try
-            {
-                if (usuario == null) return;
-                var cronometro = Stopwatch.StartNew();
-
-                DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
-                CombinedData data = await ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(usuario.Personas.NroTarjeta), 10000, 0);
-                List<Periodo> listaDePeriodos = await _context.Periodo.ToListAsync();
-
-                if (data?.DetallesSolicitud == null) return;
-
-                DateTime FechaCorte1 = new DateTime(2025, 05, 26);
-                DateTime FechaCorte = new DateTime(2025, 06, 25);
-
-                string CapitalAdeudado = data.Detalle.MontoAdeudado;
-                string TotalProximaCuota = data.Detalle.TotalProximaCuota;
-                string MontoDisponible = data.Detalle.MontoDisponible;
-
-                decimal Movimientos = data.Movimientos.Where(x => x.Fecha<=FechaCorte).Sum(x => decimal.Parse(x.Monto, CultureInfo.InvariantCulture));
-                decimal MovimientosRecargo = data.Movimientos.Where(x => x.Fecha<=FechaCorte).Sum(x => decimal.Parse(x.Recargo, CultureInfo.InvariantCulture));
-                decimal MovientoTotal = Movimientos+MovimientosRecargo;
-
-
-                //var MovimientosDetalles = data.DetallesSolicitud.Where(x => x.DetallesCuota.Any(e=> common.ConvertirFecha(e. Fecha)<=FechaCorte)).Sum(x => Convert.ToDecimal(x.DetallesCuota.Select(i=>i.Monto)));
-
-                decimal movimientosDetallesMesActual = data.DetallesSolicitud
-                 // 1. Aplana todas las listas de 'DetallesCuota' en una sola gran lista de cuotas
-                 .SelectMany(detalle => detalle.DetallesCuota)
-                 // 2. Filtra esa lista única de cuotas por la fecha de corte
-                 .Where(cuota => common.ConvertirFecha(cuota.Fecha) >= FechaCorte1 && common.ConvertirFecha(cuota.Fecha) < FechaCorte)
-                 // 3. Suma directamente el monto de las cuotas filtradas
-                 .Sum(cuota => decimal.Parse(cuota.Monto, CultureInfo.InvariantCulture));
-
-
-                decimal movimientosDetallesAnteriores = data.DetallesSolicitud
-                // 1. Aplana todas las listas de 'DetallesCuota' en una sola gran lista de cuotas
-                .SelectMany(detalle => detalle.DetallesCuota)
-                // 2. Filtra esa lista única de cuotas por la fecha de corte
-                .Where(cuota => common.ConvertirFecha(cuota.Fecha) <= FechaCorte1.AddDays(-1))
-                // 3. Suma directamente el monto de las cuotas filtradas
-                .Sum(cuota => decimal.Parse(cuota.Monto, CultureInfo.InvariantCulture));
-
-                var movimientosDetalles2 = data.DetallesSolicitud
-               // 1. Aplana todas las listas de 'DetallesCuota' en una sola gran lista de cuotas
-               .SelectMany(detalle => detalle.DetallesCuota)
-               // 2. Filtra esa lista única de cuotas por la fecha de corte
-               .Where(cuota => common.ConvertirFecha(cuota.Fecha) <= FechaCorte)
-               // 3. Suma directamente el monto de las cuotas filtradas
-               .ToList();
-
-                foreach (var item in movimientosDetalles2.OrderBy(x=> common.ConvertirFecha(x.Fecha)))
-                {
-                    decimal monto = decimal.Parse(item.Monto, CultureInfo.InvariantCulture);
-                    DateTime fecha = common.ConvertirFecha(item.Fecha);
-                    Debug.WriteLine($"{fecha} - $ {monto}");
-                }
-
-
-
+        //public async Task<DatosParaResumenDTO> PrepararDatosDTO(int periodoId, string usuarioId)
+        //{
+        //    var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == usuarioId);
+        //    var periodoActual = await _context.Periodo.FindAsync(periodoId);
+        //    if (usuario == null || periodoActual == null) return null;
+
+        //    var movimientosDelPeriodo = await _context.MovimientoTarjeta
+        //        .Where(m => m.Usuario.Id == usuarioId && m.Periodo.Id == periodoId)
+        //        .OrderBy(m => m.Fecha).ToListAsync();
+
+        //    // Lógica de ejemplo para calcular saldos. Debes adaptarla a tu negocio.
+        //    decimal saldoAnterior = _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuarioId && m.Periodo.FechaDesde < periodoActual.FechaDesde && m.Pagado==false).Sum(x => x.Monto);
+        //    decimal pagos = 0; // TODO: Reemplazar con tu lógica para obtener pagos del mes.
+        //    decimal intereses = 0; // TODO: Reemplazar con tu lógica para obtener intereses.
+        //    decimal impuestos = 0; // TODO: Reemplazar con tu lógica para obtener impuestos.
+
+        //    decimal totalConsumos = movimientosDelPeriodo.Where(m => m.Monto > 0).Sum(m => m.Monto);
+        //    decimal saldoActual = saldoAnterior - pagos + totalConsumos + intereses + impuestos;
+        //    decimal pagoMinimo = saldoActual * 0.10m; // TODO: Reemplazar con tu lógica de cálculo de pago mínimo.
+
+        //    return new DatosParaResumenDTO
+        //    {
+        //        Usuario = usuario,
+        //        Periodo = periodoActual,
+        //        Movimientos = movimientosDelPeriodo,
+        //        SaldoAnterior = saldoAnterior,
+        //        Pagos = pagos,
+        //        Intereses = intereses,
+        //        Impuestos = impuestos,
+        //        SaldoActual = saldoActual,
+        //        PagoMinimo = pagoMinimo
+        //    };
+        //}
+
+
+        //public async Task ActualizarMovimientosAsyncModificado(Usuario usuario)
+        //{
+        //    bool hayCambiosParaGuardar = false;
+        //    bool nuevasEntidadesParaGuardar = false;
+        //    int contNew = 0;
+        //    int contUpdate = 0;
+        //    long tiempo = 0;
+        //    try
+        //    {
+        //        if (usuario == null) return;
+        //        var cronometro = Stopwatch.StartNew();
+
+        //        DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
+        //        CombinedData data = await ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(usuario.Personas.NroTarjeta), 10000, 0);
+        //        List<Periodo> listaDePeriodos = await _context.Periodo.ToListAsync();
+
+        //        if (data?.DetallesSolicitud == null) return;
+
+        //        DateTime FechaCorte1 = new DateTime(2025, 05, 26);
+        //        DateTime FechaCorte = new DateTime(2025, 06, 25);
+
+        //        string CapitalAdeudado = data.Detalle.MontoAdeudado;
+        //        string TotalProximaCuota = data.Detalle.TotalProximaCuota;
+        //        string MontoDisponible = data.Detalle.MontoDisponible;
+
+        //        decimal Movimientos = data.Movimientos.Where(x => x.Fecha<=FechaCorte).Sum(x => decimal.Parse(x.Monto, CultureInfo.InvariantCulture));
+        //        decimal MovimientosRecargo = data.Movimientos.Where(x => x.Fecha<=FechaCorte).Sum(x => decimal.Parse(x.Recargo, CultureInfo.InvariantCulture));
+        //        decimal MovientoTotal = Movimientos+MovimientosRecargo;
+
+
+        //        //var MovimientosDetalles = data.DetallesSolicitud.Where(x => x.DetallesCuota.Any(e=> common.ConvertirFecha(e. Fecha)<=FechaCorte)).Sum(x => Convert.ToDecimal(x.DetallesCuota.Select(i=>i.Monto)));
+
+        //        decimal movimientosDetallesMesActual = data.DetallesSolicitud
+        //         // 1. Aplana todas las listas de 'DetallesCuota' en una sola gran lista de cuotas
+        //         .SelectMany(detalle => detalle.DetallesCuota)
+        //         // 2. Filtra esa lista única de cuotas por la fecha de corte
+        //         .Where(cuota => common.ConvertirFecha(cuota.Fecha) >= FechaCorte1 && common.ConvertirFecha(cuota.Fecha) < FechaCorte)
+        //         // 3. Suma directamente el monto de las cuotas filtradas
+        //         .Sum(cuota => decimal.Parse(cuota.Monto, CultureInfo.InvariantCulture));
+
+
+        //        decimal movimientosDetallesAnteriores = data.DetallesSolicitud
+        //        // 1. Aplana todas las listas de 'DetallesCuota' en una sola gran lista de cuotas
+        //        .SelectMany(detalle => detalle.DetallesCuota)
+        //        // 2. Filtra esa lista única de cuotas por la fecha de corte
+        //        .Where(cuota => common.ConvertirFecha(cuota.Fecha) <= FechaCorte1.AddDays(-1))
+        //        // 3. Suma directamente el monto de las cuotas filtradas
+        //        .Sum(cuota => decimal.Parse(cuota.Monto, CultureInfo.InvariantCulture));
+
+        //        var movimientosDetalles2 = data.DetallesSolicitud
+        //       // 1. Aplana todas las listas de 'DetallesCuota' en una sola gran lista de cuotas
+        //       .SelectMany(detalle => detalle.DetallesCuota)
+        //       // 2. Filtra esa lista única de cuotas por la fecha de corte
+        //       .Where(cuota => common.ConvertirFecha(cuota.Fecha) <= FechaCorte)
+        //       // 3. Suma directamente el monto de las cuotas filtradas
+        //       .ToList();
+
+        //        foreach (var item in movimientosDetalles2.OrderBy(x=> common.ConvertirFecha(x.Fecha)))
+        //        {
+        //            decimal monto = decimal.Parse(item.Monto, CultureInfo.InvariantCulture);
+        //            DateTime fecha = common.ConvertirFecha(item.Fecha);
+        //            Debug.WriteLine($"{fecha} - $ {monto}");
+        //        }
+
+
+
 
 
 
 
 
-                // --- MARCAR MOVIMIENTOS COMO PAGADOS ---
-                // 1. Crear un HashSet con las claves únicas (Solicitud+Cuota) que vienen del servicio.
-                var cuotasExternas = data.DetallesSolicitud.SelectMany(detalle => detalle.DetallesCuota.Select(cuota => new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota))).ToHashSet();
-
-                // 2. Obtener movimientos no están pagados.
-                var movimientosLocalesSinPagar = await _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuario.Id && !m.Pagado).ToListAsync();
-
-                // 3. MARCAR COMO PAGADOS: Si un movimiento local no está en la nueva lista del servicio, se marca como Pagado.
-                foreach (var movimientoLocal in movimientosLocalesSinPagar)
-                {
-                    var tuplaLocal = new Tuple<string, string>(movimientoLocal.NroSolicitud, movimientoLocal.NroCuota);
-                    if (!cuotasExternas.Contains(tuplaLocal))
-                    {
-                        movimientoLocal.Pagado = true;
-                        hayCambiosParaGuardar = true;
-                        contUpdate++;
-                    }
-                }
-
-                // 4. AÑADIR NUEVOS MOVIMIENTOS:
-                // Creamos un HashSet con las claves de los movimientos que ya tenemos en la BD para evitar duplicados.
-                var cuotasLocalesExistentes = movimientosLocalesSinPagar.Select(m => new Tuple<string, string>(m.NroSolicitud, m.NroCuota)).ToHashSet();
-
-                foreach (SolicitudDetail detalle in data.DetallesSolicitud)
-                {
-                    string totalCuotasDeLaSolicitud = detalle.DetallesCuota.Max(x => x.NumeroCuota);
-
-                    foreach (var cuota in detalle.DetallesCuota)
-                    {
-                        var tuplaExterna = new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota);
-
-                        // Si la cuota específica ya existe, saltamos a la siguiente.
-                        if (cuotasLocalesExistentes.Contains(tuplaExterna)) continue;
-
-                        // Si llegamos aquí, es una cuota nueva que debemos guardar.
-                        hayCambiosParaGuardar = true;
-
-                        DateTime fechaMovimiento = common.ConvertirFecha(cuota.Fecha);
-                        var periodo = listaDePeriodos.FirstOrDefault(p => fechaMovimiento >= p.FechaDesde && fechaMovimiento <= p.FechaHasta);
-
-                        if (periodo == null)
-                        {
-                            periodo = CrearNuevoPeriodo(fechaMovimiento);
-                            if (periodo!=null)
-                            {
-                                _context.Periodo.Add(periodo);
-                                listaDePeriodos.Add(periodo);
-                            }
-
-                        }
-
-                        _context.MovimientoTarjeta.Add(new MovimientoTarjeta
-                        {
-                            NroSolicitud = detalle.NumeroSolicitud,
-                            NombreComercio = detalle.NombreComercio,
-                            NroCuota = cuota.NumeroCuota,
-                            Monto = Convert.ToDecimal(cuota.Monto, CultureInfo.InvariantCulture),
-                            Fecha = fechaMovimiento,
-                            Usuario = usuario,
-                            Periodo = periodo,
-                            CantidadCuotas = totalCuotasDeLaSolicitud,
-                            Pagado = false
-                        });
-                        contNew++;
-                    }
-                }
-
-                // 5. GUARDAR TODOS LOS CAMBIOS UNA SOLA VEZ
-                if (hayCambiosParaGuardar)
-                {
-                    await _context.SaveChangesAsync();
-                }
-                cronometro.Stop();
-                await _context.LogProcedimientos.AddAsync(new LogProcedimientos
-                {
-                    Fecha = DateTime.Now,
-                    Nombre = "ActualizarMovimientosIndividual",
-                    Codigo = "SynchronizeMovementIndividual",
-                    Mesaje = $"Se actualizaron {contUpdate} registros y se crearon {contNew} nuevos movimientos.",
-                    StatusCode = "200",
-                    RegistrosActualizados = contUpdate,
-                    RegistrosNuevos = contNew,
-                    Tiempo = cronometro.ElapsedMilliseconds // Aquí puedes calcular el tiempo si lo deseas
-                });
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                await _context.LogProcedimientos.AddAsync(new LogProcedimientos
-                {
-                    Fecha = DateTime.Now,
-                    Nombre = "ActualizarMovimientosIndividual",
-                    Codigo = "SynchronizeMovementIndividual",
-                    Mesaje = $"Error al Sincronizar - "+ e.Message,
-                    StatusCode = "500",
-                    RegistrosActualizados = contUpdate,
-                    RegistrosNuevos = contNew,
-                    Tiempo = 0 // Aquí puedes calcular el tiempo si lo deseas
-                });
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        public async Task ActualizarMovimientosAsync(Usuario usuario)
-        {
-            bool hayCambiosParaGuardar = false;
-            bool nuevasEntidadesParaGuardar = false;
-            int contNew = 0;
-            int contUpdate = 0;
-            long tiempo = 0;
-            try
-            {
-                if (usuario == null) return;
-                var cronometro = Stopwatch.StartNew();
-
-                DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
-                CombinedData data = await ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(usuario.Personas.NroTarjeta), 100, 0);
-                List<Periodo> listaDePeriodos = await _context.Periodo.ToListAsync();
-
-                if (data?.DetallesSolicitud == null) return;
-
-                // --- MARCAR MOVIMIENTOS COMO PAGADOS ---
-                // 1. Crear un HashSet con las claves únicas (Solicitud+Cuota) que vienen del servicio.
-                var cuotasExternas = data.DetallesSolicitud.SelectMany(detalle => detalle.DetallesCuota.Select(cuota => new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota))).ToHashSet();
-
-                // 2. Obtener movimientos no están pagados.
-                var movimientosLocalesSinPagar = await _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuario.Id && !m.Pagado).ToListAsync();
-
-                // 3. MARCAR COMO PAGADOS: Si un movimiento local no está en la nueva lista del servicio, se marca como Pagado.
-                foreach (var movimientoLocal in movimientosLocalesSinPagar)
-                {
-                    var tuplaLocal = new Tuple<string, string>(movimientoLocal.NroSolicitud, movimientoLocal.NroCuota);
-                    if (!cuotasExternas.Contains(tuplaLocal))
-                    {
-                        movimientoLocal.Pagado = true;
-                        hayCambiosParaGuardar = true;
-                        contUpdate++;
-                    }
-                }
-
-                // 4. AÑADIR NUEVOS MOVIMIENTOS:
-                // Creamos un HashSet con las claves de los movimientos que ya tenemos en la BD para evitar duplicados.
-                var cuotasLocalesExistentes = movimientosLocalesSinPagar.Select(m => new Tuple<string, string>(m.NroSolicitud, m.NroCuota)).ToHashSet();
-
-                foreach (SolicitudDetail detalle in data.DetallesSolicitud)
-                {
-                    string totalCuotasDeLaSolicitud = detalle.DetallesCuota.Max(x => x.NumeroCuota);
-
-                    foreach (var cuota in detalle.DetallesCuota)
-                    {
-                        var tuplaExterna = new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota);
-
-                        // Si la cuota específica ya existe, saltamos a la siguiente.
-                        if (cuotasLocalesExistentes.Contains(tuplaExterna)) continue;
-
-                        // Si llegamos aquí, es una cuota nueva que debemos guardar.
-                        hayCambiosParaGuardar = true;
-
-                        DateTime fechaMovimiento = common.ConvertirFecha(cuota.Fecha);
-                        var periodo = listaDePeriodos.FirstOrDefault(p => fechaMovimiento >= p.FechaDesde && fechaMovimiento <= p.FechaHasta);
-
-                        if (periodo == null)
-                        {
-                            periodo = CrearNuevoPeriodo(fechaMovimiento);
-                            if (periodo!=null)
-                            {
-                                _context.Periodo.Add(periodo);
-                                listaDePeriodos.Add(periodo);
-                            }
-
-                        }
-
-                        _context.MovimientoTarjeta.Add(new MovimientoTarjeta
-                        {
-                            NroSolicitud = detalle.NumeroSolicitud,
-                            NombreComercio = detalle.NombreComercio,
-                            NroCuota = cuota.NumeroCuota,
-                            Monto = Convert.ToDecimal(cuota.Monto, CultureInfo.InvariantCulture),
-                            Fecha = fechaMovimiento,
-                            Usuario = usuario,
-                            Periodo = periodo,
-                            CantidadCuotas = totalCuotasDeLaSolicitud,
-                            Pagado = false
-                        });
-                        contNew++;
-                    }
-                }
-
-                // 5. GUARDAR TODOS LOS CAMBIOS UNA SOLA VEZ
-                if (hayCambiosParaGuardar)
-                {
-                    await _context.SaveChangesAsync();
-                }
-                cronometro.Stop();
-                await _context.LogProcedimientos.AddAsync(new LogProcedimientos
-                {
-                    Fecha = DateTime.Now,
-                    Nombre = "ActualizarMovimientosIndividual",
-                    Codigo = "SynchronizeMovementIndividual",
-                    Mesaje = $"Se actualizaron {contUpdate} registros y se crearon {contNew} nuevos movimientos.",
-                    StatusCode = "200",
-                    RegistrosActualizados = contUpdate,
-                    RegistrosNuevos = contNew,
-                    Tiempo = cronometro.ElapsedMilliseconds // Aquí puedes calcular el tiempo si lo deseas
-                });
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                await _context.LogProcedimientos.AddAsync(new LogProcedimientos
-                {
-                    Fecha = DateTime.Now,
-                    Nombre = "ActualizarMovimientosIndividual",
-                    Codigo = "SynchronizeMovementIndividual",
-                    Mesaje = $"Error al Sincronizar - "+ e.Message,
-                    StatusCode = "500",
-                    RegistrosActualizados = contUpdate,
-                    RegistrosNuevos = contNew,
-                    Tiempo = 0 // Aquí puedes calcular el tiempo si lo deseas
-                });
-                await _context.SaveChangesAsync();
-            }            
-        }
-
-        public async Task<JsonResult> ActualizarMovimientosAsync()
-        {
-            int contNew = 0;
-            int contUpdate = 0;
-            long tiempo = 0;
-            try
-            {
-                var cronometro = Stopwatch.StartNew();
-                IQueryable<Usuario> listUsuario = _context.Usuarios;
-
-                bool hayCambiosParaGuardar = false;
-                bool nuevasEntidadesParaGuardar = false;
-                foreach (var usuario in listUsuario)
-                {
-                    try
-                    {
-                        DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
-
-                        if (usuario.Personas==null) continue;
-
-                        if (usuario.Personas.NroDocumento == "" || usuario.Personas.NroTarjeta=="") continue;
-
-                        string numeroTarjetaConError = usuario.Personas.NroTarjeta;
-                        if (!long.TryParse(numeroTarjetaConError, out long resultado))
-                        {
-                            _logger.LogWarning($"El número de tarjeta '{numeroTarjetaConError}' no es válido y será omitido.");
-                            continue;
-                        }
-
-                        CombinedData data = await ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, resultado, 100, 0);
-                        List<Periodo> listaDePeriodos = await _context.Periodo.ToListAsync();
-
-                        _logger.LogInformation("Usuario - " + usuario.UserName);
-                        // --- MARCAR MOVIMIENTOS COMO PAGADOS ---
-                        // 1. Crear un HashSet con las claves únicas (Solicitud+Cuota) que vienen del servicio.
-
-                        if (data.Detalle.Resultado != "EXITO") continue;
-
-                        var cuotasExternas = data.DetallesSolicitud.SelectMany(detalle => detalle.DetallesCuota.Select(cuota => new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota))).ToHashSet();
-
-                        // 2. Obtener movimientos no están pagados.
-                        var movimientosLocalesSinPagar = await _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuario.Id && !m.Pagado).ToListAsync();
-
-                        // 3. MARCAR COMO PAGADOS: Si un movimiento local no está en la nueva lista del servicio, se marca como Pagado.
-                        foreach (var movimientoLocal in movimientosLocalesSinPagar)
-                        {
-                            var tuplaLocal = new Tuple<string, string>(movimientoLocal.NroSolicitud, movimientoLocal.NroCuota);
-                            if (!cuotasExternas.Contains(tuplaLocal))
-                            {
-                                movimientoLocal.Pagado = true;
-                                hayCambiosParaGuardar = true;
-                                contUpdate++;
-                            }
-                        }
-
-                        // 4. AÑADIR NUEVOS MOVIMIENTOS:
-                        // Creamos un HashSet con las claves de los movimientos que ya tenemos en la BD para evitar duplicados.
-                        var cuotasLocalesExistentes = movimientosLocalesSinPagar.Select(m => new Tuple<string, string>(m.NroSolicitud, m.NroCuota)).ToHashSet();
-
-                        foreach (SolicitudDetail detalle in data.DetallesSolicitud)
-                        {
-                            string totalCuotasDeLaSolicitud = detalle.DetallesCuota.Max(x => x.NumeroCuota);
-
-                            foreach (var cuota in detalle.DetallesCuota)
-                            {
-                                var tuplaExterna = new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota);
-
-                                // Si la cuota específica ya existe, saltamos a la siguiente.
-                                if (cuotasLocalesExistentes.Contains(tuplaExterna)) continue;
-
-                                // Si llegamos aquí, es una cuota nueva que debemos guardar.
-                                hayCambiosParaGuardar = true;
-
-                                DateTime fechaMovimiento = common.ConvertirFecha(cuota.Fecha);
-                                var periodo = listaDePeriodos.FirstOrDefault(p => fechaMovimiento >= p.FechaDesde && fechaMovimiento <= p.FechaHasta);
-
-                                if (periodo == null)
-                                {
-                                    periodo = CrearNuevoPeriodo(fechaMovimiento);
-                                    if (periodo!=null)
-                                    {
-                                        _context.Periodo.Add(periodo);
-                                        listaDePeriodos.Add(periodo);
-                                    }
-
-                                }
-
-                                if (!decimal.TryParse(cuota.Monto, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out decimal monto))
-                                {
-                                    // Si falla, loguea la cuota problemática y sáltala.
-                                    _logger.LogWarning($"El monto '{cuota.Monto}' no tiene un formato decimal válido. Se omite la cuota.");
-                                    continue;
-                                }
-
-                                _context.MovimientoTarjeta.Add(new MovimientoTarjeta
-                                {
-                                    NroSolicitud = detalle.NumeroSolicitud,
-                                    NombreComercio = detalle.NombreComercio,
-                                    NroCuota = cuota.NumeroCuota,
-                                    Monto = monto,
-                                    Fecha = fechaMovimiento,
-                                    Usuario = usuario,
-                                    Periodo = periodo,
-                                    CantidadCuotas = totalCuotasDeLaSolicitud,
-                                    Pagado = false
-                                });
-                                contNew++;
-                            }
-                        }
-                        // 5. GUARDAR TODOS LOS CAMBIOS UNA SOLA VEZ
-                        if (hayCambiosParaGuardar)
-                        {
-                            await _context.SaveChangesAsync();
-                            hayCambiosParaGuardar= false;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        continue; // Si hay un error con un usuario, lo saltamos y continuamos con el siguiente.
-                    }
-                }
-                cronometro.Stop();
-
-                await _context.LogProcedimientos.AddAsync(new LogProcedimientos
-                {
-                    Fecha = DateTime.Now,
-                    Nombre = "ActualizarMovimientosAsync",
-                    Codigo = "SynchronizeMovementIndividual",
-                    Mesaje = $"Se actualizaron {contUpdate} registros y se crearon {contNew} nuevos movimientos.",
-                    StatusCode = "200",
-                    RegistrosActualizados = contUpdate,
-                    RegistrosNuevos = contNew,
-                    Tiempo = cronometro.ElapsedMilliseconds // Aquí puedes calcular el tiempo si lo deseas
-                });
-                await _context.SaveChangesAsync();
-
-                return new JsonResult(new { mesanje = $"Se Actualizaron {contUpdate} Registros - Se crearon : {contNew} Registros", code = 200 });
-            }
-            catch (Exception e)
-            {
-                await _context.LogProcedimientos.AddAsync(new LogProcedimientos
-                {
-                    Fecha = DateTime.Now,
-                    Nombre = "ActualizarMovimientosAsync",
-                    Codigo = "SynchronizeMovementIndividual",
-                    Mesaje = $"Error al Sincronizar - "+ e.Message,
-                    StatusCode = "500",
-                    RegistrosActualizados = contUpdate,
-                    RegistrosNuevos = contNew,
-                    Tiempo = 0 // Aquí puedes calcular el tiempo si lo deseas
-                });
-                await _context.SaveChangesAsync();
-                return new JsonResult(new { mesanje = "Error - "+e.Message, code = 500 });
-            }            
-        }
-
-        public async Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model)
-        {
-            var actionContext = GetActionContext();
-            var view = FindView(actionContext, viewName);
-
-            using (var output = new StringWriter())
-            {
-                var viewContext = new ViewContext(
-                    actionContext,
-                    view,
-                    new ViewDataDictionary<TModel>(
-                        metadataProvider: new EmptyModelMetadataProvider(),
-                        modelState: new ModelStateDictionary())
-                    {
-                        Model = model
-                    },
-                    new TempDataDictionary(
-                        actionContext.HttpContext,
-                        _tempDataProvider),
-                    output,
-                    new HtmlHelperOptions());
-
-                await view.RenderAsync(viewContext);
-
-                return output.ToString();
-            }
-        }
-
-        /// <summary>
-        /// Obtiene la lista de créditos (solicitudes) de una persona.
-        /// </summary>
-        public async Task<ObtenerCreditosResponse> ObtenerCreditosAsync(string login, string clave, int PersonaId)
-        {
-            // Creamos el cuerpo de la petición.
-            var requestBody = new ObtenerCreditosRequest
-            {
-                LoginInterface = new LoginInterface
-                {
-                    Login = login,
-                    Clave = clave,
-                    Token = "" // El token podría ser necesario aquí si la API lo requiere.
-                },
-                IdPersona = PersonaId,
-            };
-
-            var jsonContent = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
-
-            // Realizamos la llamada POST al endpoint de ObtenerCreditos.
-            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERCREDITOS", jsonContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<ObtenerCreditosResponse>(jsonResponse);
-            }
-
-            return null;
-        }
-
-
-
-        private Periodo CrearNuevoPeriodo(DateTime fechaMovimiento)
-        {
-            if (fechaMovimiento.Year<2025) return null;
-
-            int diaDeCorte = 25;
-            DateTime fechaHasta;
-
-            if (fechaMovimiento.Day > diaDeCorte)
-                fechaHasta = new DateTime(fechaMovimiento.Year, fechaMovimiento.Month, diaDeCorte).AddMonths(1);
-            else
-                fechaHasta = new DateTime(fechaMovimiento.Year, fechaMovimiento.Month, diaDeCorte);
-
-            DateTime fechaDesde = fechaHasta.AddMonths(-1).AddDays(1);
-            var mesDeVencimiento = fechaHasta.AddMonths(1);
-            var fechaVencimiento = new DateTime(mesDeVencimiento.Year, mesDeVencimiento.Month, 15);
-
-            return new Periodo
-            {
-                Descripcion = $"{fechaHasta:MMMM yyyy}",
-                FechaDesde = fechaDesde,
-                FechaHasta = fechaHasta,
-                FechaVencimiento = fechaVencimiento,
-                Activo = true
-            };
-        }
-
-        private IView FindView(ActionContext actionContext, string viewName)
-        {
-            var getViewResult = _razorViewEngine.GetView(executingFilePath: null, viewPath: viewName, isMainPage: true);
-            if (getViewResult.Success)
-            {
-                return getViewResult.View;
-            }
-
-            var findViewResult = _razorViewEngine.FindView(actionContext, viewName, isMainPage: true);
-            if (findViewResult.Success)
-            {
-                return findViewResult.View;
-            }
-
-            throw new ArgumentNullException($"No se pudo encontrar la vista {viewName}. Se buscó en las siguientes ubicaciones: {string.Join(", ", findViewResult.SearchedLocations)}");
-        }
-
-        private ActionContext GetActionContext()
-        {
-            var httpContext = new DefaultHttpContext { RequestServices = _serviceProvider };
-            return new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
-        }
-        public async Task<LoginUsuarioResponse> LoginApiLoanAsync(string usuario, string clave)
-        {
-            // Creamos el cuerpo de la petición según la documentación.
-            var requestBody = new LoginUsuarioRequest
-            {
-                LoginInterface = new LoginInterface
-                {
-                    Login = usuario,
-                    Clave = clave,
-                    Token = "" // El token va vacío en la petición de login.
-                },
-                Login = usuario,
-                Clave = clave
-            };
-
-            var jsonContent = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/LOGINUSUARIO", jsonContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<LoginUsuarioResponse>(jsonResponse);
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Obtiene los datos de una persona usando diferentes criterios de búsqueda.
-        /// </summary>
-        /// <param name="login">Login para autenticación.</param>
-        /// <param name="clave">Clave para autenticación.</param>
-        /// <param name="documento">Documento de la persona (opcional).</param>
-        /// <returns>El objeto Persona si se encuentra, de lo contrario null.</returns>
-        public async Task<PersonaLoanDTO> ObtenerPersonaAsync(string login, string clave, string documento)
-        {
-            // 1. Crear el cuerpo de la petición.
-            var requestBody = new ObtenerPersonaRequest
-            {
-                LoginInterface = new LoginInterface
-                {
-                    Login = login,
-                    Clave = clave,
-                    Token = ""
-                },
-                Documento = documento
-                // Puedes agregar otros filtros aquí si es necesario (Nombre, Sexo, etc.)
-            };
-
-            var jsonContent = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
-
-            // 2. Realizar la llamada POST al endpoint ObtenerPersona.
-            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERPERSONA", jsonContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var personaResponse = JsonConvert.DeserializeObject<ObtenerPersonaResponse>(jsonResponse);
-
-                // Si el resultado es exitoso y se encontró una persona, la devolvemos.
-                if (personaResponse?.Resultado?.Result == 1 && personaResponse.Persona != null)
-                {
-                    return personaResponse?.Persona;
-                }
-            }
-
-            return null;
-        }
+        //        // --- MARCAR MOVIMIENTOS COMO PAGADOS ---
+        //        // 1. Crear un HashSet con las claves únicas (Solicitud+Cuota) que vienen del servicio.
+        //        var cuotasExternas = data.DetallesSolicitud.SelectMany(detalle => detalle.DetallesCuota.Select(cuota => new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota))).ToHashSet();
+
+        //        // 2. Obtener movimientos no están pagados.
+        //        var movimientosLocalesSinPagar = await _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuario.Id && !m.Pagado).ToListAsync();
+
+        //        // 3. MARCAR COMO PAGADOS: Si un movimiento local no está en la nueva lista del servicio, se marca como Pagado.
+        //        foreach (var movimientoLocal in movimientosLocalesSinPagar)
+        //        {
+        //            var tuplaLocal = new Tuple<string, string>(movimientoLocal.NroSolicitud, movimientoLocal.NroCuota);
+        //            if (!cuotasExternas.Contains(tuplaLocal))
+        //            {
+        //                movimientoLocal.Pagado = true;
+        //                hayCambiosParaGuardar = true;
+        //                contUpdate++;
+        //            }
+        //        }
+
+        //        // 4. AÑADIR NUEVOS MOVIMIENTOS:
+        //        // Creamos un HashSet con las claves de los movimientos que ya tenemos en la BD para evitar duplicados.
+        //        var cuotasLocalesExistentes = movimientosLocalesSinPagar.Select(m => new Tuple<string, string>(m.NroSolicitud, m.NroCuota)).ToHashSet();
+
+        //        foreach (SolicitudDetail detalle in data.DetallesSolicitud)
+        //        {
+        //            string totalCuotasDeLaSolicitud = detalle.DetallesCuota.Max(x => x.NumeroCuota);
+
+        //            foreach (var cuota in detalle.DetallesCuota)
+        //            {
+        //                var tuplaExterna = new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota);
+
+        //                // Si la cuota específica ya existe, saltamos a la siguiente.
+        //                if (cuotasLocalesExistentes.Contains(tuplaExterna)) continue;
+
+        //                // Si llegamos aquí, es una cuota nueva que debemos guardar.
+        //                hayCambiosParaGuardar = true;
+
+        //                DateTime fechaMovimiento = common.ConvertirFecha(cuota.Fecha);
+        //                var periodo = listaDePeriodos.FirstOrDefault(p => fechaMovimiento >= p.FechaDesde && fechaMovimiento <= p.FechaHasta);
+
+        //                if (periodo == null)
+        //                {
+        //                    periodo = CrearNuevoPeriodo(fechaMovimiento);
+        //                    if (periodo!=null)
+        //                    {
+        //                        _context.Periodo.Add(periodo);
+        //                        listaDePeriodos.Add(periodo);
+        //                    }
+
+        //                }
+
+        //                _context.MovimientoTarjeta.Add(new MovimientoTarjeta
+        //                {
+        //                    NroSolicitud = detalle.NumeroSolicitud,
+        //                    NombreComercio = detalle.NombreComercio,
+        //                    NroCuota = cuota.NumeroCuota,
+        //                    Monto = Convert.ToDecimal(cuota.Monto, CultureInfo.InvariantCulture),
+        //                    Fecha = fechaMovimiento,
+        //                    Usuario = usuario,
+        //                    Periodo = periodo,
+        //                    CantidadCuotas = totalCuotasDeLaSolicitud,
+        //                    Pagado = false
+        //                });
+        //                contNew++;
+        //            }
+        //        }
+
+        //        // 5. GUARDAR TODOS LOS CAMBIOS UNA SOLA VEZ
+        //        if (hayCambiosParaGuardar)
+        //        {
+        //            await _context.SaveChangesAsync();
+        //        }
+        //        cronometro.Stop();
+        //        await _context.LogProcedimientos.AddAsync(new LogProcedimientos
+        //        {
+        //            Fecha = DateTime.Now,
+        //            Nombre = "ActualizarMovimientosIndividual",
+        //            Codigo = "SynchronizeMovementIndividual",
+        //            Mesaje = $"Se actualizaron {contUpdate} registros y se crearon {contNew} nuevos movimientos.",
+        //            StatusCode = "200",
+        //            RegistrosActualizados = contUpdate,
+        //            RegistrosNuevos = contNew,
+        //            Tiempo = cronometro.ElapsedMilliseconds // Aquí puedes calcular el tiempo si lo deseas
+        //        });
+        //        await _context.SaveChangesAsync();
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        await _context.LogProcedimientos.AddAsync(new LogProcedimientos
+        //        {
+        //            Fecha = DateTime.Now,
+        //            Nombre = "ActualizarMovimientosIndividual",
+        //            Codigo = "SynchronizeMovementIndividual",
+        //            Mesaje = $"Error al Sincronizar - "+ e.Message,
+        //            StatusCode = "500",
+        //            RegistrosActualizados = contUpdate,
+        //            RegistrosNuevos = contNew,
+        //            Tiempo = 0 // Aquí puedes calcular el tiempo si lo deseas
+        //        });
+        //        await _context.SaveChangesAsync();
+        //    }
+        //}
+
+        //public async Task ActualizarMovimientosAsync(Usuario usuario)
+        //{
+        //    bool hayCambiosParaGuardar = false;
+        //    bool nuevasEntidadesParaGuardar = false;
+        //    int contNew = 0;
+        //    int contUpdate = 0;
+        //    long tiempo = 0;
+        //    try
+        //    {
+        //        if (usuario == null) return;
+        //        var cronometro = Stopwatch.StartNew();
+
+        //        DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
+        //        CombinedData data = await ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(usuario.Personas.NroTarjeta), 100, 0);
+        //        List<Periodo> listaDePeriodos = await _context.Periodo.ToListAsync();
+
+        //        if (data?.DetallesSolicitud == null) return;
+
+        //        // --- MARCAR MOVIMIENTOS COMO PAGADOS ---
+        //        // 1. Crear un HashSet con las claves únicas (Solicitud+Cuota) que vienen del servicio.
+        //        var cuotasExternas = data.DetallesSolicitud.SelectMany(detalle => detalle.DetallesCuota.Select(cuota => new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota))).ToHashSet();
+
+        //        // 2. Obtener movimientos no están pagados.
+        //        var movimientosLocalesSinPagar = await _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuario.Id && !m.Pagado).ToListAsync();
+
+        //        // 3. MARCAR COMO PAGADOS: Si un movimiento local no está en la nueva lista del servicio, se marca como Pagado.
+        //        foreach (var movimientoLocal in movimientosLocalesSinPagar)
+        //        {
+        //            var tuplaLocal = new Tuple<string, string>(movimientoLocal.NroSolicitud, movimientoLocal.NroCuota);
+        //            if (!cuotasExternas.Contains(tuplaLocal))
+        //            {
+        //                movimientoLocal.Pagado = true;
+        //                hayCambiosParaGuardar = true;
+        //                contUpdate++;
+        //            }
+        //        }
+
+        //        // 4. AÑADIR NUEVOS MOVIMIENTOS:
+        //        // Creamos un HashSet con las claves de los movimientos que ya tenemos en la BD para evitar duplicados.
+        //        var cuotasLocalesExistentes = movimientosLocalesSinPagar.Select(m => new Tuple<string, string>(m.NroSolicitud, m.NroCuota)).ToHashSet();
+
+        //        foreach (SolicitudDetail detalle in data.DetallesSolicitud)
+        //        {
+        //            string totalCuotasDeLaSolicitud = detalle.DetallesCuota.Max(x => x.NumeroCuota);
+
+        //            foreach (var cuota in detalle.DetallesCuota)
+        //            {
+        //                var tuplaExterna = new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota);
+
+        //                // Si la cuota específica ya existe, saltamos a la siguiente.
+        //                if (cuotasLocalesExistentes.Contains(tuplaExterna)) continue;
+
+        //                // Si llegamos aquí, es una cuota nueva que debemos guardar.
+        //                hayCambiosParaGuardar = true;
+
+        //                DateTime fechaMovimiento = common.ConvertirFecha(cuota.Fecha);
+        //                var periodo = listaDePeriodos.FirstOrDefault(p => fechaMovimiento >= p.FechaDesde && fechaMovimiento <= p.FechaHasta);
+
+        //                if (periodo == null)
+        //                {
+        //                    periodo = CrearNuevoPeriodo(fechaMovimiento);
+        //                    if (periodo!=null)
+        //                    {
+        //                        _context.Periodo.Add(periodo);
+        //                        listaDePeriodos.Add(periodo);
+        //                    }
+
+        //                }
+
+        //                _context.MovimientoTarjeta.Add(new MovimientoTarjeta
+        //                {
+        //                    NroSolicitud = detalle.NumeroSolicitud,
+        //                    NombreComercio = detalle.NombreComercio,
+        //                    NroCuota = cuota.NumeroCuota,
+        //                    Monto = Convert.ToDecimal(cuota.Monto, CultureInfo.InvariantCulture),
+        //                    Fecha = fechaMovimiento,
+        //                    Usuario = usuario,
+        //                    Periodo = periodo,
+        //                    CantidadCuotas = totalCuotasDeLaSolicitud,
+        //                    Pagado = false
+        //                });
+        //                contNew++;
+        //            }
+        //        }
+
+        //        // 5. GUARDAR TODOS LOS CAMBIOS UNA SOLA VEZ
+        //        if (hayCambiosParaGuardar)
+        //        {
+        //            await _context.SaveChangesAsync();
+        //        }
+        //        cronometro.Stop();
+        //        await _context.LogProcedimientos.AddAsync(new LogProcedimientos
+        //        {
+        //            Fecha = DateTime.Now,
+        //            Nombre = "ActualizarMovimientosIndividual",
+        //            Codigo = "SynchronizeMovementIndividual",
+        //            Mesaje = $"Se actualizaron {contUpdate} registros y se crearon {contNew} nuevos movimientos.",
+        //            StatusCode = "200",
+        //            RegistrosActualizados = contUpdate,
+        //            RegistrosNuevos = contNew,
+        //            Tiempo = cronometro.ElapsedMilliseconds // Aquí puedes calcular el tiempo si lo deseas
+        //        });
+        //        await _context.SaveChangesAsync();
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        await _context.LogProcedimientos.AddAsync(new LogProcedimientos
+        //        {
+        //            Fecha = DateTime.Now,
+        //            Nombre = "ActualizarMovimientosIndividual",
+        //            Codigo = "SynchronizeMovementIndividual",
+        //            Mesaje = $"Error al Sincronizar - "+ e.Message,
+        //            StatusCode = "500",
+        //            RegistrosActualizados = contUpdate,
+        //            RegistrosNuevos = contNew,
+        //            Tiempo = 0 // Aquí puedes calcular el tiempo si lo deseas
+        //        });
+        //        await _context.SaveChangesAsync();
+        //    }            
+        //}
+
+        //public async Task<JsonResult> ActualizarMovimientosAsync()
+        //{
+        //    int contNew = 0;
+        //    int contUpdate = 0;
+        //    long tiempo = 0;
+        //    try
+        //    {
+        //        var cronometro = Stopwatch.StartNew();
+        //        IQueryable<Usuario> listUsuario = _context.Usuarios;
+
+        //        bool hayCambiosParaGuardar = false;
+        //        bool nuevasEntidadesParaGuardar = false;
+        //        foreach (var usuario in listUsuario)
+        //        {
+        //            try
+        //            {
+        //                DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
+
+        //                if (usuario.Personas==null) continue;
+
+        //                if (usuario.Personas.NroDocumento == "" || usuario.Personas.NroTarjeta=="") continue;
+
+        //                string numeroTarjetaConError = usuario.Personas.NroTarjeta;
+        //                if (!long.TryParse(numeroTarjetaConError, out long resultado))
+        //                {
+        //                    _logger.LogWarning($"El número de tarjeta '{numeroTarjetaConError}' no es válido y será omitido.");
+        //                    continue;
+        //                }
+
+        //                CombinedData data = await ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, resultado, 100, 0);
+        //                List<Periodo> listaDePeriodos = await _context.Periodo.ToListAsync();
+
+        //                _logger.LogInformation("Usuario - " + usuario.UserName);
+        //                // --- MARCAR MOVIMIENTOS COMO PAGADOS ---
+        //                // 1. Crear un HashSet con las claves únicas (Solicitud+Cuota) que vienen del servicio.
+
+        //                if (data.Detalle.Resultado != "EXITO") continue;
+
+        //                var cuotasExternas = data.DetallesSolicitud.SelectMany(detalle => detalle.DetallesCuota.Select(cuota => new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota))).ToHashSet();
+
+        //                // 2. Obtener movimientos no están pagados.
+        //                var movimientosLocalesSinPagar = await _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuario.Id && !m.Pagado).ToListAsync();
+
+        //                // 3. MARCAR COMO PAGADOS: Si un movimiento local no está en la nueva lista del servicio, se marca como Pagado.
+        //                foreach (var movimientoLocal in movimientosLocalesSinPagar)
+        //                {
+        //                    var tuplaLocal = new Tuple<string, string>(movimientoLocal.NroSolicitud, movimientoLocal.NroCuota);
+        //                    if (!cuotasExternas.Contains(tuplaLocal))
+        //                    {
+        //                        movimientoLocal.Pagado = true;
+        //                        hayCambiosParaGuardar = true;
+        //                        contUpdate++;
+        //                    }
+        //                }
+
+        //                // 4. AÑADIR NUEVOS MOVIMIENTOS:
+        //                // Creamos un HashSet con las claves de los movimientos que ya tenemos en la BD para evitar duplicados.
+        //                var cuotasLocalesExistentes = movimientosLocalesSinPagar.Select(m => new Tuple<string, string>(m.NroSolicitud, m.NroCuota)).ToHashSet();
+
+        //                foreach (SolicitudDetail detalle in data.DetallesSolicitud)
+        //                {
+        //                    string totalCuotasDeLaSolicitud = detalle.DetallesCuota.Max(x => x.NumeroCuota);
+
+        //                    foreach (var cuota in detalle.DetallesCuota)
+        //                    {
+        //                        var tuplaExterna = new Tuple<string, string>(detalle.NumeroSolicitud, cuota.NumeroCuota);
+
+        //                        // Si la cuota específica ya existe, saltamos a la siguiente.
+        //                        if (cuotasLocalesExistentes.Contains(tuplaExterna)) continue;
+
+        //                        // Si llegamos aquí, es una cuota nueva que debemos guardar.
+        //                        hayCambiosParaGuardar = true;
+
+        //                        DateTime fechaMovimiento = common.ConvertirFecha(cuota.Fecha);
+        //                        var periodo = listaDePeriodos.FirstOrDefault(p => fechaMovimiento >= p.FechaDesde && fechaMovimiento <= p.FechaHasta);
+
+        //                        if (periodo == null)
+        //                        {
+        //                            periodo = CrearNuevoPeriodo(fechaMovimiento);
+        //                            if (periodo!=null)
+        //                            {
+        //                                _context.Periodo.Add(periodo);
+        //                                listaDePeriodos.Add(periodo);
+        //                            }
+
+        //                        }
+
+        //                        if (!decimal.TryParse(cuota.Monto, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out decimal monto))
+        //                        {
+        //                            // Si falla, loguea la cuota problemática y sáltala.
+        //                            _logger.LogWarning($"El monto '{cuota.Monto}' no tiene un formato decimal válido. Se omite la cuota.");
+        //                            continue;
+        //                        }
+
+        //                        _context.MovimientoTarjeta.Add(new MovimientoTarjeta
+        //                        {
+        //                            NroSolicitud = detalle.NumeroSolicitud,
+        //                            NombreComercio = detalle.NombreComercio,
+        //                            NroCuota = cuota.NumeroCuota,
+        //                            Monto = monto,
+        //                            Fecha = fechaMovimiento,
+        //                            Usuario = usuario,
+        //                            Periodo = periodo,
+        //                            CantidadCuotas = totalCuotasDeLaSolicitud,
+        //                            Pagado = false
+        //                        });
+        //                        contNew++;
+        //                    }
+        //                }
+        //                // 5. GUARDAR TODOS LOS CAMBIOS UNA SOLA VEZ
+        //                if (hayCambiosParaGuardar)
+        //                {
+        //                    await _context.SaveChangesAsync();
+        //                    hayCambiosParaGuardar= false;
+        //                }
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                continue; // Si hay un error con un usuario, lo saltamos y continuamos con el siguiente.
+        //            }
+        //        }
+        //        cronometro.Stop();
+
+        //        await _context.LogProcedimientos.AddAsync(new LogProcedimientos
+        //        {
+        //            Fecha = DateTime.Now,
+        //            Nombre = "ActualizarMovimientosAsync",
+        //            Codigo = "SynchronizeMovementIndividual",
+        //            Mesaje = $"Se actualizaron {contUpdate} registros y se crearon {contNew} nuevos movimientos.",
+        //            StatusCode = "200",
+        //            RegistrosActualizados = contUpdate,
+        //            RegistrosNuevos = contNew,
+        //            Tiempo = cronometro.ElapsedMilliseconds // Aquí puedes calcular el tiempo si lo deseas
+        //        });
+        //        await _context.SaveChangesAsync();
+
+        //        return new JsonResult(new { mesanje = $"Se Actualizaron {contUpdate} Registros - Se crearon : {contNew} Registros", code = 200 });
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        await _context.LogProcedimientos.AddAsync(new LogProcedimientos
+        //        {
+        //            Fecha = DateTime.Now,
+        //            Nombre = "ActualizarMovimientosAsync",
+        //            Codigo = "SynchronizeMovementIndividual",
+        //            Mesaje = $"Error al Sincronizar - "+ e.Message,
+        //            StatusCode = "500",
+        //            RegistrosActualizados = contUpdate,
+        //            RegistrosNuevos = contNew,
+        //            Tiempo = 0 // Aquí puedes calcular el tiempo si lo deseas
+        //        });
+        //        await _context.SaveChangesAsync();
+        //        return new JsonResult(new { mesanje = "Error - "+e.Message, code = 500 });
+        //    }            
+        //}
+
+        //public async Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model)
+        //{
+        //    var actionContext = GetActionContext();
+        //    var view = FindView(actionContext, viewName);
+
+        //    using (var output = new StringWriter())
+        //    {
+        //        var viewContext = new ViewContext(
+        //            actionContext,
+        //            view,
+        //            new ViewDataDictionary<TModel>(
+        //                metadataProvider: new EmptyModelMetadataProvider(),
+        //                modelState: new ModelStateDictionary())
+        //            {
+        //                Model = model
+        //            },
+        //            new TempDataDictionary(
+        //                actionContext.HttpContext,
+        //                _tempDataProvider),
+        //            output,
+        //            new HtmlHelperOptions());
+
+        //        await view.RenderAsync(viewContext);
+
+        //        return output.ToString();
+        //    }
+        //}
+
+        ///// <summary>
+        ///// Obtiene la lista de créditos (solicitudes) de una persona.
+        ///// </summary>
+        //public async Task<ObtenerCreditosResponse> ObtenerCreditosAsync(string login, string clave, int PersonaId)
+        //{
+        //    // Creamos el cuerpo de la petición.
+        //    var requestBody = new ObtenerCreditosRequest
+        //    {
+        //        LoginInterface = new LoginInterface
+        //        {
+        //            Login = login,
+        //            Clave = clave,
+        //            Token = "" // El token podría ser necesario aquí si la API lo requiere.
+        //        },
+        //        IdPersona = PersonaId,
+        //    };
+
+        //    var jsonContent = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
+
+        //    // Realizamos la llamada POST al endpoint de ObtenerCreditos.
+        //    var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERCREDITOS", jsonContent);
+
+        //    if (response.IsSuccessStatusCode)
+        //    {
+        //        var jsonResponse = await response.Content.ReadAsStringAsync();
+        //        return JsonConvert.DeserializeObject<ObtenerCreditosResponse>(jsonResponse);
+        //    }
+
+        //    return null;
+        //}
+
+
+
+        //private Periodo CrearNuevoPeriodo(DateTime fechaMovimiento)
+        //{
+        //    if (fechaMovimiento.Year<2025) return null;
+
+        //    int diaDeCorte = 25;
+        //    DateTime fechaHasta;
+
+        //    if (fechaMovimiento.Day > diaDeCorte)
+        //        fechaHasta = new DateTime(fechaMovimiento.Year, fechaMovimiento.Month, diaDeCorte).AddMonths(1);
+        //    else
+        //        fechaHasta = new DateTime(fechaMovimiento.Year, fechaMovimiento.Month, diaDeCorte);
+
+        //    DateTime fechaDesde = fechaHasta.AddMonths(-1).AddDays(1);
+        //    var mesDeVencimiento = fechaHasta.AddMonths(1);
+        //    var fechaVencimiento = new DateTime(mesDeVencimiento.Year, mesDeVencimiento.Month, 15);
+
+        //    return new Periodo
+        //    {
+        //        Descripcion = $"{fechaHasta:MMMM yyyy}",
+        //        FechaDesde = fechaDesde,
+        //        FechaHasta = fechaHasta,
+        //        FechaVencimiento = fechaVencimiento,
+        //        Activo = true
+        //    };
+        //}
+
+        //private IView FindView(ActionContext actionContext, string viewName)
+        //{
+        //    var getViewResult = _razorViewEngine.GetView(executingFilePath: null, viewPath: viewName, isMainPage: true);
+        //    if (getViewResult.Success)
+        //    {
+        //        return getViewResult.View;
+        //    }
+
+        //    var findViewResult = _razorViewEngine.FindView(actionContext, viewName, isMainPage: true);
+        //    if (findViewResult.Success)
+        //    {
+        //        return findViewResult.View;
+        //    }
+
+        //    throw new ArgumentNullException($"No se pudo encontrar la vista {viewName}. Se buscó en las siguientes ubicaciones: {string.Join(", ", findViewResult.SearchedLocations)}");
+        //}
+
+        //private ActionContext GetActionContext()
+        //{
+        //    var httpContext = new DefaultHttpContext { RequestServices = _serviceProvider };
+        //    return new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
+        //}
+
+        ///// <summary>
+        ///// Obtiene los datos de una persona usando diferentes criterios de búsqueda.
+        ///// </summary>
+        ///// <param name="login">Login para autenticación.</param>
+        ///// <param name="clave">Clave para autenticación.</param>
+        ///// <param name="documento">Documento de la persona (opcional).</param>
+        ///// <returns>El objeto Persona si se encuentra, de lo contrario null.</returns>
+        //public async Task<PersonaLoanDTO> ObtenerPersonaAsync(string login, string clave, string documento)
+        //{
+        //    // 1. Crear el cuerpo de la petición.
+        //    var requestBody = new ObtenerPersonaRequest
+        //    {
+        //        LoginInterface = new LoginInterface
+        //        {
+        //            Login = login,
+        //            Clave = clave,
+        //            Token = ""
+        //        },
+        //        Documento = documento
+        //        // Puedes agregar otros filtros aquí si es necesario (Nombre, Sexo, etc.)
+        //    };
+
+        //    var jsonContent = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
+
+        //    // 2. Realizar la llamada POST al endpoint ObtenerPersona.
+        //    var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERPERSONA", jsonContent);
+
+        //    if (response.IsSuccessStatusCode)
+        //    {
+        //        var jsonResponse = await response.Content.ReadAsStringAsync();
+        //        var personaResponse = JsonConvert.DeserializeObject<ObtenerPersonaResponse>(jsonResponse);
+
+        //        // Si el resultado es exitoso y se encontró una persona, la devolvemos.
+        //        if (personaResponse?.Resultado?.Result == 1 && personaResponse.Persona != null)
+        //        {
+        //            return personaResponse?.Persona;
+        //        }
+        //    }
+
+        //    return null;
+        //}
     }
 
 

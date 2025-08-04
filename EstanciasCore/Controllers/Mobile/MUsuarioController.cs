@@ -3,6 +3,7 @@ using Commons.Identity.Services;
 using DAL.Data;
 using DAL.DTOs;
 using DAL.DTOs.Servicios;
+using DAL.DTOs.Servicios.DatosTarjeta;
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
@@ -922,27 +923,27 @@ namespace EstanciasCore.Controllers
         }
 
 
-        [HttpGet("SincronizarMovimientos")]
-        [EnableCors("CorsPolicy")]
-        [AllowAnonymous]
-        public async Task<IActionResult> RegistrarPago()
-        {
-            try
-            {
-                var procedimiento = _context.Procedimientos.Where(x => x.Codigo=="SynchronizeMovement").FirstOrDefault();
-                if (procedimiento.Activo)
-                {
-                    var result = await _datosServices.ActualizarMovimientosAsync();
-                    return result;
-                }
-                return new JsonResult(new { mesanje = "Procedimiento Desactivado", code = 200 });
+        //[HttpGet("SincronizarMovimientos")]
+        //[EnableCors("CorsPolicy")]
+        //[AllowAnonymous]
+        //public async Task<IActionResult> RegistrarPago()
+        //{
+        //    try
+        //    {
+        //        var procedimiento = _context.Procedimientos.Where(x => x.Codigo=="SynchronizeMovement").FirstOrDefault();
+        //        if (procedimiento.Activo)
+        //        {
+        //            var result = await _datosServices.ActualizarMovimientosAsync();
+        //            return result;
+        //        }
+        //        return new JsonResult(new { mesanje = "Procedimiento Desactivado", code = 200 });
 
-            }
-            catch (Exception e)
-            {
-                return new JsonResult(new { mesanje = "Error - "+e.Message, code = 500 });
-            }
-        }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return new JsonResult(new { mesanje = "Error - "+e.Message, code = 500 });
+        //    }
+        //}
 
 
 
@@ -1458,6 +1459,7 @@ namespace EstanciasCore.Controllers
             }
 
         }
+
 
 
 

@@ -4,14 +4,16 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(EstanciasContext))]
-    partial class EstanciasContextModelSnapshot : ModelSnapshot
+    [Migration("20250724200242_add-columFechaDePago")]
+    partial class addcolumFechaDePago
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1774,8 +1776,6 @@ namespace DAL.Migrations
                     b.Property<string>("FechaVencimiento");
 
                     b.Property<byte[]>("Foto");
-
-                    b.Property<int?>("LoanId");
 
                     b.Property<string>("Nombres")
                         .IsRequired();

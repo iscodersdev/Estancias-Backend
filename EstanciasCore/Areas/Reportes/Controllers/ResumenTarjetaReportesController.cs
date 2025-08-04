@@ -53,116 +53,118 @@ public class ResumenTarjetaReportesController : EstanciasCoreController
         return View();
     }
 
-    [HttpPost]
-    public async Task<IActionResult> _ListadoResumenes(string nroTarjetaFiltro, string nroDocumentoFiltro)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(nroTarjetaFiltro) && string.IsNullOrEmpty(nroDocumentoFiltro))
-                return PartialView(new List<ResumenTarjetaDTO>());
+    //[HttpPost]
+    //public async Task<IActionResult> _ListadoResumenes(string nroTarjetaFiltro, string nroDocumentoFiltro)
+    //{
+    //    try
+    //    {
+    //        if (string.IsNullOrEmpty(nroTarjetaFiltro) && string.IsNullOrEmpty(nroDocumentoFiltro))
+    //            return PartialView(new List<ResumenTarjetaDTO>());
 
-            // Búsqueda de usuario optimizada y asíncrona
-            IQueryable<Usuario> query = _context.Usuarios;
-            if (!string.IsNullOrEmpty(nroTarjetaFiltro))
-                query = query.Where(x => x.Personas.NroTarjeta == nroTarjetaFiltro);
-            if (!string.IsNullOrEmpty(nroDocumentoFiltro))
-                query = query.Where(x => x.Personas.NroDocumento == nroDocumentoFiltro);
+    //        Búsqueda de usuario optimizada y asíncrona
+    //        IQueryable<Usuario> query = _context.Usuarios;
+    //        if (!string.IsNullOrEmpty(nroTarjetaFiltro))
+    //            query = query.Where(x => x.Personas.NroTarjeta == nroTarjetaFiltro);
+    //        if (!string.IsNullOrEmpty(nroDocumentoFiltro))
+    //            query = query.Where(x => x.Personas.NroDocumento == nroDocumentoFiltro);
 
-            var usuario = await query.FirstOrDefaultAsync();
+    //        var usuario = await query.FirstOrDefaultAsync();
 
-            if (usuario == null)
-            {
-                ViewBag.ErrorMessage = "No se encontró ningún usuario con los datos proporcionados.";
-                return PartialView(new List<ResumenTarjetaDTO>());
-            }
+    //        if (usuario == null)
+    //        {
+    //            ViewBag.ErrorMessage = "No se encontró ningún usuario con los datos proporcionados.";
+    //            return PartialView(new List<ResumenTarjetaDTO>());
+    //        }
 
-            // Sincroniza los movimientos desde el servicio externo
-            //await ActualizarMovimientosAsync(usuario);
-
-
-           await _datosServices.ActualizarMovimientosAsyncModificado(usuario);
+    //        Sincroniza los movimientos desde el servicio externo
+    //       await ActualizarMovimientosAsync(usuario);
 
 
-            DateTime fechaActual = DateTime.Now.AddMonths(1);
+    //        await _datosServices.ActualizarMovimientosAsyncModificado(usuario);
 
-            List<MovimientoTarjeta> movimientos = _context.MovimientoTarjeta.Where(x => x.Usuario.Id == usuario.Id && x.Periodo != null).Where(e=>e.Periodo.FechaHasta<fechaActual).ToList();
 
-            List<ResumenTarjetaDTO> resumenes = movimientos.GroupBy(g => g.Periodo)
-                .Select(g => new ResumenTarjetaDTO
-                {
-                    UsuarioId = usuario.Id,
-                    PeriodoId = g.Key.Id,
-                    Periodo = g.Key.Descripcion,
-                    FechaVencimiento = g.Key.FechaVencimiento.ToString("dd/MM/yyyy"),
-                    MontoAdeudado = g.Sum(m => m.Monto)
-                })
-                .OrderByDescending(r => r.FechaVencimiento)
-                .ToList();
+    //        DateTime fechaActual = DateTime.Now.AddMonths(1);
 
-            ViewBag.UsuarioId = usuario.Id;
-            return PartialView(resumenes);
-        }
-        catch (Exception ex)
-        {
-            return Json(new { error = "Se produjo un error al procesar la solicitud: " + ex.Message });
-        }
-    }
+    //        List<MovimientoTarjeta> movimientos = _context.MovimientoTarjeta.Where(x => x.Usuario.Id == usuario.Id && x.Periodo != null).Where(e => e.Periodo.FechaHasta<fechaActual).ToList();
 
-    [HttpGet]
-    public async Task<IActionResult> DescargarResumen(int periodoId, string usuarioId)
-    {
-        try
-        {
-            var datosParaElResumen = await _datosServices.PrepararDatosDTO(periodoId, usuarioId);
-            if (datosParaElResumen == null)
-            {
-                return NotFound("No se encontraron datos para generar el resumen.");
-            }
+    //        List<ResumenTarjetaDTO> resumenes = movimientos.GroupBy(g => g.Periodo)
+    //            .Select(g => new ResumenTarjetaDTO
+    //            {
+    //                UsuarioId = usuario.Id,
+    //                PeriodoId = g.Key.Id,
+    //                Periodo = g.Key.Descripcion,
+    //                FechaVencimiento = g.Key.FechaVencimiento.ToString("dd/MM/yyyy"),
+    //                MontoAdeudado = g.Sum(m => m.Monto)
+    //            })
+    //            .OrderByDescending(r => r.FechaVencimiento)
+    //            .ToList();
 
-            string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaElResumen);
+    //        ViewBag.UsuarioId = usuario.Id;
+    //        return PartialView(resumenes);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return Json(new { error = "Se produjo un error al procesar la solicitud: " + ex.Message });
+    //    }
+    //}
 
-            byte[] pdfBytes;
-            using (var memoryStream = new MemoryStream())
-            {
-                HtmlConverter.ConvertToPdf(html, memoryStream);
-                pdfBytes = memoryStream.ToArray();
-            }
+    //[HttpGet]
+    //public async Task<IActionResult> DescargarResumen(int periodoId, string usuarioId)
+    //{
+    //    try
+    //    {
+    //        var datosParaElResumen = await _datosServices.PrepararDatosDTO(periodoId, usuarioId);
+    //        var datosParaElResumen = null;
+    //        if (datosParaElResumen == null)
+    //        {
+    //            return NotFound("No se encontraron datos para generar el resumen.");
+    //        }
 
-            string nombreArchivo = $"Resumen_{datosParaElResumen.Periodo.Descripcion.Replace(" ", "_")}.pdf";
-            return File(pdfBytes, "application/pdf", nombreArchivo);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest("Ocurrió un error al generar el resumen: " + ex.Message);
-        }
-    }
+    //        string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaElResumen);
+    //        string html = null;
+
+    //        byte[] pdfBytes;
+    //        using (var memoryStream = new MemoryStream())
+    //        {
+    //            HtmlConverter.ConvertToPdf(html, memoryStream);
+    //            pdfBytes = memoryStream.ToArray();
+    //        }
+
+    //        string nombreArchivo = $"Resumen_{datosParaElResumen.Periodo.Descripcion.Replace(" ", "_")}.pdf";
+    //        return File(pdfBytes, "application/pdf", nombreArchivo);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return BadRequest("Ocurrió un error al generar el resumen: " + ex.Message);
+    //    }
+    //}
 
     
 
     /// <summary>
     /// Acción para renderizar la plantilla HTML en el navegador y facilitar el diseño.
     /// </summary>
-    [HttpGet]
-    public async Task<IActionResult> VistaPreviaResumen(int periodoId, string usuarioId)
-    {
-        try
-        {
-            // 1. Prepara los datos exactamente igual que para el PDF
-            var datosParaElResumen = await _datosServices.PrepararDatosDTO(periodoId, usuarioId);
-            if (datosParaElResumen == null)
-            {
-                return NotFound("No se encontraron datos para la vista previa.");
-            }
+    //[HttpGet]
+    //public async Task<IActionResult> VistaPreviaResumen(int periodoId, string usuarioId)
+    //{
+    //    try
+    //    {
+    //        1.Prepara los datos exactamente igual que para el PDF
+    //        var datosParaElResumen = await _datosServices.PrepararDatosDTO(periodoId, usuarioId);
+    //        if (datosParaElResumen == null)
+    //        {
+    //            return NotFound("No se encontraron datos para la vista previa.");
+    //        }
 
-            // 2. Devuelve la vista directamente, pasándole el modelo.
-            // El navegador la renderizará como una página web normal.
-            return View("ResumenBancarioTemplate", datosParaElResumen);
-        }
-        catch (Exception ex)
-        {
-            return Content("Ocurrió un error al generar la vista previa: " + ex.Message);
-        }
-    }
+    //        2.Devuelve la vista directamente, pasándole el modelo.
+    //         El navegador la renderizará como una página web normal.
+    //        return View("ResumenBancarioTemplate", datosParaElResumen);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return Content("Ocurrió un error al generar la vista previa: " + ex.Message);
+    //    }
+    //}
 
 
     [HttpGet]

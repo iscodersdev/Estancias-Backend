@@ -127,8 +127,10 @@ namespace DAL.Models.Core
             public string NroTarjeta { get; set; }
             public DateTime? FechaVencimiento { get; set; } = new DateTime();
             public Decimal MontoAdeudado { get; set; }
+            public Decimal MontoInformado { get; set; }
             public DateTime? FechaPagoProximaCuota { get; set; } = new DateTime();
             public DateTime? FechaComprobante { get; set; } = new DateTime();
+            public DateTime? FechaDePago{ get; set; } = new DateTime();
             public virtual EstadoPago EstadoPago { get; set; }
             public byte[] ComprobantePago { get; set; }
         }

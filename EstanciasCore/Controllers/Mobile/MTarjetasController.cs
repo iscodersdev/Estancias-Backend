@@ -1,6 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs;
 using DAL.DTOs.API;
+using DAL.DTOs.Reportes;
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
@@ -10,6 +11,7 @@ using EstanciasCore.Interface;
 using EstanciasCore.Services;
 using Google.Protobuf.WellKnownTypes;
 using iText.Html2pdf;
+using iText.Kernel.Pdf.Canvas.Wmf;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Razor.Internal;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -69,227 +71,301 @@ namespace EstanciasCore.API.Controllers.Billetera
         }
 
         [HttpPost("MovimientoTarjeta")]
-        public IActionResult MovimientoTarjeta([FromBody] ListaMovimientoTarjetaDTO movimientostarjetaDTOS)
+        public async Task<IActionResult> MovimientoTarjeta([FromBody] ListaMovimientoTarjetaDTO movimientostarjetaDTOS)
         {
             try
             {
+                int LoanPersonaId = 0;
                 var usuario = TraeUsuarioUAT(movimientostarjetaDTOS.UAT);
                 if (usuario == null)
                     return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"no existe UAT de Usuario" });
 
-                var procedimiento = _context.Procedimientos.Where(x => x.Codigo=="SynchronizeMovementIndividual").FirstOrDefault();
-                if (procedimiento.Activo)
+                DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
+                if (usuario.Personas.LoanId == null)
                 {
-                    _datosServices.ActualizarMovimientosAsync(usuario);
+                    var personaLOAN = _datosServices.ObtenerPersonaAsync(usuario.Personas.NroDocumento);
+                    if (personaLOAN == null)
+                    {
+                        return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No existe datos de la tarjeta" });
+                    }
+                    LoanPersonaId = Convert.ToInt32(personaLOAN.Result.Persona.Id);
+                    usuario.Personas.LoanId = LoanPersonaId;
+                    _context.Personas.Update(usuario.Personas);
+                    _context.SaveChanges();
+                }
+                else
+                {
+                    LoanPersonaId = Convert.ToInt32(usuario.Personas.LoanId);
                 }
 
-                DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
-                var tipomov = _context.TipoMovimientoTarjeta.Where(x => x.Id == movimientostarjetaDTOS.tipomovimiento).FirstOrDefault();
-
-                var movimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, movimientostarjetaDTOS.CantMovimientos, movimientostarjetaDTOS.tipomovimiento).Result;
-
-                if (movimientos.Detalle.Resultado == "EXITO")
+                var creditosLOAN = await _datosServices.ObtenerCreditosAsync(LoanPersonaId.ToString());
+                if (creditosLOAN?.Credito == null || !creditosLOAN.Credito.Any())
                 {
-                    List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-                    if (movimientostarjetaDTOS.tipomovimiento == 0) //Todos los movimientos
-                    {
-                        comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
-                        .GroupBy(m => new { m.Descripcion, m.Fecha })
-                        .Select(g => new MovimientoTarjetaDTO
+                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No hay créditos para procesar" });
+                }
+
+                var creditosTasks = creditosLOAN.Credito.Select(c => _datosServices.ObtenerCreditoDetallesAsync(c.IdSolicitud));
+                var detallesDeTodosLosCreditos = await Task.WhenAll(creditosTasks);
+
+
+                var fechaActual = DateTime.Now;
+                //var fechaActual = new DateTime(2025, 08, 17);
+
+                var fechaVentimiento = common.ObtenerFechaCalculada(fechaActual);
+
+
+
+                var totales = detallesDeTodosLosCreditos
+                    .Where(result => result?.CreditoDetalles != null)
+                    .SelectMany(result => result.CreditoDetalles)
+                    .Where(detalle =>
+                        (detalle.Estado == "Vencida" || detalle.Estado == "Pendiente") &&
+                        common.ConvertirFecha(detalle.Fecha) < common.ConvertirFecha(fechaVentimiento))
+                    .Aggregate(
+                        Tuple.Create(0m, 0m),
+                        (acumulado, detalle) =>
                         {
-                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-                            TipoMovimiento = g.Key.Descripcion,
-                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-                        })
-                        .ToList();
-
-                        comprasAgrupadas.AddRange(movimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
-                        .Select(g => new MovimientoTarjetaDTO
-                        {
-                            Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
-                            TipoMovimiento = g.Descripcion,
-                            Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
-                        }).ToList());
-                    }
-                    else
-                    {
-                        comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion == tipomov.Nombre)
-                       .GroupBy(m => new { m.Descripcion, m.Fecha })
-                       .Select(g => new MovimientoTarjetaDTO
-                       {
-                           Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-                           TipoMovimiento = g.Key.Descripcion,
-                           Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-                       })
-                       .ToList();
-                    }
-
-
-                    List<ListDetalleCuotaDTO> movimientosDetalles = new List<ListDetalleCuotaDTO>();
-
-                    //var movi = movimientos.DetallesSolicitud.Where(x=>x.DetallesCuota.Where(e=>e.Fecha))
-
-                    foreach (var item in movimientos.DetallesSolicitud)
-                    {
-                        foreach (var itemMovimiento in item.DetallesCuota)
-                        {
-                            if (movimientosDetalles.Any(x => x.Fecha == itemMovimiento.Fecha))
-                            {
-                                var detalle = movimientosDetalles.Where(x => x.Fecha == itemMovimiento.Fecha).First();
-                                detalle.Monto = (Convert.ToDecimal(detalle.Monto) + Convert.ToDecimal(itemMovimiento.Monto)).ToString();
-                            }
-                            else
-                            {
-                                movimientosDetalles.Add(new ListDetalleCuotaDTO()
-                                {
-                                    Fecha = itemMovimiento.Fecha,
-                                    Monto = itemMovimiento.Monto
-                                });
-                            }
+                            decimal.TryParse(detalle.ImporteCuota, out var cuota);
+                            decimal.TryParse(detalle.ImportePunitorios, out var punitorios);
+                            return Tuple.Create(acumulado.Item1 + cuota, acumulado.Item2 + punitorios);
                         }
-                    }
+                    );
 
-                    string saldoVencidoAcumulado = "0.0";
-                    string sumaProximoVencimientoAcumulado = "0.0";
-                    bool cuotaVencida = false;
-                    string fechaSiguienteCuota = "";
-                    DateTime? fechaProximoPago = null;
-
-                    foreach (var item in movimientosDetalles.OrderBy(x => ConvertirFecha(x.Fecha)))
-                    {
-
-                        if (VerificarVencimiento(item.Fecha))
-                        {
-                            SetearCultureInfoUS();
-                            var aux1 = Convert.ToDecimal(item.Monto);
-                            var aux2 = Convert.ToDecimal(saldoVencidoAcumulado);
-                            saldoVencidoAcumulado = (aux1+aux2).ToString();
-                            cuotaVencida = true;
-                        }
-                        else
-                        {
-                            if (fechaSiguienteCuota=="")
-                                fechaSiguienteCuota = item.Fecha;
-
-                            if ((ConvertirFecha(item.Fecha).Month==(ConvertirFecha(fechaSiguienteCuota).Month)) && (ConvertirFecha(item.Fecha).Year==ConvertirFecha(fechaSiguienteCuota).Year))
-                            {
-                                if (fechaProximoPago==null)
-                                    fechaProximoPago=ConvertirFecha(item.Fecha);
-
-                                SetearCultureInfoUS();
-                                var monto2 = Convert.ToDecimal(item.Monto);
-                                var monto1 = Convert.ToDecimal(sumaProximoVencimientoAcumulado);
-                                sumaProximoVencimientoAcumulado = (monto1+monto2).ToString();
-                            }
-                        }
-
-                    }
-                    SetearCultureInfoUS();
-                    sumaProximoVencimientoAcumulado = (Convert.ToDecimal(sumaProximoVencimientoAcumulado)+Convert.ToDecimal(saldoVencidoAcumulado)).ToString();
-
-                    bool ContieneLeyenda = false;
-                    string Leyenda = "";
-                    var LeyendaTexto = _context.LeyendaTipoMovimiento.FirstOrDefault();
-
-                    if (comprasAgrupadas.Where(x => x.TipoMovimiento == LeyendaTexto.NombreMovimiento).Count()>0 && LeyendaTexto.Activo==true)
-                    {
-                        ContieneLeyenda = true;
-                        Leyenda = LeyendaTexto.TextoLeyenda;
-                    }
+                var montoCuotaTotal = totales.Item1;
+                var montoPunitoriosTotal = totales.Item2;
+                var deudaTotal = montoCuotaTotal + montoPunitoriosTotal;
 
 
-                    List<MovimientoTarjetaDTO> MovimientosTarjeta = movimientos.Movimientos
-                        .Select(mov => new MovimientoTarjetaDTO
-                        {
-                            TipoMovimiento = mov.Descripcion,
-                            Monto = mov.Monto,
-                            Fecha = mov.Fecha.ToString("dd/MM/yyyy")
-                        })
-                        .ToList();
+                var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10, 0).Result;
+                var montoDisponible = "0";
+                if (datosMovimientos.Detalle.Resultado=="EXITO")
+                {
+                    montoDisponible = datosMovimientos.Detalle.MontoDisponible;
+                }
 
-                    int cantidadDeMovimientos = MovimientosTarjeta.Count();
-                    if (cantidadDeMovimientos>movimientostarjetaDTOS.CantMovimientos)
-                    {
-                        cantidadDeMovimientos = Convert.ToInt32(movimientostarjetaDTOS.CantMovimientos);
-                    }
+                var MovientosOrdenadosPorFecha = creditosLOAN.Credito.Select(g => new MovimientoTarjetaDTO
+                {
+                    Monto = g.CapitalPedido,
+                    TipoMovimiento = g.Producto,
+                    Fecha = g.Fecha
+                }).OrderByDescending(x=>x.Fecha).ToList();
 
 
-                    if (movimientostarjetaDTOS.NroTarjeta.ToString().TrimStart('0')=="500033395")
-                    {
-                        saldoVencidoAcumulado = "0.0";
-                    }
-
-                    var MovientosOrdenadosPorFecha = comprasAgrupadas.OrderByDescending(x => ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(movimientostarjetaDTOS.CantMovimientos)).ToList();
-
-                    return new JsonResult(
+                return new JsonResult(
                         new ListaMovimientoTarjetaDTO
                         {
                             Status = 200,
-                            UAT = movimientostarjetaDTOS.UAT,
+                            UAT = "null",
                             Mensaje = "Movimiento obtenidos",
                             NroTarjeta = movimientostarjetaDTOS.NroTarjeta,
                             NroDocumento = Convert.ToInt32(usuario.Personas.NroDocumento),
-                            Direccion = movimientos.Detalle.Direccion,
-                            MontoAdeudado = saldoVencidoAcumulado.Replace(".", ","),
-                            ProximaFechaPago = fechaProximoPago?.ToString("dd/MM/yyyy"),
-                            CuotaVencida = cuotaVencida,
-                            TotalProximaCuota = sumaProximoVencimientoAcumulado.Replace(".", ","),
-                            CantMovimientos = movimientostarjetaDTOS.CantMovimientos,
-                            Resultado = movimientos.Detalle.Resultado,
-                            Nombre = movimientos.Detalle.Nombre,
-                            FechaPagoProximaCuota = fechaProximoPago?.ToString("dd/MM/yyyy"),
-                            MovimientosTarjeta = MovientosOrdenadosPorFecha,
-                            MontoDisponible = movimientos.Detalle.MontoDisponible.Replace(".", ","),
-                            ContieneLeyenda = ContieneLeyenda,
-                            Leyenda = Leyenda,
-                            Telefono = empresa.Telefono
+                            CantMovimientos = MovientosOrdenadosPorFecha.Count(),
+                            Direccion = datosMovimientos.Detalle.Direccion,
+                            MontoAdeudado = deudaTotal.ToString().Replace(".", ","),
+                            ProximaFechaPago = fechaVentimiento,
+                            CuotaVencida = true,
+                            TotalProximaCuota = deudaTotal.ToString().Replace(".", ","),
+                            Resultado = creditosLOAN.Resultado.Mensaje,
+                            Nombre = usuario.Personas.GetNombreCompleto(),
+                            FechaPagoProximaCuota = fechaVentimiento,
+                            MontoDisponible = montoDisponible.Replace(".", ","),
+                            ContieneLeyenda = false,
+                            Leyenda = "",
+                            Telefono = empresa.Telefono,
+                            MovimientosTarjeta = MovientosOrdenadosPorFecha
                         });
-                }
-                else
-                    return new JsonResult(new ListaMovimientoTarjetaDTO { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No existe datos de la tarjeta" });
 
+
+
+                //return new JsonResult(respuestaDTO);
             }
             catch (Exception e)
             {
-                Log.Error($"Error en creacion de tarjeta - {e.Message}");
-                return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"Error en creacion de tarjeta" + e });
+                Log.Error($"Error en MovimientoTarjeta - {e.Message}");
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"Error en MovimientoTarjeta: {e.Message}" });
             }
-
         }
 
 
-        [HttpPost("MovimientoTarjetaNew")]
-        public IActionResult MovimientoTarjetaNew([FromBody] ListaMovimientoTarjetaDTO movimientostarjetaDTOS)
-        {
-            try
-            {
-                var usuario = TraeUsuarioUAT(movimientostarjetaDTOS.UAT);
-                if (usuario == null)
-                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"no existe UAT de Usuario" });
 
-                //var procedimiento = _context.Procedimientos.Where(x => x.Codigo=="SynchronizeMovementIndividual").FirstOrDefault();
-                //if (procedimiento.Activo)
-                //{
-                //    _datosServices.ActualizarMovimientosAsync(usuario);
-                //}
+        //[HttpPost("MovimientosLoan")]
+        //public IActionResult MovimientosLoan([FromBody] MovimientoLoanDTO movimientoLoanDTO)
+        //{
+        //    try
+        //    {              
+        //        DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
+        //        var tipomov = _context.TipoMovimientoTarjeta.Where(x => x.Id == movimientoLoanDTO.Tipomovimiento).FirstOrDefault();
 
-                DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
-                var tipomov = _context.TipoMovimientoTarjeta.Where(x => x.Id == movimientostarjetaDTOS.tipomovimiento).FirstOrDefault();
+        //        var movimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, movimientoLoanDTO.NroDocumento, Convert.ToUInt32(movimientoLoanDTO.NroTarjeta), movimientoLoanDTO.CantMovimientos, movimientoLoanDTO.Tipomovimiento).Result;
 
-                // var movimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, movimientostarjetaDTOS.CantMovimientos, movimientostarjetaDTOS.tipomovimiento).Result;
-                var movimientos = _datosServices.LoginApiLoanAsync(empresa.UsernameWS, empresa.PasswordWS);
+        //        if (movimientos.Detalle.Resultado == "EXITO")
+        //        {
+        //            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+        //            if (movimientoLoanDTO.Tipomovimiento == 0) //Todos los movimientos
+        //            {
+        //                comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
+        //                .GroupBy(m => new { m.Descripcion, m.Fecha })
+        //                .Select(g => new MovimientoTarjetaDTO
+        //                {
+        //                    Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+        //                    TipoMovimiento = g.Key.Descripcion,
+        //                    Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+        //                })
+        //                .ToList();
 
-                
-                return new JsonResult(new ListaMovimientoTarjetaDTO { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No existe datos de la tarjeta" });
+        //                comprasAgrupadas.AddRange(movimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+        //                .Select(g => new MovimientoTarjetaDTO
+        //                {
+        //                    Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
+        //                    TipoMovimiento = g.Descripcion,
+        //                    Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
+        //                }).ToList());
+        //            }
+        //            else
+        //            {
+        //                comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion == tipomov.Nombre)
+        //               .GroupBy(m => new { m.Descripcion, m.Fecha })
+        //               .Select(g => new MovimientoTarjetaDTO
+        //               {
+        //                   Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+        //                   TipoMovimiento = g.Key.Descripcion,
+        //                   Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+        //               })
+        //               .ToList();
+        //            }
 
-            }
-            catch (Exception e)
-            {
-                Log.Error($"Error en creacion de tarjeta - {e.Message}");
-                return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"Error en creacion de tarjeta" + e });
-            }
 
-        }
+        //            List<ListDetalleCuotaDTO> movimientosDetalles = new List<ListDetalleCuotaDTO>();
+
+        //            //var movi = movimientos.DetallesSolicitud.Where(x=>x.DetallesCuota.Where(e=>e.Fecha))
+
+        //            foreach (var item in movimientos.DetallesSolicitud)
+        //            {
+        //                foreach (var itemMovimiento in item.DetallesCuota)
+        //                {
+        //                    if (movimientosDetalles.Any(x => x.Fecha == itemMovimiento.Fecha))
+        //                    {
+        //                        var detalle = movimientosDetalles.Where(x => x.Fecha == itemMovimiento.Fecha).First();
+        //                        detalle.Monto = (Convert.ToDecimal(detalle.Monto) + Convert.ToDecimal(itemMovimiento.Monto)).ToString();
+        //                    }
+        //                    else
+        //                    {
+        //                        movimientosDetalles.Add(new ListDetalleCuotaDTO()
+        //                        {
+        //                            Fecha = itemMovimiento.Fecha,
+        //                            Monto = itemMovimiento.Monto
+        //                        });
+        //                    }
+        //                }
+        //            }
+
+        //            string saldoVencidoAcumulado = "0.0";
+        //            string sumaProximoVencimientoAcumulado = "0.0";
+        //            bool cuotaVencida = false;
+        //            string fechaSiguienteCuota = "";
+        //            DateTime? fechaProximoPago = null;
+
+        //            foreach (var item in movimientosDetalles.OrderBy(x => ConvertirFecha(x.Fecha)))
+        //            {
+
+        //                if (VerificarVencimiento(item.Fecha))
+        //                {
+        //                    SetearCultureInfoUS();
+        //                    var aux1 = Convert.ToDecimal(item.Monto);
+        //                    var aux2 = Convert.ToDecimal(saldoVencidoAcumulado);
+        //                    saldoVencidoAcumulado = (aux1+aux2).ToString();
+        //                    cuotaVencida = true;
+        //                }
+        //                else
+        //                {
+        //                    if (fechaSiguienteCuota=="")
+        //                        fechaSiguienteCuota = item.Fecha;
+
+        //                    if ((ConvertirFecha(item.Fecha).Month==(ConvertirFecha(fechaSiguienteCuota).Month)) && (ConvertirFecha(item.Fecha).Year==ConvertirFecha(fechaSiguienteCuota).Year))
+        //                    {
+        //                        if (fechaProximoPago==null)
+        //                            fechaProximoPago=ConvertirFecha(item.Fecha);
+
+        //                        SetearCultureInfoUS();
+        //                        var monto2 = Convert.ToDecimal(item.Monto);
+        //                        var monto1 = Convert.ToDecimal(sumaProximoVencimientoAcumulado);
+        //                        sumaProximoVencimientoAcumulado = (monto1+monto2).ToString();
+        //                    }
+        //                }
+
+        //            }
+        //            SetearCultureInfoUS();
+        //            sumaProximoVencimientoAcumulado = (Convert.ToDecimal(sumaProximoVencimientoAcumulado)+Convert.ToDecimal(saldoVencidoAcumulado)).ToString();
+
+        //            bool ContieneLeyenda = false;
+        //            string Leyenda = "";
+        //            var LeyendaTexto = _context.LeyendaTipoMovimiento.FirstOrDefault();
+
+        //            if (comprasAgrupadas.Where(x => x.TipoMovimiento == LeyendaTexto.NombreMovimiento).Count()>0 && LeyendaTexto.Activo==true)
+        //            {
+        //                ContieneLeyenda = true;
+        //                Leyenda = LeyendaTexto.TextoLeyenda;
+        //            }
+
+
+        //            List<MovimientoTarjetaDTO> MovimientosTarjeta = movimientos.Movimientos
+        //                .Select(mov => new MovimientoTarjetaDTO
+        //                {
+        //                    TipoMovimiento = mov.Descripcion,
+        //                    Monto = mov.Monto,
+        //                    Fecha = mov.Fecha.ToString("dd/MM/yyyy")
+        //                })
+        //                .ToList();
+
+        //            int cantidadDeMovimientos = MovimientosTarjeta.Count();
+        //            if (cantidadDeMovimientos>movimientoLoanDTO.CantMovimientos)
+        //            {
+        //                cantidadDeMovimientos = Convert.ToInt32(movimientoLoanDTO.CantMovimientos);
+        //            }
+
+
+        //            if (movimientoLoanDTO.NroTarjeta.ToString().TrimStart('0')=="500033395")
+        //            {
+        //                saldoVencidoAcumulado = "0.0";
+        //            }
+
+        //            var MovientosOrdenadosPorFecha = comprasAgrupadas.OrderByDescending(x => ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(movimientoLoanDTO.CantMovimientos)).ToList();
+
+        //            return new JsonResult(
+        //                new ListaMovimientoTarjetaDTO
+        //                {
+        //                    Status = 200,
+        //                    UAT = "null",
+        //                    Mensaje = "Movimiento obtenidos",
+        //                    NroTarjeta = Convert.ToUInt32(movimientoLoanDTO.NroTarjeta),
+        //                    NroDocumento = Convert.ToInt32(movimientoLoanDTO.NroDocumento),
+        //                    Direccion = movimientos.Detalle.Direccion,
+        //                    MontoAdeudado = saldoVencidoAcumulado.Replace(".", ","),
+        //                    ProximaFechaPago = fechaProximoPago?.ToString("dd/MM/yyyy"),
+        //                    CuotaVencida = cuotaVencida,
+        //                    TotalProximaCuota = sumaProximoVencimientoAcumulado.Replace(".", ","),
+        //                    CantMovimientos = movimientoLoanDTO.CantMovimientos,
+        //                    Resultado = movimientos.Detalle.Resultado,
+        //                    Nombre = movimientos.Detalle.Nombre,
+        //                    FechaPagoProximaCuota = fechaProximoPago?.ToString("dd/MM/yyyy"),
+        //                    MovimientosTarjeta = MovientosOrdenadosPorFecha,
+        //                    MontoDisponible = movimientos.Detalle.MontoDisponible.Replace(".", ","),
+        //                    ContieneLeyenda = ContieneLeyenda,
+        //                    Leyenda = Leyenda,
+        //                    Telefono = empresa.Telefono
+        //                });
+        //        }
+        //        else
+        //            return new JsonResult(new ListaMovimientoTarjetaDTO { Status = 500, UAT = "null", Mensaje = "No existe datos de la tarjeta" });
+
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Log.Error($"Error en creacion de tarjeta - {e.Message}");
+        //        return new JsonResult(new RespuestaAPI { Status = 500, UAT = "null", Mensaje = $"Error en creacion de tarjeta" + e });
+        //    }
+
+        //}
 
         [HttpPost("TraePeriodos")]
         public async Task<IActionResult> TraePeriodos(TraePeriodosDTO body)
@@ -311,37 +387,37 @@ namespace EstanciasCore.API.Controllers.Billetera
             return new JsonResult(traePeriodosDTO);
         }
 
-        [HttpPost("DescargarResumen")]
-        public async Task<IActionResult> DescargarResumen(MovimientosTarjetaDTO body)
-        {
-            var usuario = TraeUsuarioUAT(body.UAT);
-            if (usuario == null)
-                return new JsonResult(new RespuestaAPI { Status = 500, UAT = body.UAT, Mensaje = $"no existe UAT de Usuario" });
+        //[HttpPost("DescargarResumen")]
+        //public async Task<IActionResult> DescargarResumen(MovimientosTarjetaDTO body)
+        //{
+        //    var usuario = TraeUsuarioUAT(body.UAT);
+        //    if (usuario == null)
+        //        return new JsonResult(new RespuestaAPI { Status = 500, UAT = body.UAT, Mensaje = $"no existe UAT de Usuario" });
 
-            var datosParaElResumen = await _datosServices.PrepararDatosDTO(body.PeriodoId, usuario.Id);
-            if (datosParaElResumen == null)
-            {
-                return NotFound(new { error = "No se encontraron datos para generar el resumen." });
-            }
+        //    var datosParaElResumen = await _datosServices.PrepararDatosDTO(body.PeriodoId, usuario.Id);
+        //    if (datosParaElResumen == null)
+        //    {
+        //        return NotFound(new { error = "No se encontraron datos para generar el resumen." });
+        //    }
 
-            string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaElResumen);
-            byte[] pdfBytes;
-            using (var memoryStream = new MemoryStream())
-            {
-                HtmlConverter.ConvertToPdf(html, memoryStream);
-                pdfBytes = memoryStream.ToArray();
-            }
+        //    string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaElResumen);
+        //    byte[] pdfBytes;
+        //    using (var memoryStream = new MemoryStream())
+        //    {
+        //        HtmlConverter.ConvertToPdf(html, memoryStream);
+        //        pdfBytes = memoryStream.ToArray();
+        //    }
 
-            // --- 3. Devuelve un objeto JSON con los datos del archivo ---
-            string nombreArchivo = $"Resumen_{datosParaElResumen.Periodo.Descripcion.Replace(" ", "_")}.pdf";
+        //    // --- 3. Devuelve un objeto JSON con los datos del archivo ---
+        //    string nombreArchivo = $"Resumen_{datosParaElResumen.Periodo.Descripcion.Replace(" ", "_")}.pdf";
 
-            return Ok(new
-            {
-                FileName = nombreArchivo,
-                MimeType = "application/pdf",
-                FileContents = pdfBytes // Esto se enviará como un string Base64
-            });
-        }
+        //    return Ok(new
+        //    {
+        //        FileName = nombreArchivo,
+        //        MimeType = "application/pdf",
+        //        FileContents = pdfBytes // Esto se enviará como un string Base64
+        //    });
+        //}
 
         [HttpPost("SolicitarPagoTarjeta")]
         public IActionResult SolicitarPagoTarjeta([FromBody] PagoTarjetaDTO pagotarjetaDTO)
@@ -357,7 +433,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                 var movtarj = new MovPersona();
 
                 var tipomov = _context.TipoMovimientoTarjeta.FirstOrDefault();
-                var nuevosMovimientos = movtarj.ConsultarMovimientosTarjetas2(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(pagotarjetaDTO.NroTarjeta), 100, 0);                var pers = _context.Personas.Where(x => x.NroTarjeta == usuario.Personas.NroTarjeta).FirstOrDefault();
+                var nuevosMovimientos = movtarj.ConsultarMovimientosTarjetas2(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(pagotarjetaDTO.NroTarjeta), 100, 0);                
+                var pers = _context.Personas.Where(x => x.NroTarjeta == usuario.Personas.NroTarjeta).FirstOrDefault();
 
 
                 if (nuevosMovimientos.Detalle.Resultado == "EXITO")
@@ -663,7 +740,10 @@ namespace EstanciasCore.API.Controllers.Billetera
                             EstadoPago = EstadoPago.Pagado,
                             FechaComprobante = DateTime.Now,
                             FechaPagoProximaCuota = fechaProximoPago==null ? DateTime.MinValue : (DateTime)fechaProximoPago,
-                            ComprobantePago = pagotarjetaDTO.ComprobantePago
+                            ComprobantePago = pagotarjetaDTO.ComprobantePago,
+                            FechaDePago = DateTime.Now,
+                            MontoInformado = 0
+                            
                         };
                         _context.PagoTarjeta.Add(pagoTarjeta);
                         _context.SaveChanges();
@@ -691,7 +771,191 @@ namespace EstanciasCore.API.Controllers.Billetera
 
         }
 
-		[HttpPost("ObtenerComprobantes")]
+
+        [HttpPost("SubirComprobantePago")]
+        public IActionResult SubirComprobantePago([FromBody] PagoTarjetaNewDTO pagotarjetaDTO)
+        {
+            try
+            {
+                if (pagotarjetaDTO.ComprobantePago!=null)
+                //if (true)
+                {
+                    var usuario = TraeUsuarioUAT(pagotarjetaDTO.UAT);
+                    if (usuario == null)
+                        return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"no existe UAT de Usuario" });
+
+                    ListaMovimientoTarjetaDTO movimientostarjetaDTOS = new ListaMovimientoTarjetaDTO();
+
+                    DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
+                    var movtarj = new MovPersona();
+
+                    var tipomov = _context.TipoMovimientoTarjeta.FirstOrDefault();
+                    var nuevosMovimientos = movtarj.ConsultarMovimientosTarjetas2(empresa.UsernameWS, empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(pagotarjetaDTO.NroTarjeta), 100, 0);
+                    var pers = _context.Personas.Where(x => x.NroTarjeta == usuario.Personas.NroTarjeta).FirstOrDefault();
+
+
+                    if (nuevosMovimientos.Detalle.Resultado == "EXITO")
+                    {
+                        List<MovimientoTarjetaDTO> resultadoNuevos = new List<MovimientoTarjetaDTO>();
+                        if (movimientostarjetaDTOS.tipomovimiento == 0)
+                        {
+                            resultadoNuevos = nuevosMovimientos.Movimientos
+                            .GroupBy(m => new { m.Descripcion, m.Fecha })
+                            .Select(g => new MovimientoTarjetaDTO
+                            {
+                                Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                                TipoMovimiento = g.Key.Descripcion,
+                                Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                            })
+                            .ToList();
+                        }
+                        else
+                        {
+                            resultadoNuevos = nuevosMovimientos.Movimientos.Where(x => x.Descripcion == tipomov.Nombre)
+                            .GroupBy(m => new { m.Descripcion, m.Fecha })
+                            .Select(g => new MovimientoTarjetaDTO
+                            {
+                                Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                                TipoMovimiento = g.Key.Descripcion,
+                                Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                            })
+                            .ToList();
+                        }
+
+                        List<ListDetalleCuotaDTO> listDetalle = new List<ListDetalleCuotaDTO>();
+
+                        foreach (var item in nuevosMovimientos.DetallesSolicitud)
+                        {
+                            foreach (var itemMovimiento in item.DetallesCuota)
+                            {
+                                if (listDetalle.Any(x => x.Fecha == itemMovimiento.Fecha))
+                                {
+                                    var detalle = listDetalle.Where(x => x.Fecha == itemMovimiento.Fecha).First();
+                                    detalle.Monto = (Convert.ToDecimal(detalle.Monto) + Convert.ToDecimal(itemMovimiento.Monto)).ToString();
+                                }
+                                else
+                                {
+                                    listDetalle.Add(new ListDetalleCuotaDTO()
+                                    {
+                                        Fecha = itemMovimiento.Fecha,
+                                        Monto = itemMovimiento.Monto
+                                    });
+                                }
+                            }
+                        }
+
+                        string deudaTotal = "0.0";
+                        string saldoVencidoAcumulado = "0.0";
+                        string sumaProximoVencimientoAcumulado = "0.0";
+                        string sumaTotalAcumulado = "0.0";
+                        bool cuotaVencida = false;
+                        string fechaSiguienteCuota = "";
+                        DateTime? fechaProximoPago = null;
+                        foreach (var item in listDetalle.OrderBy(x => x.Fecha))
+                        {
+                            if (VerificarVencimiento(item.Fecha))
+                            {
+                                SetearCultureInfoUS();
+                                var aux1 = Convert.ToDecimal(item.Monto);
+                                var aux2 = Convert.ToDecimal(saldoVencidoAcumulado);
+                                saldoVencidoAcumulado = (aux1+aux2).ToString();
+                                cuotaVencida = true;
+                            }
+                            else
+                            {
+
+                                if (fechaSiguienteCuota=="")
+                                    fechaSiguienteCuota = item.Fecha;
+
+                                if ((ConvertirFecha(item.Fecha).Month==(ConvertirFecha(fechaSiguienteCuota).Month)) && (ConvertirFecha(item.Fecha).Year==ConvertirFecha(fechaSiguienteCuota).Year))
+                                {
+                                    if (fechaProximoPago==null)
+                                        fechaProximoPago=ConvertirFecha(item.Fecha);
+
+                                    SetearCultureInfoUS();
+                                    var monto2 = Convert.ToDecimal(item.Monto);
+                                    var monto1 = Convert.ToDecimal(sumaProximoVencimientoAcumulado);
+                                    sumaProximoVencimientoAcumulado = (monto1+monto2).ToString();
+                                }
+                                SetearCultureInfoUS();
+                                var monto3 = Convert.ToDecimal(item.Monto);
+                                var monto4 = Convert.ToDecimal(deudaTotal);
+                                deudaTotal = (monto3+monto4).ToString();
+                            }
+
+                        }
+                        SetearCultureInfoUS();
+                        sumaProximoVencimientoAcumulado = (Convert.ToDecimal(sumaProximoVencimientoAcumulado)+Convert.ToDecimal(saldoVencidoAcumulado)).ToString();
+                        sumaTotalAcumulado = (Convert.ToDecimal(deudaTotal)+Convert.ToDecimal(saldoVencidoAcumulado)).ToString();
+
+                        bool ContieneLeyenda = false;
+                        string Leyenda = "";
+                        var LeyendaTexto = _context.LeyendaTipoMovimiento.FirstOrDefault();
+
+                        if (resultadoNuevos.Where(x => x.TipoMovimiento == LeyendaTexto.NombreMovimiento).Count()>0 && LeyendaTexto.Activo==true)
+                        {
+                            ContieneLeyenda = true;
+                            Leyenda = LeyendaTexto.TextoLeyenda;
+                        }
+
+                        List<MovimientoTarjetaDTO> MovimientosTarjeta = nuevosMovimientos.Movimientos
+                            .Select(mov => new MovimientoTarjetaDTO
+                            {
+                                TipoMovimiento = mov.Descripcion,
+                                Monto = mov.Monto,
+                                Fecha = mov.Fecha.ToString("dd/MM/yyyy")
+                            })
+                            .ToList();
+
+                        int cantidadDeMovimientos = MovimientosTarjeta.Count();
+                        if (cantidadDeMovimientos>movimientostarjetaDTOS.CantMovimientos)
+                        {
+                            cantidadDeMovimientos = Convert.ToInt32(movimientostarjetaDTOS.CantMovimientos);
+                        }
+                        DateTime fechaDateTimePago = DateTime.ParseExact(pagotarjetaDTO.FechaComprobante, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+                        var pagoTarjeta = new PagoTarjeta
+                        {
+                            NroTarjeta = pagotarjetaDTO.NroTarjeta,
+                            //MontoAdeudado = Convert.ToDecimal(sumaTotalAcumulado.Replace(".", ",")),
+                            MontoAdeudado = Convert.ToDecimal(sumaProximoVencimientoAcumulado),
+                            FechaVencimiento = fechaProximoPago==null ? DateTime.MinValue : (DateTime)fechaProximoPago,
+                            Persona = pers,
+                            EstadoPago = EstadoPago.Pagado,
+                            FechaComprobante = DateTime.Now,
+                            FechaPagoProximaCuota = fechaProximoPago==null ? DateTime.MinValue : (DateTime)fechaProximoPago,
+                            ComprobantePago = pagotarjetaDTO.ComprobantePago,
+                            FechaDePago = fechaDateTimePago,
+                            MontoInformado = Convert.ToDecimal(pagotarjetaDTO.MontoInformado)
+
+                        };
+                        _context.PagoTarjeta.Add(pagoTarjeta);
+                        _context.SaveChanges();
+                        return new JsonResult(new PagoTarjetaDTO { Status = 200, UAT = pagotarjetaDTO.UAT, Mensaje = "Comprobante cargado con exito" });
+                    }
+                    else
+                    {
+                        return new JsonResult(new PagoTarjetaDTO { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = "Error al traer el Saldo Pendiente." });
+                    }
+                }
+                else
+                {
+                    return new JsonResult(new PagoTarjetaDTO { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = "No hay comprobante cargado" });
+                }
+
+                //else
+                //    return new JsonResult(new PagoTarjetaDTO { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = "No tiene pagos pendientes para subir archivo" });
+
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error en creacion de tarjeta - {e.Message}");
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al subir comprobante" });
+            }
+
+        }
+
+
+        [HttpPost("ObtenerComprobantes")]
 		public IActionResult ObtenerComprobantes([FromBody] ComprobantesDTO pagotarjetaDTO)
 		{
 			try

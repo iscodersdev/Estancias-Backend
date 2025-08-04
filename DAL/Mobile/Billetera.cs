@@ -51,8 +51,24 @@ namespace DAL.Mobile
         public string alias { get; set; }
     }
 
+    public class PagoTarjetaNewDTO : RespuestaAPI
+    {
+        public int id { get; set; }
+        public int Persona { get; set; }
+        public string NroTarjeta { get; set; }
+        public string FechaVencimiento { get; set; }
+        public string MontoAdeudado { get; set; }
+        public string FechaPagoProximaCuota { get; set; }
+        public string FechaComprobante { get; set; }
+        public virtual EstadoPago EstadoPago { get; set; }
+        public byte[] ComprobantePago { get; set; }
+        public string CBU { get; set; }
+        public string alias { get; set; }
+        public string MontoInformado { get; set; }
+    }
 
-	public class ComprobantesDTO : RespuestaAPI
+
+    public class ComprobantesDTO : RespuestaAPI
 	{
 		public int PersonaId { get; set; }
         public List<ListComprobantesDTO> ListComprobantes;
@@ -237,4 +253,15 @@ namespace DAL.Mobile
         public int MetodoPagoId { get; set; }
         public TipoMedioPago TipoMedioPago { get; set; }
     }
+
+
+    public class MovimientoLoanDTO
+    {
+        public string UAT { get; set; }
+        public string NroDocumento { get; set; }
+        public string NroTarjeta { get; set; }
+        public int Tipomovimiento { get; set; }
+        public int CantMovimientos { get; set; }
+    }
+
 }

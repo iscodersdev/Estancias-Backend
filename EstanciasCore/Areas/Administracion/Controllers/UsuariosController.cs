@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using DAL.DTOs;
 using DAL.DTOs.Servicios;
 using EstanciasCore.Services;
+using DAL.DTOs.Servicios.DatosTarjeta;
 
 namespace EstanciasCore.Controllers
 {
