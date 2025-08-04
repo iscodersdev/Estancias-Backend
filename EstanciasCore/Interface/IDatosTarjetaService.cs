@@ -31,6 +31,14 @@ namespace EstanciasCore.Interface
         /// <returns></returns>
         Task<ApiResponseCreditoDetalles> ObtenerCreditoDetallesAsync(int SolicitudId);
 
+        /// <summary>
+        /// obtiene la deuda de una operación específica a partir del número de documento.
+        /// </summary>
+        /// <param name="documento"></param>
+        /// <returns></returns>
+        Task<DeudaApiResponseLOAN> ObtenerDeudaOperacionAsync(string documento);
+
+
         Task<CombinedData> ConsultarMovimientos(string usuario, string clave, String documento, long numeroTarjeta, long cantidadMovimientos, int tipomovimientotarjeta);
 
         //Task<DatosParaResumenDTO> PrepararDatosDTO(int periodoId, string usuarioId);

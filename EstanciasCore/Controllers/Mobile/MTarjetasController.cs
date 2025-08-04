@@ -76,6 +76,11 @@ namespace EstanciasCore.API.Controllers.Billetera
             try
             {
                 int LoanPersonaId = 0;
+                decimal totalMontoCuota = 0;
+                var fechaActual = DateTime.Now;
+                //var fechaActual = new DateTime(2025, 07, 4);
+                var fechaVentimiento = common.ObtenerFechaCalculada(fechaActual);
+
                 var usuario = TraeUsuarioUAT(movimientostarjetaDTOS.UAT);
                 if (usuario == null)
                     return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"no existe UAT de Usuario" });
@@ -104,23 +109,14 @@ namespace EstanciasCore.API.Controllers.Billetera
                     return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No hay créditos para procesar" });
                 }
 
-                var creditosTasks = creditosLOAN.Credito.Select(c => _datosServices.ObtenerCreditoDetallesAsync(c.IdSolicitud));
+                var creditosTasks = creditosLOAN.Credito.Where(x=>x.FechaProximoVencimiento!="").Select(c => _datosServices.ObtenerCreditoDetallesAsync(c.IdSolicitud));
                 var detallesDeTodosLosCreditos = await Task.WhenAll(creditosTasks);
-
-
-                var fechaActual = DateTime.Now;
-                //var fechaActual = new DateTime(2025, 08, 17);
-
-                var fechaVentimiento = common.ObtenerFechaCalculada(fechaActual);
-
 
 
                 var totales = detallesDeTodosLosCreditos
                     .Where(result => result?.CreditoDetalles != null)
                     .SelectMany(result => result.CreditoDetalles)
-                    .Where(detalle =>
-                        (detalle.Estado == "Vencida" || detalle.Estado == "Pendiente") &&
-                        common.ConvertirFecha(detalle.Fecha) < common.ConvertirFecha(fechaVentimiento))
+                    .Where(detalle => (detalle.Estado == "Vencida") &&(common.ConvertirFecha(detalle.Fecha) <= common.ConvertirFecha(fechaVentimiento)))
                     .Aggregate(
                         Tuple.Create(0m, 0m),
                         (acumulado, detalle) =>
@@ -131,17 +127,34 @@ namespace EstanciasCore.API.Controllers.Billetera
                         }
                     );
 
-                var montoCuotaTotal = totales.Item1;
                 var montoPunitoriosTotal = totales.Item2;
-                var deudaTotal = montoCuotaTotal + montoPunitoriosTotal;
 
+
+                var deudasLOAN = await _datosServices.ObtenerDeudaOperacionAsync(usuario.Personas.NroDocumento);
+                if (deudasLOAN?.Resultado == null || !deudasLOAN.DeudasOperacion.Any())
+                {
+                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No hay créditos para procesar" });
+                }
+
+                var deuda = deudasLOAN.DeudasOperacion.Where(detalle => common.ConvertirFecha(detalle.FechaMora) <= common.ConvertirFecha(fechaVentimiento)).Sum(e => e.DeudaActualizada);
+                var montoCuotaTotal = deuda;
 
                 var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10, 0).Result;
                 var montoDisponible = "0";
                 if (datosMovimientos.Detalle.Resultado=="EXITO")
                 {
                     montoDisponible = datosMovimientos.Detalle.MontoDisponible;
+
+                    var totalDetallesCuota = datosMovimientos.DetallesSolicitud
+                    .Where(result => result?.DetallesCuota != null)
+                    .SelectMany(result => result.DetallesCuota)
+                    .Where(detalle => (common.ConvertirFecha(detalle.Fecha) <= common.ConvertirFecha(fechaVentimiento)))
+                    .Select(e => new { monto = e.Monto }).ToList();
+
+                    totalMontoCuota = totalDetallesCuota.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
                 }
+
+                var deudaTotal = totalMontoCuota + montoPunitoriosTotal;
 
                 var MovientosOrdenadosPorFecha = creditosLOAN.Credito.Select(g => new MovimientoTarjetaDTO
                 {

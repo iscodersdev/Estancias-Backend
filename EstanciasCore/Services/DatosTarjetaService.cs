@@ -152,6 +152,34 @@ namespace EstanciasCore.Services
             return null;
         }
 
+        public async Task<DeudaApiResponseLOAN> ObtenerDeudaOperacionAsync(string documento)
+        {
+            DatosEstructura datosEstructura = await _context.DatosEstructura.FirstOrDefaultAsync();
+
+            // Creamos el cuerpo de la petición según la documentación.
+            var requestBody = new
+            {
+                loginServicio = new
+                {
+                    Login = datosEstructura.UsernameWS.ToLower(),
+                    Clave = datosEstructura.PasswordWS.ToLower(),
+                },
+                Documento = documento
+            };
+
+            var jsonSerializado = JsonConvert.SerializeObject(requestBody);
+
+            var jsonContent = new StringContent(jsonSerializado, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/COLLECTION/OBTENERDEUDAOPERACION", jsonContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<DeudaApiResponseLOAN>(jsonResponse);
+            }
+            return null;
+        }
 
 
         private async Task<string> ObtenerDatos(string usuario, string clave, long documento, long numeroTarjeta, long cantidadMovimientos)
