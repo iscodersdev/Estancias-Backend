@@ -27,4 +27,16 @@ namespace DAL.Models
         public bool Pagado { get; set; } = false;
         public DateTime FechaPago { get; set; }
     }
+
+    public class ResumenTarjeta
+    {
+        public int Id { get; set; }
+        public string NroComprobante { get; set; }
+        public decimal Monto { get; set; }
+        public decimal MontoAdeudado { get; set; }
+        public DateTime Fecha { get; set; }
+        public virtual Periodo Periodo { get; set; }
+        public virtual Usuario Usuario { get; set; }
+        public byte[] Adjunto { get; set; }
+    }
 }

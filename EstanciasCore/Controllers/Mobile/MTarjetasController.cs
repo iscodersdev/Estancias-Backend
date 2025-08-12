@@ -12,6 +12,7 @@ using EstanciasCore.Services;
 using Google.Protobuf.WellKnownTypes;
 using iText.Html2pdf;
 using iText.Kernel.Pdf.Canvas.Wmf;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Razor.Internal;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -41,11 +42,13 @@ namespace EstanciasCore.API.Controllers.Billetera
     {
         private readonly MercadoPagoServices _mp;
         private readonly IDatosTarjetaService _datosServices;
+        private readonly IHostingEnvironment _webHostEnvironment;
 
-        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices) : base(context)
+        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment) : base(context)
         {
             _datosServices = datosServices;
             _mp = mp;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         [HttpPost("Alta")]
@@ -77,6 +80,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             {
                 int LoanPersonaId = 0;
                 decimal totalMontoCuota = 0;
+                decimal montoPunitoriosTotal = 0;
                 var fechaActual = DateTime.Now;
                 //var fechaActual = new DateTime(2025, 07, 4);
                 var fechaVentimiento = common.ObtenerFechaCalculada(fechaActual);
@@ -104,40 +108,39 @@ namespace EstanciasCore.API.Controllers.Billetera
                 }
 
                 var creditosLOAN = await _datosServices.ObtenerCreditosAsync(LoanPersonaId.ToString());
-                if (creditosLOAN?.Credito == null || !creditosLOAN.Credito.Any())
+                if (creditosLOAN?.Credito.Count()>0 || creditosLOAN.Credito.Any())
                 {
-                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No hay créditos para procesar" });
+                    var creditosTasks = creditosLOAN.Credito.Where(x => x.FechaProximoVencimiento!="").Select(c => _datosServices.ObtenerCreditoDetallesAsync(c.IdSolicitud));
+                    var detallesDeTodosLosCreditos = await Task.WhenAll(creditosTasks);
+
+
+                    var totales = detallesDeTodosLosCreditos
+                        .Where(result => result?.CreditoDetalles != null)
+                        .SelectMany(result => result.CreditoDetalles)
+                        .Where(detalle => (detalle.Estado == "Vencida") &&(common.ConvertirFecha(detalle.Fecha) <= common.ConvertirFecha(fechaVentimiento)))
+                        .Aggregate(
+                            Tuple.Create(0m, 0m),
+                            (acumulado, detalle) =>
+                            {
+                                decimal.TryParse(detalle.ImporteCuota, out var cuota);
+                                decimal.TryParse(detalle.ImportePunitorios, out var punitorios);
+                                return Tuple.Create(acumulado.Item1 + cuota, acumulado.Item2 + punitorios);
+                            }
+                        );
+
+                    montoPunitoriosTotal = totales.Item2;
+
+                    var deudasLOAN = await _datosServices.ObtenerDeudaOperacionAsync(usuario.Personas.NroDocumento);
+                    if (deudasLOAN?.Resultado == null || !deudasLOAN.DeudasOperacion.Any())
+                    {
+                        return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No hay créditos para procesar" });
+                    }
+
+                    var deuda = deudasLOAN.DeudasOperacion.Where(detalle => common.ConvertirFecha(detalle.FechaMora) <= common.ConvertirFecha(fechaVentimiento)).Sum(e => e.DeudaActualizada);
+                    var montoCuotaTotal = deuda;
                 }
 
-                var creditosTasks = creditosLOAN.Credito.Where(x=>x.FechaProximoVencimiento!="").Select(c => _datosServices.ObtenerCreditoDetallesAsync(c.IdSolicitud));
-                var detallesDeTodosLosCreditos = await Task.WhenAll(creditosTasks);
-
-
-                var totales = detallesDeTodosLosCreditos
-                    .Where(result => result?.CreditoDetalles != null)
-                    .SelectMany(result => result.CreditoDetalles)
-                    .Where(detalle => (detalle.Estado == "Vencida") &&(common.ConvertirFecha(detalle.Fecha) <= common.ConvertirFecha(fechaVentimiento)))
-                    .Aggregate(
-                        Tuple.Create(0m, 0m),
-                        (acumulado, detalle) =>
-                        {
-                            decimal.TryParse(detalle.ImporteCuota, out var cuota);
-                            decimal.TryParse(detalle.ImportePunitorios, out var punitorios);
-                            return Tuple.Create(acumulado.Item1 + cuota, acumulado.Item2 + punitorios);
-                        }
-                    );
-
-                var montoPunitoriosTotal = totales.Item2;
-
-
-                var deudasLOAN = await _datosServices.ObtenerDeudaOperacionAsync(usuario.Personas.NroDocumento);
-                if (deudasLOAN?.Resultado == null || !deudasLOAN.DeudasOperacion.Any())
-                {
-                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = "No hay créditos para procesar" });
-                }
-
-                var deuda = deudasLOAN.DeudasOperacion.Where(detalle => common.ConvertirFecha(detalle.FechaMora) <= common.ConvertirFecha(fechaVentimiento)).Sum(e => e.DeudaActualizada);
-                var montoCuotaTotal = deuda;
+                
 
                 var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10, 0).Result;
                 var montoDisponible = "0";
@@ -199,6 +202,111 @@ namespace EstanciasCore.API.Controllers.Billetera
             }
         }
 
+        [HttpPost("MovimientoTarjetaNew")]
+        public async Task<IActionResult> MovimientoTarjetaNew([FromBody] ListaMovimientoTarjetaDTO movimientostarjetaDTOS)
+        {
+            try
+            {
+                int LoanPersonaId = 0;
+                decimal totalMontoCuota = 0;
+                decimal montoPunitoriosTotal = 0;
+                var fechaActual = DateTime.Now;
+                //var fechaActual = new DateTime(2025, 07, 4);
+                List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+                var fechaVentimiento = common.ObtenerFechaCalculada(fechaActual);
+
+                var usuario = TraeUsuarioUAT(movimientostarjetaDTOS.UAT);
+                if (usuario == null)
+                    return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"no existe UAT de Usuario" });
+
+                DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
+
+                
+                var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10, 0).Result;
+                var montoDisponible = "0";
+                if (datosMovimientos.Detalle.Resultado=="EXITO")
+                {
+                    montoDisponible = datosMovimientos.Detalle.MontoDisponible;
+
+                    //if (movimientostarjetaDTOS.Tipomovimiento == 0) //Todos los movimientos
+                    //{
+                        comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
+                        .GroupBy(m => new { m.Descripcion, m.Fecha })
+                        .Select(g => new MovimientoTarjetaDTO
+                        {
+                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            TipoMovimiento = g.Key.Descripcion,
+                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                        })
+                        .ToList();
+
+                        comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+                        .Select(g => new MovimientoTarjetaDTO
+                        {
+                            Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
+                            TipoMovimiento = g.Descripcion,
+                            Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
+                        }).ToList());
+                    //}
+                    //else
+                    //{
+                    //    comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion == tipomov.Nombre)
+                    //   .GroupBy(m => new { m.Descripcion, m.Fecha })
+                    //   .Select(g => new MovimientoTarjetaDTO
+                    //   {
+                    //       Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                    //       TipoMovimiento = g.Key.Descripcion,
+                    //       Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                    //   })
+                    //   .ToList();
+                    //}
+
+                    var totalDetallesCuota = datosMovimientos.DetallesSolicitud
+                    .Where(result => result?.DetallesCuota != null)
+                    .SelectMany(result => result.DetallesCuota)
+                    .Where(detalle => (common.ConvertirFecha(detalle.Fecha) <= common.ConvertirFecha(fechaVentimiento)))
+                    .Select(e => new { monto = e.Monto }).ToList();
+
+                    totalMontoCuota = totalDetallesCuota.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
+                    CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+                    montoPunitoriosTotal = _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
+                }
+                decimal totalPunitoriosRedondeo = montoPunitoriosTotal;
+                var deudaTotal = totalMontoCuota + totalPunitoriosRedondeo;
+
+                var MovientosOrdenadosPorFecha = comprasAgrupadas.OrderByDescending(x => ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(20)).ToList();
+                decimal totalRedondeo = Math.Round(deudaTotal, 2);
+
+                return new JsonResult(
+                    new ListaMovimientoTarjetaDTO
+                    {
+                        Status = 200,
+                        UAT = "null",
+                        Mensaje = "Movimiento obtenidos",
+                        NroTarjeta = movimientostarjetaDTOS.NroTarjeta,
+                        NroDocumento = Convert.ToInt32(usuario.Personas.NroDocumento),
+                        CantMovimientos = MovientosOrdenadosPorFecha.Count(),
+                        Direccion = datosMovimientos.Detalle.Direccion,
+                        MontoAdeudado = totalRedondeo.ToString().Replace(".", ","),
+                        ProximaFechaPago = fechaVentimiento,
+                        CuotaVencida = true,
+                        TotalProximaCuota = totalRedondeo.ToString().Replace(".", ","),
+                        Resultado = "Exito",
+                        Nombre = usuario.Personas.GetNombreCompleto(),
+                        FechaPagoProximaCuota = fechaVentimiento,
+                        MontoDisponible = montoDisponible.Replace(".", ","),
+                        ContieneLeyenda = false,
+                        Leyenda = "",
+                        Telefono = empresa.Telefono,
+                        MovimientosTarjeta = MovientosOrdenadosPorFecha
+                    });
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error en MovimientoTarjeta - {e.Message}");
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"Error en MovimientoTarjeta: {e.Message}" });
+            }
+        }
 
 
         //[HttpPost("MovimientosLoan")]
@@ -400,8 +508,113 @@ namespace EstanciasCore.API.Controllers.Billetera
             return new JsonResult(traePeriodosDTO);
         }
 
-        //[HttpPost("DescargarResumen")]
-        //public async Task<IActionResult> DescargarResumen(MovimientosTarjetaDTO body)
+        [HttpPost("DescargarResumen")]
+        public async Task<IActionResult> DescargarResumen(MovimientosTarjetaDTO body)
+        {
+            try
+            {
+                // --- 1. Validar el usuario ---
+                var usuario = TraeUsuarioUAT(body.UAT);
+                if (usuario == null)
+                {
+                    // Si el UAT no es válido, se retorna un error.
+                    return new JsonResult(new RespuestaAPI { Status = 401, UAT = body.UAT, Mensaje = $"UAT de Usuario no válida o inexistente." });
+                }
+
+                // --- 2. Definir la ruta y el nombre del archivo a descargar ---
+                // TO-DO: Debes construir la ruta al archivo PDF que quieres descargar.
+                // Esta lógica dependerá de cómo almacenas y nombras tus archivos.
+                // Por ejemplo, podrías buscar en la base de datos la ruta asociada al `body.PeriodoId`.
+                string nombreArchivo = $"recibo.pdf"; // TO-DO: Cambia esto por el nombre de tu archivo real.
+
+                // Se asume que los PDFs están en una subcarpeta "pdfs" dentro de wwwroot para mejor organización.
+                // La ruta sería: wwwroot/pdfs/tu_archivo.pdf
+                string rutaCompletaDelArchivo = Path.Combine(_webHostEnvironment.WebRootPath, "Plantillas", nombreArchivo);
+
+                // --- 3. Verificar si el archivo existe ---
+                if (!System.IO.File.Exists(rutaCompletaDelArchivo))
+                {
+                    return NotFound(new { error = "El archivo solicitado no fue encontrado." });
+                }
+
+                // --- 4. Leer el archivo existente en un array de bytes ---
+                byte[] pdfBytes = await System.IO.File.ReadAllBytesAsync(rutaCompletaDelArchivo);
+
+                // --- 5. Devolver el archivo para descarga directa ---
+                // Se retorna un `File` con los bytes del PDF leído.
+                // Esto le indica al navegador que debe iniciar la descarga.
+                return File(pdfBytes, "application/pdf", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                // Es una buena práctica capturar excepciones inesperadas, como problemas de permisos de lectura.
+                // Aquí puedes loguear el error para depuración.
+                // _logger.LogError(ex, "Error al descargar el resumen PDF.");
+                return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
+            }
+        }
+         
+        [HttpPost("DescargarResumenNew")]
+        public async Task<IActionResult> DescargarResumenNew()
+        {
+            try
+            {
+                decimal montoVencido = 0;
+                decimal totalPunitorios = 0;
+                List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+                DateTime fechaActual = DateTime.Now;
+                DatosEstructura datosEstructura = _context.DatosEstructura.FirstOrDefault();
+                Periodo periodo = _context.Periodo.Where(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta).FirstOrDefault();
+                IQueryable<Usuario> usuarios = _context.Usuarios.Where(x => x.Personas!=null).Where(u => (u.Personas.NroTarjeta != null && u.Personas.NroTarjeta != "") &&  (u.Personas.NroDocumento != null && u.Personas.NroDocumento != ""))
+                    .Where(x=>x.Personas.NroDocumento=="43649088");
+
+                foreach (var itemUsuario in usuarios)
+                {
+                    var datosMovimientos = await _datosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, itemUsuario.Personas.NroDocumento, Convert.ToInt64(itemUsuario.Personas.NroTarjeta), 100, 0);
+                    if (datosMovimientos.Detalle.Resultado=="EXITO")
+                    {
+                        TempalteResumenDTO datosParaResumenDTO = null;
+                        datosParaResumenDTO = (TempalteResumenDTO) await _datosServices.PrepararDatosDTO(datosMovimientos, periodo, itemUsuario);
+
+                        if (datosParaResumenDTO == null)
+                        {
+                            continue;
+                        }
+                        byte[] pdfBytesPDF;
+                        string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            HtmlConverter.ConvertToPdf(html, memoryStream);
+                            pdfBytesPDF = memoryStream.ToArray();
+                        }
+
+                        // --- 3. Devuelve un objeto JSON con los datos del archivo ---
+                        string nombreResumen = $"Resumen_{datosParaResumenDTO.NroDocumento+"-"+periodo.Descripcion.Replace(" ", "_")}.pdf";
+
+                        return File(pdfBytesPDF, "application/pdf", nombreResumen);
+
+                        return Ok(new
+                        {
+                            FileName = nombreResumen,
+                            MimeType = "application/pdf",
+                            FileContents = pdfBytesPDF // Esto se enviará como un string Base64
+                        });
+                    }
+                    return null;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                // Es una buena práctica capturar excepciones inesperadas, como problemas de permisos de lectura.
+                // Aquí puedes loguear el error para depuración.
+                // _logger.LogError(ex, "Error al descargar el resumen PDF.");
+                return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
+            }
+        }
+
+        //[HttpPost("DescargarResumen2")]
+        //public async Task<IActionResult> DescargarResumen2(MovimientosTarjetaDTO body)
         //{
         //    var usuario = TraeUsuarioUAT(body.UAT);
         //    if (usuario == null)

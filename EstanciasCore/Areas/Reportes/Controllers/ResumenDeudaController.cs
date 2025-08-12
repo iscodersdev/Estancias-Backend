@@ -1,45 +1,36 @@
 ﻿using Commons.Models;
 using DAL.Data;
 using DAL.DTOs.Reportes;
+using DAL.Mobile;
 using DAL.Models;
 using EstanciasCore.Controllers; // Tu controlador base
 using EstanciasCore.Interface; // Para IDatosTarjetaService
 using EstanciasCore.Services;
-using iText.Html2pdf;
-using iText.Kernel.Pdf;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-public class DatosParaResumenDTO
+
+public class DetalleCuotaConSolicitud
 {
-    public Usuario Usuario { get; set; }
-    public Periodo Periodo { get; set; }
-    public List<MovimientoTarjeta> Movimientos { get; set; }
-    public decimal SaldoAnterior { get; set; }
-    public decimal Pagos { get; set; }
-    public decimal Intereses { get; set; }
-    public decimal Impuestos { get; set; }
-    public decimal SaldoActual { get; set; }
-    public decimal PagoMinimo { get; set; }
-    public string Domicilio { get; set; }
+    public string NroSolicitud { get; set; } 
+    public string Fecha { get; set; } 
+    public string Monto { get; set; } 
+    public string NroCuota { get; set; } 
 }
 
 
 [Area("Reportes")]
-public class ResumenTarjetaReportesController : EstanciasCoreController
+public class ResumenDeudaController : EstanciasCoreController
 {
     private readonly IDatosTarjetaService _datosServices;
     private readonly ICompositeViewEngine _viewEngine;
 
-    public ResumenTarjetaReportesController(EstanciasContext context, IDatosTarjetaService datosServices, ICompositeViewEngine viewEngine) : base(context)
+    public ResumenDeudaController(EstanciasContext context, IDatosTarjetaService datosServices, ICompositeViewEngine viewEngine) : base(context)
     {
         breadcumb.Add(new Message() { DisplayName = "Reportes" });
         _datosServices = datosServices;
@@ -48,19 +39,20 @@ public class ResumenTarjetaReportesController : EstanciasCoreController
 
     public IActionResult Index()
     {
-        breadcumb.Add(new Message() { DisplayName = "Resumen de Tarjeta" });
+        breadcumb.Add(new Message() { DisplayName = "Resumen de Deuda" });
         ViewBag.Breadcrumb = breadcumb;
         return View();
     }
 
     [HttpPost]
-    public async Task<IActionResult> _ListadoResumenes(string nroTarjetaFiltro, string nroDocumentoFiltro)
+    public async Task<IActionResult> _ListadoDeuda(string nroTarjetaFiltro, string nroDocumentoFiltro)
     {
         try
         {
             if (string.IsNullOrEmpty(nroTarjetaFiltro) && string.IsNullOrEmpty(nroDocumentoFiltro))
                 return PartialView(new List<ResumenTarjetaDTO>());
 
+           
             IQueryable<Usuario> query = _context.Usuarios;
             if (!string.IsNullOrEmpty(nroTarjetaFiltro))
                 query = query.Where(x => x.Personas.NroTarjeta == nroTarjetaFiltro);
@@ -75,27 +67,62 @@ public class ResumenTarjetaReportesController : EstanciasCoreController
                 return PartialView(new List<ResumenTarjetaDTO>());
             }
 
-            //await _datosServices.ActualizarMovimientosAsync(usuario);
 
 
-            DateTime fechaActual = DateTime.Now.AddMonths(1);
+            int LoanPersonaId = 0;
+            decimal totalMontoCuota = 0;
+            decimal montoPunitoriosTotal = 0;
+            var fechaActual = DateTime.Now;
+            //var fechaActual = new DateTime(2025, 07, 4);
+            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+            var fechaVentimiento = common.ObtenerFechaCalculada(fechaActual);        
+            DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
 
-            List<MovimientoTarjeta> movimientos = _context.MovimientoTarjeta.Where(x => x.Usuario.Id == usuario.Id && x.Periodo != null).Where(e => e.Periodo.FechaHasta<fechaActual).ToList();
 
-            List<ResumenTarjetaDTO> resumenes = movimientos.GroupBy(g => g.Periodo)
-                .Select(g => new ResumenTarjetaDTO
+            var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, Convert.ToInt64(usuario.Personas.NroTarjeta), 10, 0).Result;
+            var montoDisponible = "0";
+            if (datosMovimientos.Detalle.Resultado=="EXITO")
+            {
+                montoDisponible = datosMovimientos.Detalle.MontoDisponible;
+
+                comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
+                .GroupBy(m => new { m.Descripcion, m.Fecha })
+                .Select(g => new MovimientoTarjetaDTO
                 {
-                    UsuarioId = usuario.Id,
-                    PeriodoId = g.Key.Id,
-                    Periodo = g.Key.Descripcion,
-                    FechaVencimiento = g.Key.FechaVencimiento.ToString("dd/MM/yyyy"),
-                    MontoAdeudado = g.Sum(m => m.Monto)
+                    Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                    TipoMovimiento = g.Key.Descripcion,
+                    Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
                 })
-                .OrderByDescending(r => r.FechaVencimiento)
                 .ToList();
 
+                comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+                .Select(g => new MovimientoTarjetaDTO
+                {
+                    Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
+                    TipoMovimiento = g.Descripcion,
+                    Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
+                }).ToList());
+
+                var totalDetallesCuota = datosMovimientos.DetallesSolicitud
+                    .Where(result => result?.DetallesCuota != null)
+                    .SelectMany(result => result.DetallesCuota,
+                                (result, detalle) => new DetalleCuotaConSolicitud
+                                {
+                                    NroSolicitud = result.NumeroSolicitud,
+                                    NroCuota = detalle.NumeroCuota,
+                                    Monto = detalle.Monto,
+                                    Fecha = detalle.Fecha,
+                                })
+                    .Where(x => common.ConvertirFecha(x.Fecha) <= common.ConvertirFecha(fechaVentimiento))
+                    .ToList(); 
+
+                //totalMontoCuota = totalDetallesCuota.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
+                //CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+                montoPunitoriosTotal = _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
+            }
+
             ViewBag.UsuarioId = usuario.Id;
-            return PartialView(resumenes);
+            return PartialView();
         }
         catch (Exception ex)
         {

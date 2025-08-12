@@ -1,9 +1,11 @@
-﻿using DAL.DTOs.Servicios;
+﻿using DAL.DTOs.Reportes;
+using DAL.DTOs.Servicios;
 using DAL.DTOs.Servicios.DatosTarjeta;
 using DAL.Models;
 using EstanciasCore.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace EstanciasCore.Interface
@@ -38,14 +40,39 @@ namespace EstanciasCore.Interface
         /// <returns></returns>
         Task<DeudaApiResponseLOAN> ObtenerDeudaOperacionAsync(string documento);
 
-
+        /// <summary>
+        /// Consulta los movimiento sy montos de loan API Antigua.
+        /// </summary>
+        /// <param name="usuario"></param>
+        /// <param name="clave"></param>
+        /// <param name="documento"></param>
+        /// <param name="numeroTarjeta"></param>
+        /// <param name="cantidadMovimientos"></param>
+        /// <param name="tipomovimientotarjeta"></param>
+        /// <returns></returns>
         Task<CombinedData> ConsultarMovimientos(string usuario, string clave, String documento, long numeroTarjeta, long cantidadMovimientos, int tipomovimientotarjeta);
 
-        //Task<DatosParaResumenDTO> PrepararDatosDTO(int periodoId, string usuarioId);
+        /// <summary>
+        /// Prepara los datos necesarios para el resumen de un periodo específico y un usuario.
+        /// </summary>
+        /// <param name="periodoId"></param>
+        /// <param name="usuarioId"></param>
+        /// <returns></returns>
+        Task<TempalteResumenDTO> PrepararDatosDTO(CombinedData datosMovimientos, Periodo periodo, Usuario usuario);
+
         //Task ActualizarMovimientosAsync(Usuario usuario);
         //Task ActualizarMovimientosAsyncModificado(Usuario usuario);
         //Task<JsonResult> ActualizarMovimientosAsync();
-        //Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model);
+        Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model);
+
+        /// <summary>
+        /// Calcula los punitorios de una lista de cuotas a partir de una fecha de cálculo.
+        /// </summary>
+        /// <param name="cuotas"></param>
+        /// <param name="fechaDeCalculo"></param>
+        /// <returns></returns>
+        decimal CalcularPunitorios(List<SolicitudDetail> cuotas);
+
         //Task<ObtenerCreditosResponse> ObtenerCreditosAsync(string login, string clave, int PersonaId);
         //Task<LoginUsuarioResponse> LoginApiLoanAsync(string usuario, string clave);
     }

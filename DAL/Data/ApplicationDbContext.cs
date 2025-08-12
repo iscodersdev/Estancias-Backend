@@ -97,6 +97,7 @@ namespace DAL.Data
         //para ejecutar procedimientos almacenados o validaciones
         public DbSet<Procedimientos> Procedimientos { get; set; }
         public DbSet<LogProcedimientos> LogProcedimientos { get; set; }
+        public DbSet<ResumenTarjeta> ResumenTarjeta { get; set; }
 
 
 

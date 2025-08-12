@@ -1,5 +1,6 @@
 @using System.Globalization
-@model DatosParaResumenDTO
+@using DAL.DTOs.Reportes
+@model TempalteResumenDTO
 @{
     Layout = null;
     // Se define la cultura de Argentina para usarla en el formato de moneda.
@@ -126,37 +127,37 @@
         <table class="header-table">
             <tr>
                 <td>
-                    <div class="bold">@Model.Usuario.Personas.Nombres.ToUpper() @Model.Usuario.Personas.Apellido.ToUpper()</div>
-                    <div><span class="bold">Nº Documento:</span> @Model.Usuario.Personas.NroDocumento</div>
-                    <div class="bold">@Model.Usuario.Personas.Email.ToLower()</div>
+                    <div class="bold">@Model.Nombre.ToUpper()</div>
+                    <div><span class="bold">Nº Documento:</span> @Model.NroDocumento</div>
+                    <div class="bold">@Model.Mail.ToLower()</div>
                     <div></div>
                 </td>
                 <td class="header-right">
                    @*  <div>Hoja: 1 / 3</div> *@
-                    <div><span class="bold">Nº Socio: </span>@Model.Usuario.Id</div>
-                    <div><span class="bold">Nº Tarjeta:</span> @Model.Usuario.Personas.NroTarjeta</div>
+                    <div><span class="bold">Nº Socio: </span>@Model.NroSocio</div>
+                    <div><span class="bold">Nº Tarjeta:</span> @Model.NroTarjeta</div>
                 </td>
             </tr>
         </table>
 
         <table class="data-table">
             <tr>
-                <td class="bold">Estado de cuenta al:</td>
-                <td>@Model.Periodo.FechaHasta.ToString("dd-MMM-yy")</td>
+                <td class="bold">Período Desde:</td>
+                <td>@Model.PeriodoDesde</td>
+                <td class="bold">Vencimiento:</td>
+                <td class="text-right">@Model.Vencimiento</td>
+            </tr>
+            <tr>
+                <td class="bold">Período Hasta:</td>
+                <td>@Model.PeriodoHasta</td>
                 <td class="bold">Saldo actual:</td>
                 <td class="text-right">@Model.SaldoActual.ToString("C", culturaAR)</td>
             </tr>
             <tr>
-                <td class="bold">Vencimiento actual:</td>
-                <td >@Model.Periodo.FechaVencimiento.ToString("dd-MMM-yy")</td>
-               @*  <td class="bold">Pago Mínimo:</td>
+               @*  <td class="bold">Vencimiento actual:</td>
+                <td>@Model.Periodo.FechaVencimiento.ToString("dd-MMM-yy")</td> *@
+                @*  <td class="bold">Pago Mínimo:</td>
                 <td class="text-right">@Model.PagoMinimo.ToString("C", culturaAR)</td> *@
-            </tr>
-            <tr>
-                <td class="bold">Próximo Cierre:</td>
-                <td >@Model.Periodo.FechaHasta.AddMonths(1).ToString("dd-MMM-yy")</td>
-                <td></td>
-                <td></td>
             </tr>
         </table>
 
@@ -165,19 +166,19 @@
                 <td colspan="2">RESUMEN CONSOLIDADO</td>
             </tr>
             <tr>
-                <td class="bold">SALDO ANTERIOR</td>
+                <td class="bold">PUNITORIOS</td>
                 <td class="text-right">$ @Model.SaldoAnterior.ToString("N2", culturaAR)</td>
             </tr>
             @if (Model.Pagos != 0)
             {
                 <tr>
                     <td>SU PAGO</td>
-                    <td class="text-right">$ @Model.Pagos.ToString("N2", culturaAR)</td>
+                    <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
                 </tr>
             }
             <tr>
                 <td class="bold">TOTAL CONSUMOS DEL MES</td>
-                <td class="text-right">$ @Model.Movimientos.Sum(m => m.Monto).ToString("N2", culturaAR)</td>
+                <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
             </tr>
             @if (Model.Intereses > 0)
             {
@@ -195,7 +196,7 @@
             }
             <tr class="summary-total-row">
                 <td>SALDO ACTUAL</td>
-                <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
+                <td class="text-right">$ @Model.SaldoTotal.ToString("N2", culturaAR)</td>
             </tr>
         </table>
 
@@ -213,19 +214,20 @@
             <tr class="table-header">
                 <td colspan="5" style="background-color: #eee;">CUOTAS DEL MES</td>
             </tr>
-            @foreach (var mov in Model.Movimientos)
+            @foreach (var mov in Model.DetallesCuotas)
             {
                 <tr>
-                    <td>@mov.Fecha.ToString("dd-MMM-yy")</td>
-                    <td>@mov.NombreComercio</td>
+                    <td>@mov.Fecha</td>
+                    <td>@mov.Concepto</td>
                     <td class="text-center">@mov.NroSolicitud</td>
-                    <td class="text-center">@mov.NroCuota/@mov.CantidadCuotas</td>
+                    <td class="text-center">@mov.NroCuota/@mov.TotalDeCuotas</td>
                     <td class="text-right">$ @mov.Monto.ToString("N2", culturaAR)</td>
                 </tr>
             }
             <tr class="summary-total-row">
-                <td colspan="4">TOTAL TITULAR @Model.Usuario.Personas.Nombres @Model.Usuario.Personas.Apellido</td>
-                <td class="text-right">$ @Model.Movimientos.Sum(m => m.Monto).ToString("N2", culturaAR)</td>
+                <td colspan="4">TOTAL TITULAR @Model.Nombre</td>
+                <td class="text-right">$ @Model.SaldoTotal.ToString("N2", culturaAR)</td>
+                <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
             </tr>
         </table>
     </div>

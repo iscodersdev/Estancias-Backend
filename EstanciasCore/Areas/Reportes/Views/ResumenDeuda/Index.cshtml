@@ -1,0 +1,55 @@
+@{
+    ViewData["Title"] = "Reporte de Resumen de Tarjeta";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Filtros de Búsqueda</h3>
+    </div>
+    <div class="card-body" id="filtrosContainer">
+        @* La vista parcial de filtros se cargará aquí *@
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-tools" id="exportarContainer">
+            @* La vista parcial de exportación se cargará aquí *@
+        </div>
+    </div>
+    <div class="card-body" id="listadoContainer">
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+
+            // Cargar los filtros y botones de exportación al iniciar
+            $('#filtrosContainer').load('@Url.Action("_Filtros", "ResumenTarjetaReportes")');
+
+            // Manejar el envío del formulario de filtros
+
+
+
+            $('#filtrosContainer').on('submit', '#filtroForm', function (e) {
+                e.preventDefault(); // Evitar el envío tradicional del formulario
+
+                var formData = $(this).serialize();
+
+                // Mostrar un loader mientras se cargan los datos
+                $('#listadoContainer').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-3x"></i><p>Cargando...</p></div>');
+
+                // Cargar el listado
+                $.post('@Url.Action("_ListadoDeuda", "ResumenDeuda")', formData, function (data) {
+                    $('#listadoContainer').html(data);
+                });
+
+                // Actualizar los botones de exportación con los nuevos filtros
+                var nroTarjeta = $('#nroTarjetaFiltro').val();
+                var nroDocumento = $('#nroDocumentoFiltro').val();
+                //$('#exportarContainer').load('@Url.Action("_Exportar", "ResumenTarjetaReportes")' + `?nroTarjetaFiltro=${encodeURIComponent(nroTarjeta)}&nroDocumentoFiltro=${encodeURIComponent(nroDocumento)}`);
+            });
+        });
+    </script>
+}
