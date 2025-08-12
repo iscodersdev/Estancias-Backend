@@ -19,16 +19,19 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using OfficeOpenXml.ConditionalFormatting;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
 using Org.BouncyCastle.Ocsp;
 using Serilog;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using static EstanciasCore.Services.MercadoPagoServices;
 using PagoTarjetaDTO = DAL.Mobile.PagoTarjetaDTO;
@@ -42,13 +45,15 @@ namespace EstanciasCore.API.Controllers.Billetera
     {
         private readonly MercadoPagoServices _mp;
         private readonly IDatosTarjetaService _datosServices;
-        private readonly IHostingEnvironment _webHostEnvironment;
+        private readonly IHostingEnvironment _webHostEnvironment; 
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment) : base(context)
+        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory serviceScopeFactory) : base(context)
         {
             _datosServices = datosServices;
             _mp = mp;
             _webHostEnvironment = webHostEnvironment;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         [HttpPost("Alta")]
@@ -553,63 +558,191 @@ namespace EstanciasCore.API.Controllers.Billetera
                 return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
             }
         }
-         
+
+
         [HttpPost("DescargarResumenNew")]
-        public async Task<IActionResult> DescargarResumenNew()
+        public async Task DescargarResumenNew()
+        {
+            try
+            {
+                var resumenTarjetaRange = new ConcurrentBag<ResumenTarjeta>();
+                DateTime fechaActual = new DateTime(2025, 7, 25);
+
+                DatosEstructura datosEstructura = _context.DatosEstructura.FirstOrDefault();
+                Periodo periodo = _context.Periodo.FirstOrDefault(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta);
+
+                List<Usuario> usuarios = await _context.Usuarios
+                    .Where(x => x.Personas != null)
+                    .Where(u => u.Personas.NroTarjeta != null && u.Personas.NroTarjeta != "")
+                    .Where(u => u.Personas.NroDocumento != null && u.Personas.NroDocumento != "")
+                    .ToListAsync();
+
+                // 1. Definimos el "portero" (SemaphoreSlim) para limitar la concurrencia a 10.
+                var semaphore = new SemaphoreSlim(initialCount: 10);
+
+                // 2. Creamos una lista para guardar todas las tareas.
+                var tasks = new List<Task>();
+
+                foreach (var itemUsuario in usuarios)
+                {
+                    // 3. Creamos una tarea por cada usuario.
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        // Esperamos a que el semáforo nos dé paso.
+                        await semaphore.WaitAsync();
+
+                        try
+                        {
+                            // La lógica interna es IDÉNTICA a la solución anterior.
+                            // Se crea un scope y se procesa al usuario.
+                            using (var scope = _serviceScopeFactory.CreateScope())
+                            {
+                                var scopedDatosServices = scope.ServiceProvider.GetRequiredService<IDatosTarjetaService>();
+
+                                var datosMovimientos = await scopedDatosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, itemUsuario.Personas.NroDocumento, Convert.ToInt64(itemUsuario.Personas.NroTarjeta), 100, 0);
+
+                                if (datosMovimientos.Detalle.Resultado == "EXITO")
+                                {
+                                    var datosParaResumenDTO = (TempalteResumenDTO)await scopedDatosServices.PrepararDatosDTO(datosMovimientos, periodo, itemUsuario);
+                                    if (datosParaResumenDTO == null) return;
+
+                                    var html = await scopedDatosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
+                                    byte[] pdfBytesPDF;
+                                    using (var memoryStream = new MemoryStream())
+                                    {
+                                        HtmlConverter.ConvertToPdf(html, memoryStream);
+                                        pdfBytesPDF = memoryStream.ToArray();
+                                    }
+
+                                    var codigo = common.Encrypt(datosParaResumenDTO.NroDocumento, fechaActual.ToString("ddMMyyyy"));
+
+                                    var resumenTarjeta = new ResumenTarjeta
+                                    {
+                                        Fecha = fechaActual,
+                                        Monto = datosParaResumenDTO.SaldoActual,
+                                        MontoAdeudado = datosParaResumenDTO.SaldoAnterior,
+                                        Periodo = periodo,
+                                        Usuario = itemUsuario,
+                                        NroComprobante = codigo,
+                                        Adjunto = pdfBytesPDF
+                                    };
+                                    resumenTarjetaRange.Add(resumenTarjeta);
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            // _logger.LogError(e, $"Error procesando usuario {itemUsuario.Id}");
+                        }
+                        finally
+                        {
+                            // 4. MUY IMPORTANTE: Liberamos el espacio en el semáforo para que otro pueda pasar.
+                            // Esto se ejecuta siempre, incluso si hay un error.
+                            semaphore.Release();
+                        }
+                    }));
+                }
+
+                // 5. Esperamos a que TODAS las tareas de la lista terminen.
+                await Task.WhenAll(tasks);
+
+                // Guardamos los resultados en la base de datos.
+                await _context.AddRangeAsync(resumenTarjetaRange);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError(ex, "Error crítico en el proceso de descarga de resúmenes.");
+            }
+        }
+
+
+
+        [HttpPost("DescargarResumenNew2")]
+        public async Task DescargarResumenNew2()
         {
             try
             {
                 decimal montoVencido = 0;
                 decimal totalPunitorios = 0;
                 List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-                DateTime fechaActual = DateTime.Now;
+                List<ResumenTarjeta> resumenTarjetaRange = new List<ResumenTarjeta>();
+
+                //DateTime fechaActual = DateTime.Now;
+
+                DateTime fechaActual = new DateTime(2025, 7, 25);
+
                 DatosEstructura datosEstructura = _context.DatosEstructura.FirstOrDefault();
                 Periodo periodo = _context.Periodo.Where(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta).FirstOrDefault();
-                IQueryable<Usuario> usuarios = _context.Usuarios.Where(x => x.Personas!=null).Where(u => (u.Personas.NroTarjeta != null && u.Personas.NroTarjeta != "") &&  (u.Personas.NroDocumento != null && u.Personas.NroDocumento != ""))
-                    .Where(x=>x.Personas.NroDocumento=="43649088");
+                IQueryable<Usuario> usuarios = _context.Usuarios.Where(x => x.Personas!=null).Where(u => (u.Personas.NroTarjeta != null && u.Personas.NroTarjeta != "") &&  (u.Personas.NroDocumento != null && u.Personas.NroDocumento != ""));
+                    //.Where(x=>x.Personas.NroDocumento=="43649088");
 
                 foreach (var itemUsuario in usuarios)
                 {
-                    var datosMovimientos = await _datosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, itemUsuario.Personas.NroDocumento, Convert.ToInt64(itemUsuario.Personas.NroTarjeta), 100, 0);
-                    if (datosMovimientos.Detalle.Resultado=="EXITO")
-                    {
-                        TempalteResumenDTO datosParaResumenDTO = null;
-                        datosParaResumenDTO = (TempalteResumenDTO) await _datosServices.PrepararDatosDTO(datosMovimientos, periodo, itemUsuario);
-
-                        if (datosParaResumenDTO == null)
+                    try
+                    {                    
+                        var datosMovimientos = await _datosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, itemUsuario.Personas.NroDocumento, Convert.ToInt64(itemUsuario.Personas.NroTarjeta), 100, 0);
+                        if (datosMovimientos.Detalle.Resultado=="EXITO")
                         {
-                            continue;
+                            TempalteResumenDTO datosParaResumenDTO = null;
+                            datosParaResumenDTO = (TempalteResumenDTO) await _datosServices.PrepararDatosDTO(datosMovimientos, periodo, itemUsuario);
+
+                            if (datosParaResumenDTO == null)
+                            {
+                                continue;
+                            }
+                            byte[] pdfBytesPDF;
+                            string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
+                            using (var memoryStream = new MemoryStream())
+                            {
+                                HtmlConverter.ConvertToPdf(html, memoryStream);
+                                pdfBytesPDF = memoryStream.ToArray();
+                            }
+
+                            // --- 3. Devuelve un objeto JSON con los datos del archivo ---
+                            string nombreResumen = $"Resumen_{datosParaResumenDTO.NroDocumento+"-"+periodo.Descripcion.Replace(" ", "_")}.pdf";
+
+                            var codigo = common.Encrypt(datosParaResumenDTO.NroDocumento, fechaActual.ToString("ddMMyyyy"));
+
+                            ResumenTarjeta resumenTarjeta = new ResumenTarjeta()
+                            {
+                                Fecha = fechaActual,
+                                Monto = datosParaResumenDTO.SaldoActual,
+                                MontoAdeudado = datosParaResumenDTO.SaldoAnterior,
+                                Periodo = periodo,
+                                Usuario = itemUsuario,
+                                NroComprobante = codigo,
+                                Adjunto = pdfBytesPDF
+                            };
+                            resumenTarjetaRange.Add(resumenTarjeta);
+
+                            //return File(pdfBytesPDF, "application/pdf", nombreResumen);
+
+                            //return Ok(new
+                            //{
+                            //    FileName = nombreResumen,
+                            //    MimeType = "application/pdf",
+                            //    FileContents = pdfBytesPDF // Esto se enviará como un string Base64
+                            //});
                         }
-                        byte[] pdfBytesPDF;
-                        string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
-                        using (var memoryStream = new MemoryStream())
-                        {
-                            HtmlConverter.ConvertToPdf(html, memoryStream);
-                            pdfBytesPDF = memoryStream.ToArray();
-                        }
-
-                        // --- 3. Devuelve un objeto JSON con los datos del archivo ---
-                        string nombreResumen = $"Resumen_{datosParaResumenDTO.NroDocumento+"-"+periodo.Descripcion.Replace(" ", "_")}.pdf";
-
-                        return File(pdfBytesPDF, "application/pdf", nombreResumen);
-
-                        return Ok(new
-                        {
-                            FileName = nombreResumen,
-                            MimeType = "application/pdf",
-                            FileContents = pdfBytesPDF // Esto se enviará como un string Base64
-                        });
                     }
-                    return null;
+                    catch (Exception e)
+                    {
+                        continue;
+                    }
+                    //return null;
                 }
-                return null;
+
+                await _context.AddRangeAsync(resumenTarjetaRange);
+                await _context.SaveChangesAsync();
+                //return null;
             }
             catch (Exception ex)
             {
                 // Es una buena práctica capturar excepciones inesperadas, como problemas de permisos de lectura.
                 // Aquí puedes loguear el error para depuración.
                 // _logger.LogError(ex, "Error al descargar el resumen PDF.");
-                return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
+                //return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
             }
         }
 
