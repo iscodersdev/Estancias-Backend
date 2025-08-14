@@ -18,19 +18,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-public class DatosParaResumenDTO
-{
-    public Usuario Usuario { get; set; }
-    public Periodo Periodo { get; set; }
-    public List<MovimientoTarjeta> Movimientos { get; set; }
-    public decimal SaldoAnterior { get; set; }
-    public decimal Pagos { get; set; }
-    public decimal Intereses { get; set; }
-    public decimal Impuestos { get; set; }
-    public decimal SaldoActual { get; set; }
-    public decimal PagoMinimo { get; set; }
-    public string Domicilio { get; set; }
-}
 
 
 [Area("Reportes")]
@@ -75,12 +62,9 @@ public class ResumenTarjetaReportesController : EstanciasCoreController
                 return PartialView(new List<ResumenTarjetaDTO>());
             }
 
-            //await _datosServices.ActualizarMovimientosAsync(usuario);
-
-
             DateTime fechaActual = DateTime.Now.AddMonths(1);
 
-            List<MovimientoTarjeta> movimientos = _context.MovimientoTarjeta.Where(x => x.Usuario.Id == usuario.Id && x.Periodo != null).Where(e => e.Periodo.FechaHasta<fechaActual).ToList();
+            List<ResumenTarjeta> movimientos = _context.ResumenTarjeta.Where(x => x.Usuario.Id == usuario.Id && x.Periodo != null).Where(e => e.Periodo.FechaHasta<fechaActual).ToList();
 
             List<ResumenTarjetaDTO> resumenes = movimientos.GroupBy(g => g.Periodo)
                 .Select(g => new ResumenTarjetaDTO
@@ -89,7 +73,8 @@ public class ResumenTarjetaReportesController : EstanciasCoreController
                     PeriodoId = g.Key.Id,
                     Periodo = g.Key.Descripcion,
                     FechaVencimiento = g.Key.FechaVencimiento.ToString("dd/MM/yyyy"),
-                    MontoAdeudado = g.Sum(m => m.Monto)
+                    Monto = g.Sum(m => m.Monto),
+                    Punitorios = g.Sum(m => m.MontoAdeudado)
                 })
                 .OrderByDescending(r => r.FechaVencimiento)
                 .ToList();
@@ -103,64 +88,50 @@ public class ResumenTarjetaReportesController : EstanciasCoreController
         }
     }
 
-    //[HttpGet]
-    //public async Task<IActionResult> DescargarResumen(int periodoId, string usuarioId)
-    //{
-    //    try
-    //    {
-    //        var datosParaElResumen = await _datosServices.PrepararDatosDTO(periodoId, usuarioId);
-    //        var datosParaElResumen = null;
-    //        if (datosParaElResumen == null)
-    //        {
-    //            return NotFound("No se encontraron datos para generar el resumen.");
-    //        }
+    [HttpGet]
+    public async Task<IActionResult> DescargarResumen(string Id)
+    {
+        if (string.IsNullOrEmpty(Id))
+        {
+            return BadRequest("El ID no puede ser nulo o vacío.");
+        }
 
-    //        string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaElResumen);
-    //        string html = null;
+        string[] partes = Id.Split(',');
+        if (partes.Length != 2)
+        {
+            return BadRequest("El formato del ID es incorrecto. Se esperaba 'PeriodoId,UsuarioId'.");
+        }
 
-    //        byte[] pdfBytes;
-    //        using (var memoryStream = new MemoryStream())
-    //        {
-    //            HtmlConverter.ConvertToPdf(html, memoryStream);
-    //            pdfBytes = memoryStream.ToArray();
-    //        }
+        if (!int.TryParse(partes[0], out int periodoId))
+        {
+            return BadRequest("El PeriodoId proporcionado no es un número válido.");
+        }
 
-    //        string nombreArchivo = $"Resumen_{datosParaElResumen.Periodo.Descripcion.Replace(" ", "_")}.pdf";
-    //        return File(pdfBytes, "application/pdf", nombreArchivo);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return BadRequest("Ocurrió un error al generar el resumen: " + ex.Message);
-    //    }
-    //}
+        string usuarioId = partes[1];
 
+        try
+        {
+            var resumen = await _context.ResumenTarjeta
+                .FirstOrDefaultAsync(x => x.UsuarioId == usuarioId && x.PeriodoId == periodoId);
 
+            if (resumen == null)
+            {
+                return NotFound("No se encontró un resumen para el período y usuario especificados.");
+            }
 
-    /// <summary>
-    /// Acción para renderizar la plantilla HTML en el navegador y facilitar el diseño.
-    /// </summary>
-    //[HttpGet]
-    //public async Task<IActionResult> VistaPreviaResumen(int periodoId, string usuarioId)
-    //{
-    //    try
-    //    {
-    //        1.Prepara los datos exactamente igual que para el PDF
-    //        var datosParaElResumen = await _datosServices.PrepararDatosDTO(periodoId, usuarioId);
-    //        if (datosParaElResumen == null)
-    //        {
-    //            return NotFound("No se encontraron datos para la vista previa.");
-    //        }
+            if (resumen.Adjunto == null || resumen.Adjunto.Length == 0)
+            {
+                return NotFound("El resumen fue encontrado pero no contiene un archivo adjunto.");
+            }
 
-    //        2.Devuelve la vista directamente, pasándole el modelo.
-    //         El navegador la renderizará como una página web normal.
-    //        return View("ResumenBancarioTemplate", datosParaElResumen);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return Content("Ocurrió un error al generar la vista previa: " + ex.Message);
-    //    }
-    //}
-
+            string base64String = Convert.ToBase64String(resumen.Adjunto);
+            return PartialView("_VerResumen", base64String);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "Ocurrió un error interno al procesar la solicitud.");
+        }
+    }
 
     [HttpGet]
     public IActionResult _Filtros()

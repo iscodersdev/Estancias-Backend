@@ -12,7 +12,8 @@ namespace DAL.DTOs.Reportes
         public int PeriodoId { get; set; }
         public string UsuarioId { get; set; }
         public string FechaVencimiento { get; set; }
-        public decimal MontoAdeudado { get; set; }
+        public decimal Monto { get; set; }
+        public decimal Punitorios { get; set; }
     }
 
 

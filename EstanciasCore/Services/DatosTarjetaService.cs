@@ -410,79 +410,8 @@ namespace EstanciasCore.Services
             }
             return totalPunitorios;
         }
-
-        //public async Task<byte[]> GenerarPDF(CombinedData dataMoniviento)
-        //{
-        //    decimal montoVencido = 0;
-        //    decimal totalPunitorios = 0;
-        //    List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-        //    DateTime fechaActual = DateTime.Now;
-        //    DatosEstructura datosEstructura = _context.DatosEstructura.FirstOrDefault();
-        //    Periodo periodo = _context.Periodo.Where(p => p.FechaHasta == fechaActual).FirstOrDefault();
-        //    IQueryable<Usuario> usuarios = _context.Usuarios.Where(x => x.Personas!=null).Where(u => (u.Personas.NroTarjeta != null && u.Personas.NroTarjeta != "") &&  (u.Personas.NroDocumento != null && u.Personas.NroDocumento != ""));
-
-
-        //    foreach (var itemUsuario in usuarios)
-        //    {
-        //        var datosMovimientos = await ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, itemUsuario.Personas.NroDocumento, Convert.ToInt64(itemUsuario.Personas.NroTarjeta), 100, 0);
-        //        if (datosMovimientos.Detalle.Resultado=="EXITO")
-        //        {
-        //            //comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
-        //            //        .GroupBy(m => new { m.Descripcion, m.Fecha })
-        //            //        .Select(g => new MovimientoTarjetaDTO
-        //            //        {
-        //            //            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-        //            //            TipoMovimiento = g.Key.Descripcion,
-        //            //            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-        //            //        })
-        //            //        .ToList();
-
-        //            //comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
-        //            //.Select(g => new MovimientoTarjetaDTO
-        //            //{
-        //            //    Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
-        //            //    TipoMovimiento = g.Descripcion,
-        //            //    Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
-        //            //}).ToList());
-
-        //            var totalDetallesCuota = datosMovimientos.DetallesSolicitud
-        //           .Where(result => result?.DetallesCuota != null)
-        //           .SelectMany(result => result.DetallesCuota)
-        //           .Where(detalle => (common.ConvertirFecha(detalle.Fecha) < periodo.FechaDesde))
-        //           .Select(e => new { monto = e.Monto }).ToList();
-
-        //            montoVencido = totalDetallesCuota.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
-        //            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
-        //            totalPunitorios = CalcularPunitorios(datosMovimientos.DetallesSolicitud);
-
-        //            decimal saldoAnterior = _context.MovimientoTarjeta.Where(m => m.Usuario.Id == usuarioId && m.Periodo.FechaDesde < periodoActual.FechaDesde && m.Pagado==false).Sum(x => x.Monto);
-        //            decimal pagos = 0; // TODO: Reemplazar con tu lógica para obtener pagos del mes.
-        //            decimal intereses = 0; // TODO: Reemplazar con tu lógica para obtener intereses.
-        //            decimal impuestos = 0; // TODO: Reemplazar con tu lógica para obtener impuestos.
-
-        //            decimal totalConsumos = movimientosDelPeriodo.Where(m => m.Monto > 0).Sum(m => m.Monto);
-        //            decimal saldoActual = saldoAnterior - pagos + totalConsumos + intereses + impuestos;
-        //            decimal pagoMinimo = saldoActual * 0.10m; // TODO: Reemplazar con tu lógica de cálculo de pago mínimo.
-
-        //            var eee = new DatosParaResumenDTO
-        //            {
-        //                Usuario = usuario,
-        //                Periodo = periodoActual,
-        //                Movimientos = movimientosDelPeriodo,
-        //                SaldoAnterior = saldoAnterior,
-        //                Pagos = pagos,
-        //                Intereses = intereses,
-        //                Impuestos = impuestos,
-        //                SaldoActual = saldoActual,
-        //                PagoMinimo = pagoMinimo
-        //            }
-
-
-
-        //    }
-        //}
          
-        public async Task<TempalteResumenDTO> PrepararDatosDTO(CombinedData datosMovimientos, Periodo periodo, Usuario usuario)
+        public async Task<TempalteResumenDTO> PrepararDatosDTO(CombinedData datosMovimientos, Periodo periodo, UsuarioParaProcesarDTO usuario)
         {
             TempalteResumenDTO tempalteResumenDTO = new TempalteResumenDTO();
             List<DetallesCuotasResumenDTO>  detallesCuotasResumenDTO = new List<DetallesCuotasResumenDTO>();
@@ -497,7 +426,7 @@ namespace EstanciasCore.Services
             tempalteResumenDTO.NroDocumento =  datosMovimientos.Detalle.Documento; 
             tempalteResumenDTO.Mail =  usuario.UserName; 
             tempalteResumenDTO.NroSocio = usuario.Id; 
-            tempalteResumenDTO.NroTarjeta = usuario.Personas.NroTarjeta; 
+            tempalteResumenDTO.NroTarjeta = usuario.NroTarjeta; 
             tempalteResumenDTO.Domicilio =  datosMovimientos.Detalle.Direccion; 
             tempalteResumenDTO.PeriodoDesde = periodo.FechaDesde.ToString("dd/MMM/yyyy"); 
             tempalteResumenDTO.PeriodoHasta = periodo.FechaHasta.ToString("dd/MMM/yyyy");

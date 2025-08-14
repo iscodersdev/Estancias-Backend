@@ -561,9 +561,32 @@ namespace EstanciasCore.Controllers
                     }
                 }
                 Clientes cliente = _context.Clientes.Where(x => x.Usuario.Id==user.Id).FirstOrDefault();
-                cliente.Password = pass;
-                cliente.Usuario.Token = token;
-                _context.Clientes.Update(cliente);
+                if (cliente== null)
+                {
+                    cliente = new Clientes();
+                    cliente.Empresa = _context.Empresas.FirstOrDefault();
+                    cliente.TipoCliente = _context.TiposClientes.Find(1);
+                    cliente.Celular = "";
+                    cliente.Localidad = _context.Localidad.Find(24860);
+                    cliente.Provincia = _context.Provincia.Find(6);
+                    cliente.Password = pass;
+                    user.Clientes = cliente;
+                    cliente.Usuario = user;
+                    cliente.Usuario.Token = token;
+                    cliente.Persona = user.Personas;
+                    _context.Clientes.Add(cliente);
+                }
+                else
+                {
+                    cliente.Password = pass;
+                    cliente.Usuario.Token = token;
+                    if (cliente.Persona==null)
+                    {
+                        cliente.Persona = user.Personas;
+                    }
+                    _context.Clientes.Update(cliente);
+                }
+
                 _context.SaveChanges();
                 string sHTML = "";
                 string asteriscos = "***********************************************************************";

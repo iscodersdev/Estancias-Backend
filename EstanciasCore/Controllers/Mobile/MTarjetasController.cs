@@ -2,32 +2,25 @@
 using DAL.DTOs;
 using DAL.DTOs.API;
 using DAL.DTOs.Reportes;
+using DAL.DTOs.Servicios;
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
 using EstanciasCore.API.Filters;
-using EstanciasCore.Areas.Administracion.ViewModels;
 using EstanciasCore.Interface;
 using EstanciasCore.Services;
-using Google.Protobuf.WellKnownTypes;
 using iText.Html2pdf;
-using iText.Kernel.Pdf.Canvas.Wmf;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Razor.Internal;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.ViewEngines;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using OfficeOpenXml.ConditionalFormatting;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
-using Org.BouncyCastle.Ocsp;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -46,14 +39,18 @@ namespace EstanciasCore.API.Controllers.Billetera
         private readonly MercadoPagoServices _mp;
         private readonly IDatosTarjetaService _datosServices;
         private readonly IHostingEnvironment _webHostEnvironment; 
-        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ILogger<MTarjetasController> _logger;
+        private readonly IConfiguration _configuration;
 
-        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory serviceScopeFactory) : base(context)
+        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory scopeFactory, ILogger<MTarjetasController> logger, IConfiguration configuration) : base(context)
         {
             _datosServices = datosServices;
             _mp = mp;
             _webHostEnvironment = webHostEnvironment;
-            _serviceScopeFactory = serviceScopeFactory;
+            _scopeFactory = scopeFactory;
+            _logger = logger;
+            _configuration = configuration;
         }
 
         [HttpPost("Alta")]
@@ -312,186 +309,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 return new JsonResult(new RespuestaAPI { Status = 500, UAT = movimientostarjetaDTOS.UAT, Mensaje = $"Error en MovimientoTarjeta: {e.Message}" });
             }
         }
-
-
-        //[HttpPost("MovimientosLoan")]
-        //public IActionResult MovimientosLoan([FromBody] MovimientoLoanDTO movimientoLoanDTO)
-        //{
-        //    try
-        //    {              
-        //        DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
-        //        var tipomov = _context.TipoMovimientoTarjeta.Where(x => x.Id == movimientoLoanDTO.Tipomovimiento).FirstOrDefault();
-
-        //        var movimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS, empresa.PasswordWS, movimientoLoanDTO.NroDocumento, Convert.ToUInt32(movimientoLoanDTO.NroTarjeta), movimientoLoanDTO.CantMovimientos, movimientoLoanDTO.Tipomovimiento).Result;
-
-        //        if (movimientos.Detalle.Resultado == "EXITO")
-        //        {
-        //            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-        //            if (movimientoLoanDTO.Tipomovimiento == 0) //Todos los movimientos
-        //            {
-        //                comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
-        //                .GroupBy(m => new { m.Descripcion, m.Fecha })
-        //                .Select(g => new MovimientoTarjetaDTO
-        //                {
-        //                    Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-        //                    TipoMovimiento = g.Key.Descripcion,
-        //                    Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-        //                })
-        //                .ToList();
-
-        //                comprasAgrupadas.AddRange(movimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
-        //                .Select(g => new MovimientoTarjetaDTO
-        //                {
-        //                    Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
-        //                    TipoMovimiento = g.Descripcion,
-        //                    Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
-        //                }).ToList());
-        //            }
-        //            else
-        //            {
-        //                comprasAgrupadas = movimientos.Movimientos.Where(x => x.Descripcion == tipomov.Nombre)
-        //               .GroupBy(m => new { m.Descripcion, m.Fecha })
-        //               .Select(g => new MovimientoTarjetaDTO
-        //               {
-        //                   Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-        //                   TipoMovimiento = g.Key.Descripcion,
-        //                   Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-        //               })
-        //               .ToList();
-        //            }
-
-
-        //            List<ListDetalleCuotaDTO> movimientosDetalles = new List<ListDetalleCuotaDTO>();
-
-        //            //var movi = movimientos.DetallesSolicitud.Where(x=>x.DetallesCuota.Where(e=>e.Fecha))
-
-        //            foreach (var item in movimientos.DetallesSolicitud)
-        //            {
-        //                foreach (var itemMovimiento in item.DetallesCuota)
-        //                {
-        //                    if (movimientosDetalles.Any(x => x.Fecha == itemMovimiento.Fecha))
-        //                    {
-        //                        var detalle = movimientosDetalles.Where(x => x.Fecha == itemMovimiento.Fecha).First();
-        //                        detalle.Monto = (Convert.ToDecimal(detalle.Monto) + Convert.ToDecimal(itemMovimiento.Monto)).ToString();
-        //                    }
-        //                    else
-        //                    {
-        //                        movimientosDetalles.Add(new ListDetalleCuotaDTO()
-        //                        {
-        //                            Fecha = itemMovimiento.Fecha,
-        //                            Monto = itemMovimiento.Monto
-        //                        });
-        //                    }
-        //                }
-        //            }
-
-        //            string saldoVencidoAcumulado = "0.0";
-        //            string sumaProximoVencimientoAcumulado = "0.0";
-        //            bool cuotaVencida = false;
-        //            string fechaSiguienteCuota = "";
-        //            DateTime? fechaProximoPago = null;
-
-        //            foreach (var item in movimientosDetalles.OrderBy(x => ConvertirFecha(x.Fecha)))
-        //            {
-
-        //                if (VerificarVencimiento(item.Fecha))
-        //                {
-        //                    SetearCultureInfoUS();
-        //                    var aux1 = Convert.ToDecimal(item.Monto);
-        //                    var aux2 = Convert.ToDecimal(saldoVencidoAcumulado);
-        //                    saldoVencidoAcumulado = (aux1+aux2).ToString();
-        //                    cuotaVencida = true;
-        //                }
-        //                else
-        //                {
-        //                    if (fechaSiguienteCuota=="")
-        //                        fechaSiguienteCuota = item.Fecha;
-
-        //                    if ((ConvertirFecha(item.Fecha).Month==(ConvertirFecha(fechaSiguienteCuota).Month)) && (ConvertirFecha(item.Fecha).Year==ConvertirFecha(fechaSiguienteCuota).Year))
-        //                    {
-        //                        if (fechaProximoPago==null)
-        //                            fechaProximoPago=ConvertirFecha(item.Fecha);
-
-        //                        SetearCultureInfoUS();
-        //                        var monto2 = Convert.ToDecimal(item.Monto);
-        //                        var monto1 = Convert.ToDecimal(sumaProximoVencimientoAcumulado);
-        //                        sumaProximoVencimientoAcumulado = (monto1+monto2).ToString();
-        //                    }
-        //                }
-
-        //            }
-        //            SetearCultureInfoUS();
-        //            sumaProximoVencimientoAcumulado = (Convert.ToDecimal(sumaProximoVencimientoAcumulado)+Convert.ToDecimal(saldoVencidoAcumulado)).ToString();
-
-        //            bool ContieneLeyenda = false;
-        //            string Leyenda = "";
-        //            var LeyendaTexto = _context.LeyendaTipoMovimiento.FirstOrDefault();
-
-        //            if (comprasAgrupadas.Where(x => x.TipoMovimiento == LeyendaTexto.NombreMovimiento).Count()>0 && LeyendaTexto.Activo==true)
-        //            {
-        //                ContieneLeyenda = true;
-        //                Leyenda = LeyendaTexto.TextoLeyenda;
-        //            }
-
-
-        //            List<MovimientoTarjetaDTO> MovimientosTarjeta = movimientos.Movimientos
-        //                .Select(mov => new MovimientoTarjetaDTO
-        //                {
-        //                    TipoMovimiento = mov.Descripcion,
-        //                    Monto = mov.Monto,
-        //                    Fecha = mov.Fecha.ToString("dd/MM/yyyy")
-        //                })
-        //                .ToList();
-
-        //            int cantidadDeMovimientos = MovimientosTarjeta.Count();
-        //            if (cantidadDeMovimientos>movimientoLoanDTO.CantMovimientos)
-        //            {
-        //                cantidadDeMovimientos = Convert.ToInt32(movimientoLoanDTO.CantMovimientos);
-        //            }
-
-
-        //            if (movimientoLoanDTO.NroTarjeta.ToString().TrimStart('0')=="500033395")
-        //            {
-        //                saldoVencidoAcumulado = "0.0";
-        //            }
-
-        //            var MovientosOrdenadosPorFecha = comprasAgrupadas.OrderByDescending(x => ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(movimientoLoanDTO.CantMovimientos)).ToList();
-
-        //            return new JsonResult(
-        //                new ListaMovimientoTarjetaDTO
-        //                {
-        //                    Status = 200,
-        //                    UAT = "null",
-        //                    Mensaje = "Movimiento obtenidos",
-        //                    NroTarjeta = Convert.ToUInt32(movimientoLoanDTO.NroTarjeta),
-        //                    NroDocumento = Convert.ToInt32(movimientoLoanDTO.NroDocumento),
-        //                    Direccion = movimientos.Detalle.Direccion,
-        //                    MontoAdeudado = saldoVencidoAcumulado.Replace(".", ","),
-        //                    ProximaFechaPago = fechaProximoPago?.ToString("dd/MM/yyyy"),
-        //                    CuotaVencida = cuotaVencida,
-        //                    TotalProximaCuota = sumaProximoVencimientoAcumulado.Replace(".", ","),
-        //                    CantMovimientos = movimientoLoanDTO.CantMovimientos,
-        //                    Resultado = movimientos.Detalle.Resultado,
-        //                    Nombre = movimientos.Detalle.Nombre,
-        //                    FechaPagoProximaCuota = fechaProximoPago?.ToString("dd/MM/yyyy"),
-        //                    MovimientosTarjeta = MovientosOrdenadosPorFecha,
-        //                    MontoDisponible = movimientos.Detalle.MontoDisponible.Replace(".", ","),
-        //                    ContieneLeyenda = ContieneLeyenda,
-        //                    Leyenda = Leyenda,
-        //                    Telefono = empresa.Telefono
-        //                });
-        //        }
-        //        else
-        //            return new JsonResult(new ListaMovimientoTarjetaDTO { Status = 500, UAT = "null", Mensaje = "No existe datos de la tarjeta" });
-
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Log.Error($"Error en creacion de tarjeta - {e.Message}");
-        //        return new JsonResult(new RespuestaAPI { Status = 500, UAT = "null", Mensaje = $"Error en creacion de tarjeta" + e });
-        //    }
-
-        //}
+                
 
         [HttpPost("TraePeriodos")]
         public async Task<IActionResult> TraePeriodos(TraePeriodosDTO body)
@@ -502,7 +320,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             if (usuario == null)
                 return new JsonResult(new RespuestaAPI { Status = 500, UAT = traePeriodosDTO.UAT, Mensaje = $"no existe UAT de Usuario" });
 
-            var periodos = await _context.Periodo.Select(x=> new PeriodoDTO() { FechaDesde = x.FechaDesde, FechaHasta = x.FechaHasta, Id = x.Id, Nombre = x.Descripcion }).ToListAsync();
+            var periodos = await _context.Periodo.Where(x=>x.Activo).Select(x=> new PeriodoDTO() { FechaDesde = x.FechaDesde, FechaHasta = x.FechaHasta, Id = x.Id, Nombre = x.Descripcion }).ToListAsync();
             if (periodos == null || !periodos.Any())
             {
                 return NotFound("No se encontraron periodos.");
@@ -513,270 +331,42 @@ namespace EstanciasCore.API.Controllers.Billetera
             return new JsonResult(traePeriodosDTO);
         }
 
+
+
+
         [HttpPost("DescargarResumen")]
         public async Task<IActionResult> DescargarResumen(MovimientosTarjetaDTO body)
         {
             try
             {
-                // --- 1. Validar el usuario ---
                 var usuario = TraeUsuarioUAT(body.UAT);
                 if (usuario == null)
                 {
-                    // Si el UAT no es válido, se retorna un error.
-                    return new JsonResult(new RespuestaAPI { Status = 401, UAT = body.UAT, Mensaje = $"UAT de Usuario no válida o inexistente." });
+                    return BadRequest(new { Mensaje = "UAT de Usuario no válida o inexistente." });
                 }
-
-                // --- 2. Definir la ruta y el nombre del archivo a descargar ---
-                // TO-DO: Debes construir la ruta al archivo PDF que quieres descargar.
-                // Esta lógica dependerá de cómo almacenas y nombras tus archivos.
-                // Por ejemplo, podrías buscar en la base de datos la ruta asociada al `body.PeriodoId`.
-                string nombreArchivo = $"recibo.pdf"; // TO-DO: Cambia esto por el nombre de tu archivo real.
-
-                // Se asume que los PDFs están en una subcarpeta "pdfs" dentro de wwwroot para mejor organización.
-                // La ruta sería: wwwroot/pdfs/tu_archivo.pdf
-                string rutaCompletaDelArchivo = Path.Combine(_webHostEnvironment.WebRootPath, "Plantillas", nombreArchivo);
-
-                // --- 3. Verificar si el archivo existe ---
-                if (!System.IO.File.Exists(rutaCompletaDelArchivo))
+                Periodo periodo = _context.Periodo.Where(p=>p.Id==body.PeriodoId).FirstOrDefault();
+                if (periodo==null)
                 {
-                    return NotFound(new { error = "El archivo solicitado no fue encontrado." });
+                    return UnprocessableEntity(new { Mensaje = "El Período con el ID proporcionado no existe." });
                 }
+            
 
-                // --- 4. Leer el archivo existente en un array de bytes ---
-                byte[] pdfBytes = await System.IO.File.ReadAllBytesAsync(rutaCompletaDelArchivo);
+                ResumenTarjeta resumenTarjeta = _context.ResumenTarjeta.Where(x => x.UsuarioId==usuario.Id && x.PeriodoId== periodo.Id).FirstOrDefault();
+                if (resumenTarjeta==null)
+                {
+                    return NotFound(new { Mensaje = "No se encontró un resumen para el usuario y período especificados." });
+                }
+                string fechaString = DateTime.Now.ToString("ddMMyyyy");
+                string nombreArchivo = $"Resumen_{usuario.Personas.NroDocumento}_{fechaString}";
 
-                // --- 5. Devolver el archivo para descarga directa ---
-                // Se retorna un `File` con los bytes del PDF leído.
-                // Esto le indica al navegador que debe iniciar la descarga.
-                return File(pdfBytes, "application/pdf", nombreArchivo);
+                return File(resumenTarjeta.Adjunto, "application/pdf", nombreArchivo);
             }
             catch (Exception ex)
             {
-                // Es una buena práctica capturar excepciones inesperadas, como problemas de permisos de lectura.
-                // Aquí puedes loguear el error para depuración.
-                // _logger.LogError(ex, "Error al descargar el resumen PDF.");
                 return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
             }
         }
 
-
-        [HttpPost("DescargarResumenNew")]
-        public async Task DescargarResumenNew()
-        {
-            try
-            {
-                var resumenTarjetaRange = new ConcurrentBag<ResumenTarjeta>();
-                DateTime fechaActual = new DateTime(2025, 7, 25);
-
-                DatosEstructura datosEstructura = _context.DatosEstructura.FirstOrDefault();
-                Periodo periodo = _context.Periodo.FirstOrDefault(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta);
-
-                List<Usuario> usuarios = await _context.Usuarios
-                    .Where(x => x.Personas != null)
-                    .Where(u => u.Personas.NroTarjeta != null && u.Personas.NroTarjeta != "")
-                    .Where(u => u.Personas.NroDocumento != null && u.Personas.NroDocumento != "")
-                    .ToListAsync();
-
-                // 1. Definimos el "portero" (SemaphoreSlim) para limitar la concurrencia a 10.
-                var semaphore = new SemaphoreSlim(initialCount: 10);
-
-                // 2. Creamos una lista para guardar todas las tareas.
-                var tasks = new List<Task>();
-
-                foreach (var itemUsuario in usuarios)
-                {
-                    // 3. Creamos una tarea por cada usuario.
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        // Esperamos a que el semáforo nos dé paso.
-                        await semaphore.WaitAsync();
-
-                        try
-                        {
-                            // La lógica interna es IDÉNTICA a la solución anterior.
-                            // Se crea un scope y se procesa al usuario.
-                            using (var scope = _serviceScopeFactory.CreateScope())
-                            {
-                                var scopedDatosServices = scope.ServiceProvider.GetRequiredService<IDatosTarjetaService>();
-
-                                var datosMovimientos = await scopedDatosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, itemUsuario.Personas.NroDocumento, Convert.ToInt64(itemUsuario.Personas.NroTarjeta), 100, 0);
-
-                                if (datosMovimientos.Detalle.Resultado == "EXITO")
-                                {
-                                    var datosParaResumenDTO = (TempalteResumenDTO)await scopedDatosServices.PrepararDatosDTO(datosMovimientos, periodo, itemUsuario);
-                                    if (datosParaResumenDTO == null) return;
-
-                                    var html = await scopedDatosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
-                                    byte[] pdfBytesPDF;
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        HtmlConverter.ConvertToPdf(html, memoryStream);
-                                        pdfBytesPDF = memoryStream.ToArray();
-                                    }
-
-                                    var codigo = common.Encrypt(datosParaResumenDTO.NroDocumento, fechaActual.ToString("ddMMyyyy"));
-
-                                    var resumenTarjeta = new ResumenTarjeta
-                                    {
-                                        Fecha = fechaActual,
-                                        Monto = datosParaResumenDTO.SaldoActual,
-                                        MontoAdeudado = datosParaResumenDTO.SaldoAnterior,
-                                        Periodo = periodo,
-                                        Usuario = itemUsuario,
-                                        NroComprobante = codigo,
-                                        Adjunto = pdfBytesPDF
-                                    };
-                                    resumenTarjetaRange.Add(resumenTarjeta);
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            // _logger.LogError(e, $"Error procesando usuario {itemUsuario.Id}");
-                        }
-                        finally
-                        {
-                            // 4. MUY IMPORTANTE: Liberamos el espacio en el semáforo para que otro pueda pasar.
-                            // Esto se ejecuta siempre, incluso si hay un error.
-                            semaphore.Release();
-                        }
-                    }));
-                }
-
-                // 5. Esperamos a que TODAS las tareas de la lista terminen.
-                await Task.WhenAll(tasks);
-
-                // Guardamos los resultados en la base de datos.
-                await _context.AddRangeAsync(resumenTarjetaRange);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError(ex, "Error crítico en el proceso de descarga de resúmenes.");
-            }
-        }
-
-
-
-        [HttpPost("DescargarResumenNew2")]
-        public async Task DescargarResumenNew2()
-        {
-            try
-            {
-                decimal montoVencido = 0;
-                decimal totalPunitorios = 0;
-                List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-                List<ResumenTarjeta> resumenTarjetaRange = new List<ResumenTarjeta>();
-
-                //DateTime fechaActual = DateTime.Now;
-
-                DateTime fechaActual = new DateTime(2025, 7, 25);
-
-                DatosEstructura datosEstructura = _context.DatosEstructura.FirstOrDefault();
-                Periodo periodo = _context.Periodo.Where(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta).FirstOrDefault();
-                IQueryable<Usuario> usuarios = _context.Usuarios.Where(x => x.Personas!=null).Where(u => (u.Personas.NroTarjeta != null && u.Personas.NroTarjeta != "") &&  (u.Personas.NroDocumento != null && u.Personas.NroDocumento != ""));
-                    //.Where(x=>x.Personas.NroDocumento=="43649088");
-
-                foreach (var itemUsuario in usuarios)
-                {
-                    try
-                    {                    
-                        var datosMovimientos = await _datosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, itemUsuario.Personas.NroDocumento, Convert.ToInt64(itemUsuario.Personas.NroTarjeta), 100, 0);
-                        if (datosMovimientos.Detalle.Resultado=="EXITO")
-                        {
-                            TempalteResumenDTO datosParaResumenDTO = null;
-                            datosParaResumenDTO = (TempalteResumenDTO) await _datosServices.PrepararDatosDTO(datosMovimientos, periodo, itemUsuario);
-
-                            if (datosParaResumenDTO == null)
-                            {
-                                continue;
-                            }
-                            byte[] pdfBytesPDF;
-                            string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
-                            using (var memoryStream = new MemoryStream())
-                            {
-                                HtmlConverter.ConvertToPdf(html, memoryStream);
-                                pdfBytesPDF = memoryStream.ToArray();
-                            }
-
-                            // --- 3. Devuelve un objeto JSON con los datos del archivo ---
-                            string nombreResumen = $"Resumen_{datosParaResumenDTO.NroDocumento+"-"+periodo.Descripcion.Replace(" ", "_")}.pdf";
-
-                            var codigo = common.Encrypt(datosParaResumenDTO.NroDocumento, fechaActual.ToString("ddMMyyyy"));
-
-                            ResumenTarjeta resumenTarjeta = new ResumenTarjeta()
-                            {
-                                Fecha = fechaActual,
-                                Monto = datosParaResumenDTO.SaldoActual,
-                                MontoAdeudado = datosParaResumenDTO.SaldoAnterior,
-                                Periodo = periodo,
-                                Usuario = itemUsuario,
-                                NroComprobante = codigo,
-                                Adjunto = pdfBytesPDF
-                            };
-                            resumenTarjetaRange.Add(resumenTarjeta);
-
-                            //return File(pdfBytesPDF, "application/pdf", nombreResumen);
-
-                            //return Ok(new
-                            //{
-                            //    FileName = nombreResumen,
-                            //    MimeType = "application/pdf",
-                            //    FileContents = pdfBytesPDF // Esto se enviará como un string Base64
-                            //});
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        continue;
-                    }
-                    //return null;
-                }
-
-                await _context.AddRangeAsync(resumenTarjetaRange);
-                await _context.SaveChangesAsync();
-                //return null;
-            }
-            catch (Exception ex)
-            {
-                // Es una buena práctica capturar excepciones inesperadas, como problemas de permisos de lectura.
-                // Aquí puedes loguear el error para depuración.
-                // _logger.LogError(ex, "Error al descargar el resumen PDF.");
-                //return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
-            }
-        }
-
-        //[HttpPost("DescargarResumen2")]
-        //public async Task<IActionResult> DescargarResumen2(MovimientosTarjetaDTO body)
-        //{
-        //    var usuario = TraeUsuarioUAT(body.UAT);
-        //    if (usuario == null)
-        //        return new JsonResult(new RespuestaAPI { Status = 500, UAT = body.UAT, Mensaje = $"no existe UAT de Usuario" });
-
-        //    var datosParaElResumen = await _datosServices.PrepararDatosDTO(body.PeriodoId, usuario.Id);
-        //    if (datosParaElResumen == null)
-        //    {
-        //        return NotFound(new { error = "No se encontraron datos para generar el resumen." });
-        //    }
-
-        //    string html = await _datosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaElResumen);
-        //    byte[] pdfBytes;
-        //    using (var memoryStream = new MemoryStream())
-        //    {
-        //        HtmlConverter.ConvertToPdf(html, memoryStream);
-        //        pdfBytes = memoryStream.ToArray();
-        //    }
-
-        //    // --- 3. Devuelve un objeto JSON con los datos del archivo ---
-        //    string nombreArchivo = $"Resumen_{datosParaElResumen.Periodo.Descripcion.Replace(" ", "_")}.pdf";
-
-        //    return Ok(new
-        //    {
-        //        FileName = nombreArchivo,
-        //        MimeType = "application/pdf",
-        //        FileContents = pdfBytes // Esto se enviará como un string Base64
-        //    });
-        //}
 
         [HttpPost("SolicitarPagoTarjeta")]
         public IActionResult SolicitarPagoTarjeta([FromBody] PagoTarjetaDTO pagotarjetaDTO)

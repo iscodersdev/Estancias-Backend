@@ -1,0 +1,26 @@
+﻿@model string
+@{
+    ViewData["Title"] = "Ver Resumen";
+}
+<body class="hold-transition layout-top-nav">
+    <div class="wrapper">
+        <section class="content">
+            <div class="">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body" style="padding: 0;">
+                                <div class="embed-responsive embed-responsive-16by9" style="height: 85vh;">
+                                    <iframe class="embed-responsive-item"
+                                            src="data:application/pdf;base64,@Model"
+                                            allowfullscreen>
+                                    </iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>

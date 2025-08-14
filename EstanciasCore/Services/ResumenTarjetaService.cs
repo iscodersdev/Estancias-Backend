@@ -1,4 +1,12 @@
-﻿using DAL.Models;
+﻿using DAL.Data;
+using DAL.DTOs.Reportes;
+using DAL.DTOs.Servicios;
+using DAL.Models;
+using DAL.Models.Core;
+using EstanciasCore.API.Controllers.Billetera;
+using EstanciasCore.Interface;
+using EstanciasCore.Services;
+using iText.Html2pdf;
 using iText.Kernel.Colors;
 using iText.Kernel.Events;
 using iText.Kernel.Font;
@@ -9,191 +17,258 @@ using iText.Layout;
 using iText.Layout.Borders;
 using iText.Layout.Element;
 using iText.Layout.Properties;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
-public class GeneradorResumenPDF
+public class ResumenTarjetaService : IResumenTarjetaService
 {
-    // El DTO no cambia
-    public class DatosParaResumenDTO
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IConfiguration _configuration;
+
+    public ResumenTarjetaService(IServiceScopeFactory scopeFactory, IConfiguration configuration)
     {
-        public Usuario Usuario { get; set; }
-        public Periodo Periodo { get; set; }
-        public List<MovimientoTarjeta> Movimientos { get; set; }
-        public decimal SaldoAnterior { get; set; }
-        public decimal Pagos { get; set; }
-        public decimal Intereses { get; set; }
-        public decimal Impuestos { get; set; }
-        public decimal SaldoActual { get; set; }
-        public decimal PagoMinimo { get; set; }
+        _scopeFactory = scopeFactory;
+        _configuration = configuration;
     }
 
-    public byte[] Generar(DatosParaResumenDTO datos)
+    public async Task<bool> GenerarResumenTarjetas()
     {
-        if (datos?.Movimientos == null || !datos.Movimientos.Any()) return new byte[0];
-
-        using (var memoryStream = new MemoryStream())
+        var stopwatch = Stopwatch.StartNew();
+        try
         {
-            // La creación del documento en iText 7 es diferente
-            var writer = new PdfWriter(memoryStream);
-            var pdfDocument = new PdfDocument(writer);
-            var document = new Document(pdfDocument, PageSize.A4);
-            document.SetMargins(80, 30, 50, 30); // top, right, bottom, left
+            // --- 1. Configuración del Proceso ---
+            var tamanoLote = _configuration.GetValue<int>("ProcesoResumen:TamanoLote", 100);
+            var limiteConcurrencia = _configuration.GetValue<int>("ProcesoResumen:LimiteConcurrencia", 10);
 
-            // Asignamos el gestor de eventos para la cabecera y pie de página
-            var eventHandler = new GestorDeEventosPDF(datos.Usuario);
-            pdfDocument.AddEventHandler(PdfDocumentEvent.START_PAGE, eventHandler);
-            pdfDocument.AddEventHandler(PdfDocumentEvent.END_PAGE, eventHandler);
+            var resumenesGenerados = new ConcurrentBag<ResumenTarjeta>();
+            var usuariosFallidos = new ConcurrentBag<(string UsuarioId, string Error)>();
 
-            // --- CUERPO DEL DOCUMENTO ---
-            document.Add(CrearTablaEstadoCuenta(datos.Periodo));
-            document.Add(new Paragraph(" "));
-            document.Add(CrearTablaSaldosPrincipales(datos));
-            document.Add(new Paragraph(" "));
-            document.Add(CrearTablaResumenConsolidado(datos));
-            document.Add(new Paragraph(" "));
-            document.Add(CrearTablaDetalleDelMes(datos.Movimientos, datos.SaldoAnterior));
+            // --- 2. OBTENER O CREAR EL PERIODO ACTUAL ---
+            Periodo periodo;
+            DateTime fechaActual = DateTime.Now.AddDays(-1);
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
 
-            document.Close();
-            return memoryStream.ToArray();
+                // Buscamos si ya existe un período para la fecha actual.
+                periodo = await context.Periodo.FirstOrDefaultAsync(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta);
+
+                if (periodo == null)
+                {
+                    // Si no existe, lo creamos para el mes actual.                    
+                    var FechaDesde = fechaActual.AddMonths(-1).AddDays(1);
+                    var FechaHasta = fechaActual;
+                    DateTime proximoMes = fechaActual.AddMonths(1);
+                    DateTime fechaDeVencimiento = new DateTime(proximoMes.Year, proximoMes.Month, 15);
+                    periodo = new Periodo
+                    {
+                        Descripcion = fechaActual.ToString("MMMM yyyy", new CultureInfo("es-ES")), // ej. "agosto 2025"
+                        FechaDesde = FechaDesde,
+                        FechaHasta = FechaHasta,
+                        Activo = true,
+                        FechaVencimiento = fechaDeVencimiento
+                    };
+                    context.Add(periodo);
+                    await context.SaveChangesAsync(); // Guardamos inmediatamente para que tenga un Id
+                }
+            }
+
+            // --- 3. Obtención del Total de Usuarios (usando un scope temporal) ---
+            int totalUsuarios;
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+                totalUsuarios = await context.Usuarios
+                    .Include(u => u.Personas)
+                    .CountAsync(u => u.Personas != null &&
+                                     !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
+                                     !string.IsNullOrEmpty(u.Personas.NroDocumento));
+            }
+
+            if (totalUsuarios == 0)
+            {
+                return false;
+            }
+
+            var totalLotes = (int)Math.Ceiling((double)totalUsuarios / tamanoLote);
+
+            // --- 3. Procesamiento en Lotes Paralelos ---
+            using (var semaphore = new SemaphoreSlim(limiteConcurrencia))
+            {
+                for (int i = 0; i < totalLotes; i++)
+                {
+                    // Obtenemos los usuarios del lote en su propio scope para mantener el contexto corto
+                    List<UsuarioParaProcesarDTO> usuariosDelLote;
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+                        usuariosDelLote = await context.Usuarios
+                            .Include(u => u.Personas)
+                            .Where(u => u.Personas != null &&
+                                        !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
+                                        !string.IsNullOrEmpty(u.Personas.NroDocumento))
+                            .OrderBy(u => u.Id)
+                            .Skip(i * tamanoLote)
+                            .Take(tamanoLote)
+                            .Select(u => new UsuarioParaProcesarDTO
+                            {
+                                Id = u.Id,
+                                NombreCompleto = u.Personas.GetNombreCompleto(),
+                                NroDocumento = u.Personas.NroDocumento,
+                                NroTarjeta = u.Personas.NroTarjeta,
+                                UserName = u.UserName
+                            })
+                            .ToListAsync();
+                    }
+
+                    // Creamos una tarea por cada usuario del lote
+                    var tasks = usuariosDelLote.Select(usuario => ProcessarUsuarioAsync(usuario, semaphore, resumenesGenerados, usuariosFallidos));
+                    await Task.WhenAll(tasks);
+                }
+            }
+
+            // --- 4. Guardado de Resultados ---
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var finalContext = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+
+                // 1. Agrega los resúmenes que se generaron correctamente
+                await finalContext.AddRangeAsync(resumenesGenerados);
+
+                // 2. Crea el objeto de log principal
+                var logProcedimiento = new LogProcedimientos()
+                {
+                    Nombre = "Generación de Resumen Tarjeta",
+                    Fecha = DateTime.Now,
+                    StatusCode = "200",
+                    RegistrosCreados = resumenesGenerados.Count(),
+                    RegistrosConErrores = usuariosFallidos.Count(),
+                    Tiempo = stopwatch.ElapsedMilliseconds,
+                };
+
+                // 3. Crea la lista de logs de errores (sin asignar el Id manualmente)
+                var logErrores = usuariosFallidos.Select(x => new LogResumenesTarjetas()
+                {
+                    Fecha = DateTime.Now,
+                    Mensaje = x.Error,
+                    UsuarioId = x.UsuarioId
+                }).ToList();
+
+                // 4. ¡LA MAGIA! Asigna la colección de errores a la propiedad de navegación del log principal
+                logProcedimiento.DetalleErrores = logErrores;
+
+                // 5. Agrega el log principal al contexto. EF entenderá que también debe agregar los errores asociados.
+                await finalContext.AddAsync(logProcedimiento);
+
+                // 6. Guarda todo en UNA SOLA transacción.
+                await finalContext.SaveChangesAsync();
+            }
+
+            stopwatch.Stop();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            return false;
         }
     }
 
-    // --- MÉTODOS AUXILIARES ADAPTADOS A ITEXT 7 ---
-
-    private Table CrearTablaEstadoCuenta(Periodo p)
+    private async Task ProcessarUsuarioAsync(UsuarioParaProcesarDTO usuario, SemaphoreSlim semaphore, ConcurrentBag<ResumenTarjeta> resumenes, ConcurrentBag<(string, string)> fallidos)
     {
-        var table = new Table(UnitValue.CreatePercentArray(new float[] { 1, 1 })).UseAllAvailableWidth();
-        table.AddCell(new Cell().Add(new Paragraph("Estado de cuenta al:")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph($"{p.FechaHasta:dd-MMM-yy}")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph("Vencimiento actual:")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph($"{p.FechaVencimiento:dd-MMM-yy}")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph("Próximo Cierre:")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph($"{p.FechaHasta.AddMonths(1):dd-MMM-yy}")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph("Próximo Vencimiento:")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph($"{p.FechaVencimiento.AddMonths(1):dd-MMM-yy}")).SetBorder(Border.NO_BORDER));
-        return table;
-    }
-
-    private Table CrearTablaSaldosPrincipales(DatosParaResumenDTO d)
-    {
-        var table = new Table(UnitValue.CreatePercentArray(4)).UseAllAvailableWidth();
-
-        table.AddCell(new Cell().Add(new Paragraph("Saldo actual:")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph("Pago Mínimo:")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph("Compras Anteriores:")).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph("Pago Mínimo Anterior:")).SetBorder(Border.NO_BORDER));
-
-        table.AddCell(new Cell().Add(new Paragraph(d.SaldoActual.ToString("C")).SetBold()).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph(d.PagoMinimo.ToString("C")).SetBold()).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph(d.SaldoAnterior.ToString("C")).SetBold()).SetBorder(Border.NO_BORDER));
-        table.AddCell(new Cell().Add(new Paragraph("0.00").SetBold()).SetBorder(Border.NO_BORDER));
-
-        return table;
-    }
-
-    private Table CrearTablaResumenConsolidado(DatosParaResumenDTO d)
-    {
-        var table = new Table(UnitValue.CreatePercentArray(new float[] { 75, 25 })).UseAllAvailableWidth().SetMarginTop(10);
-
-        var cellTitle = new Cell(1, 2).Add(new Paragraph("RESUMEN CONSOLIDADO").SetBold())
-            .SetBorderBottom(new SolidBorder(ColorConstants.GRAY, 1)).SetPaddingBottom(5);
-        table.AddHeaderCell(cellTitle);
-
-        Action<string, decimal> AddRow = (concepto, monto) => {
-            table.AddCell(new Cell().Add(new Paragraph(concepto)).SetBorder(Border.NO_BORDER));
-            table.AddCell(new Cell().Add(new Paragraph(monto.ToString("N2"))).SetTextAlignment(TextAlignment.RIGHT).SetBorder(Border.NO_BORDER));
-        };
-
-        AddRow("SALDO ANTERIOR", d.SaldoAnterior);
-        if (d.Pagos != 0) AddRow("SU PAGO", d.Pagos);
-        AddRow("TOTAL CONSUMOS DEL MES", d.Movimientos.Sum(m => m.Monto));
-        AddRow("INTERESES", d.Intereses);
-        AddRow("IMPUESTOS", d.Impuestos);
-
-        var cellTotalLabel = new Cell().Add(new Paragraph("SALDO ACTUAL").SetBold()).SetBorderTop(new SolidBorder(ColorConstants.GRAY, 1)).SetPaddingTop(5).SetBorderLeft(Border.NO_BORDER).SetBorderRight(Border.NO_BORDER).SetBorderBottom(Border.NO_BORDER);
-        var cellTotalMonto = new Cell().Add(new Paragraph(d.SaldoActual.ToString("N2")).SetBold()).SetTextAlignment(TextAlignment.RIGHT).SetBorderTop(new SolidBorder(ColorConstants.GRAY, 1)).SetPaddingTop(5).SetBorderLeft(Border.NO_BORDER).SetBorderRight(Border.NO_BORDER).SetBorderBottom(Border.NO_BORDER);
-        table.AddCell(cellTotalLabel);
-        table.AddCell(cellTotalMonto);
-
-        return table;
-    }
-
-    private Table CrearTablaDetalleDelMes(List<MovimientoTarjeta> movimientos, decimal saldoAnterior)
-    {
-        var table = new Table(UnitValue.CreatePercentArray(new float[] { 20f, 20f, 40f, 15f, 25f })).UseAllAvailableWidth().SetMarginTop(10);
-
-        var cellTitle = new Cell(1, 5).Add(new Paragraph("DETALLE DEL MES").SetBold()).SetBorderBottom(new SolidBorder(ColorConstants.GRAY, 1)).SetPaddingBottom(5);
-        table.AddHeaderCell(cellTitle);
-
-        var headers = new List<string> { "Solicitud", "Fecha", "Comercio", "Cuota", "Monto" };
-        foreach (var header in headers)
+        await semaphore.WaitAsync();
+        try
         {
-            table.AddHeaderCell(new Cell().Add(new Paragraph(header).SetBold()).SetTextAlignment(TextAlignment.CENTER));
-        }
+            var numeroTarjetaLimpio = usuario.NroTarjeta.Trim();
 
-        if (saldoAnterior > 0)
+            if (!long.TryParse(numeroTarjetaLimpio, out long numeroTarjetaConvertido))
+            {
+                // El número de tarjeta no es un número válido.
+                // Lo registramos como fallido y salimos de la tarea para este usuario.
+                var errorMsg = $"El Nro. de Tarjeta '{numeroTarjetaLimpio}' no tiene un formato numérico válido.";
+                fallidos.Add((usuario.Id, errorMsg));
+                return; // Importante: Salir temprano para no continuar con este usuario.
+            }
+
+            // 1. CREAMOS UN SCOPE NUEVO Y AISLADO PARA ESTA TAREA
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                //DateTime fechaActual = new DateTime(2025, 7, 25); //Cambiar para modo Prueba
+                DateTime fechaActual = DateTime.Now;
+
+                // 2. OBTENEMOS LOS SERVICIOS Y EL DBCONTEXT DE ESTE SCOPE
+                var scopedDatosServices = scope.ServiceProvider.GetRequiredService<IDatosTarjetaService>();
+                var scopedContext = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+
+                // 3. OBTENEMOS LOS DATOS DE CONFIGURACIÓN DENTRO DEL MISMO SCOPE
+                //    Esto es más seguro que pasarlos desde fuera.
+                DatosEstructura datosEstructura = await scopedContext.DatosEstructura.FirstOrDefaultAsync();                
+                Periodo periodo = await scopedContext.Periodo.FirstOrDefaultAsync(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta);
+
+                if (datosEstructura == null || periodo == null)
+                {
+                    fallidos.Add((usuario.Id, "No se encontraron datos de estructura o período válidos."));
+                    return; // Salimos si falta configuración crítica
+                }
+
+                // 4. EJECUTAMOS TU LÓGICA DE NEGOCIO ORIGINAL
+                var datosMovimientos = await scopedDatosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, usuario.NroDocumento, numeroTarjetaConvertido, 100, 0);
+
+                if (datosMovimientos.Detalle.Resultado == "EXITO")
+                {
+                    var datosParaResumenDTO = (TempalteResumenDTO)await scopedDatosServices.PrepararDatosDTO(datosMovimientos, periodo, usuario);
+                    if (datosParaResumenDTO == null) return;
+
+                    var html = await scopedDatosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
+
+                    byte[] pdfBytesPDF;
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        HtmlConverter.ConvertToPdf(html, memoryStream);
+                        pdfBytesPDF = memoryStream.ToArray();
+                    }
+
+                    var codigo = common.Encrypt(datosParaResumenDTO.NroDocumento, fechaActual.ToString("ddMMyyyy"));
+
+                    // 5. CREAMOS EL RESUMEN USANDO IDs, NO ENTIDADES COMPLETAS
+                    var resumenTarjeta = new ResumenTarjeta
+                    {
+                        Fecha = fechaActual,
+                        Monto = datosParaResumenDTO.SaldoActual,
+                        MontoAdeudado = datosParaResumenDTO.SaldoAnterior,
+                        NroComprobante = codigo,
+                        Adjunto = pdfBytesPDF,
+                        PeriodoId = periodo.Id,
+                        UsuarioId = usuario.Id
+                    };
+                    resumenes.Add(resumenTarjeta);
+                }
+            }
+        }
+        catch (Exception ex)
         {
-            table.AddCell(new Cell(1, 4).Add(new Paragraph("Saldo Período Anterior").SetBold()).SetPadding(5));
-            table.AddCell(new Cell().Add(new Paragraph(saldoAnterior.ToString("N2")).SetBold()).SetTextAlignment(TextAlignment.RIGHT).SetPadding(5));
+            fallidos.Add((usuario.Id, ex.Message));
         }
-
-        foreach (var mov in movimientos)
+        finally
         {
-            table.AddCell(new Cell().Add(new Paragraph(mov.NroSolicitud)));
-            table.AddCell(new Cell().Add(new Paragraph(mov.Fecha.ToString("dd-MMM-yy"))));
-            table.AddCell(new Cell().Add(new Paragraph(mov.NombreComercio)));
-            table.AddCell(new Cell().Add(new Paragraph($"{mov.NroCuota}/{mov.CantidadCuotas}")).SetTextAlignment(TextAlignment.CENTER));
-            table.AddCell(new Cell().Add(new Paragraph(mov.Monto.ToString("N2"))).SetTextAlignment(TextAlignment.RIGHT));
+            semaphore.Release();
         }
-
-        return table;
     }
+
 
 }
 
-public class GestorDeEventosPDF : IEventHandler
-{
-    private Usuario Usuario;
-
-    public GestorDeEventosPDF(Usuario usuario)
-    {
-        this.Usuario = usuario;
-    }
-
-    public void HandleEvent(Event @event)
-    {
-        var docEvent = (PdfDocumentEvent)@event;
-        var page = docEvent.GetPage();
-        var pageSize = page.GetPageSize();
-        var pdfDoc = docEvent.GetDocument();
-        var canvas = new PdfCanvas(page);
-
-        if (docEvent.GetEventType() == PdfDocumentEvent.START_PAGE)
-        {
-            // Lógica para dibujar la cabecera
-            var table = new Table(UnitValue.CreatePercentArray(new float[] { 70, 30 })).UseAllAvailableWidth();
-            table.AddCell(new Cell().Add(new Paragraph("Mi Banco S.A.").SetBold()).SetBorder(Border.NO_BORDER));
-            table.AddCell(new Cell().Add(new Paragraph($"Hoja: {pdfDoc.GetPageNumber(page)}").SetTextAlignment(TextAlignment.RIGHT)).SetBorder(Border.NO_BORDER));
-            //... Añadir más datos a la cabecera como en el ejemplo anterior
-
-            var canvasWrapper = new Canvas(canvas, pageSize);
-            canvasWrapper.Add(table.SetMarginLeft(30).SetMarginTop(20)); // Ajustar márgenes
-        }
-        else if (docEvent.GetEventType() == PdfDocumentEvent.END_PAGE)
-        {
-            // Lógica para dibujar el pie de página
-            var table = new Table(1).UseAllAvailableWidth();
-            table.AddCell(new Cell().Add(new Paragraph("USTED DISPONE DE 30 DIAS PARA CUESTIONAR SU RESUMEN DE CUENTA DESDE SU RECEPCION.").SetFontSize(8).SetFontColor(ColorConstants.GRAY)).SetTextAlignment(TextAlignment.CENTER).SetBorder(Border.NO_BORDER));
-
-            var canvasWrapper = new Canvas(canvas, pageSize);
-            // Se dibuja en una posición fija en la parte inferior
-            canvasWrapper.ShowTextAligned(table.ToString(), pageSize.GetLeft() + 30, pageSize.GetBottom() + 30, TextAlignment.LEFT);
-        }
-    }
-}
 
 

@@ -12,6 +12,8 @@
                         <th>Período</th>
                         <th>Fecha Vencimiento</th>
                         <th>Monto Adeudado</th>
+                        <th>Punitorios</th>
+                        <th>Monto Total</th>
                         <th>Acción</th>
                     </tr>
                 </thead>
@@ -23,9 +25,11 @@
                             <tr>
                                 <td>@item.Periodo</td>
                                 <td>@item.FechaVencimiento</td>
-                                <td>@item.MontoAdeudado.ToString("C", new System.Globalization.CultureInfo("es-AR"))</td>
+                                <td>@item.Monto.ToString("C", new System.Globalization.CultureInfo("es-AR"))</td>
+                                <td>@item.Punitorios.ToString("C", new System.Globalization.CultureInfo("es-AR"))</td>
+                                <td>@((item.Punitorios+item.Monto).ToString("C", new System.Globalization.CultureInfo("es-AR")))</td>
                                 <td>
-                                    <a href="@Url.Action("DescargarResumen", "ResumenTarjetaReportes", new { area = "Reportes", periodoId = item.PeriodoId, usuarioId = item.UsuarioId })" class="btn btn-danger btn-sm" title="Descargar Resumen en PDF">
+                                    <a onclick="VerComprobante('@item.PeriodoId,@item.UsuarioId')" class="btn btn-danger btn-sm" title="Ver Resumen en PDF">
                                         <i class="fa fa-file-pdf-o"></i>
                                     </a>
                                 </td>
@@ -43,6 +47,7 @@
         </div>
     </div>
 </div>
+<modal title="Ver Comprobante" callback-modal="true" function="VerComprobante" load-url="/Reportes/ResumenTarjetaReportes/DescargarResumen/" size="Large"></modal>
 <script>
     // Si usas DataTables, puedes inicializarlo aquí.
     // $('#tablaResumenes').DataTable();

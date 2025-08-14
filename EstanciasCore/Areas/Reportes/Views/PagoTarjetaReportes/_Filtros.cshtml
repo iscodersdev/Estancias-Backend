@@ -1,9 +1,5 @@
-﻿@* Nombre de tu vista Razor, ej: PagoTarjetaReporte.cshtml *@
-@using DAL.Models.Core
-@model Commons.Models.Page<DAL.Models.Core.PagoTarjeta>
-
-@{
-    ViewData["Title"] = "Reporte de Pagos con Tarjeta"; // Opcional: Define un título para la página
+﻿@{
+    ViewData["Title"] = "Reporte de Pagos con Tarjeta";
 }
 
 <div class="box box-info">
@@ -11,7 +7,6 @@
         <span class="txt-titulo-box">Filtros</span>
     </div>
     <div class="box-body">
-        @* No es estrictamente necesario un form si manejas todo con JS *@
         <div class="row">
             <div class="col-md-2">
                 <div class="form-group">
@@ -27,36 +22,26 @@
             </div>
             <div class="form-group col-md-2">
                 <label for="estadoFiltro">Estado:</label>
-                <select class="form-control" id="estadoFiltro" name="Estado">
+                <select class="form-control" id="estadoFiltro" name="EstadoId">
                     <option value="">Todos</option>
-                    <option value="1">Pendiente</option> @* Ajusta 'value' si tu EstadoPagoId es diferente *@
+                    <option value="1">Pendiente</option>
                     <option value="2">Pagado</option>
                     <option value="3">Aprobado</option>
                     <option value="4">Rechazado</option>
                 </select>
             </div>
-            <div class="form-group col-md-2" id="divNroDocumentoNotificacion">
-                <label id="labelBusqueda">Nro Documento/Nro Tarjeta</label>                
-                <select-ajax title="Ingrese Nro "
-                             class="form-control"
-                             url="/Reportes/PagoTarjetaReportes/NroTarjetaComboJson"
-                             color="Default"
-                             width="100%"
-                             name="NroDocumentoNotificacion"
-                             class-btn="btn-flat"
-                             text-no-results="<h4 class='text-center'>El Cliente no está en el sistema.<br></h3>"></select-ajax>
-            </div>            
-            <div class="form-group col-md-2" id="divNroDocumentoNotificacion">
-                <label id="labelBusqueda">Cliente</label>
-                <select-ajax title="Ingrese Nombre o Apellido "
+
+            <div class="form-group col-md-3">
+                <label>Cliente</label>
+                <select-ajax title="Ingrese Nombre o Apellido"
                              class="form-control"
                              url="/Reportes/PagoTarjetaReportes/NombreApellidoComboJson"
-                             color="Default"
                              width="100%"
-                             name="nombreApellidoNotificacion"
+                             name="PersonaId"
                              class-btn="btn-flat"
-                             text-no-results="<h4 class='text-center'>El Cliente no está en el sistema.<br></h3>"></select-ajax>
+                             text-no-results="<h4 class='text-center'>El Cliente no está en el sistema.</h4>"></select-ajax>
             </div>
+
             <div class="col-md-1">
                 <div class="form-group">
                     <label for="montoFiltro">Monto</label>
@@ -74,54 +59,232 @@
         </div>
     </div>
 </div>
+<div class="box">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Comprobantes</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 900px;    min-width: 200px;">
+            <div class="btn-group">
+                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-download"></i> <span class="hidden-xs">Exportar</span> <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a href="#" class="export-link" data-format="xlsx">Exportar a Excel (.xlsx)</a></li>
+                    <li><a href="#" class="export-link" data-format="csv">Exportar a CSV (.csv)</a></li>
+                    <li><a href="#" class="export-link" data-format="txt">Exportar a Texto (.txt)</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="tablaPagos" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Nro Documento</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Fecha Comprobante</th>
+                    <th>Estado</th>
+                    <th>Monto Adeudado</th>
+                    <th>Monto Informado</th>
+                    <th>Acciones</th> 
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-<div id="divContenido"></div>
+<modal title="Ver Comprobante" callback-modal="true" function="VerComprobante" load-url="/Core/PagoTarjeta/_VerComprobante/" size="Large"></modal>
 
-    <script>
-       $(document).ready(function () {
+<script>
+    $(document).ready(function () {
 
-        $('#botonFiltrarReporte').on('click', function (e) { // <-- Añadido 'e'
-            var fechaDesde = $('#fechaDesdeFiltro').val();
-            var fechaHasta = $('#fechaHastaFiltro').val();
-            var estado = $('#estadoFiltro').val();
-            var nroDocumentoNotificacion = $('select[name="NroDocumentoNotificacion"]').val()
-            var nombreApellidoNotificacion = $('select[name="nombreApellidoNotificacion"]').val()
-            var monto = $('#montoFiltro').val();
+        const hoy = new Date();
+        const anio = hoy.getFullYear();
+        // JavaScript cuenta los meses de 0 a 11, por eso se suma 1.
+        // .padStart(2, '0') asegura que tenga dos dígitos (ej: '08' en lugar de '8').
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        const fechaDeHoy = `${anio}-${mes}-${dia}`;
 
-            // Muestra el spinner de carga
-            //$("#ContenedorProyectos").hide();
-          $("#divContenido").html('<div style="text-align-last: center;"><img src="/images/loading.gif" class="loading-spinner" style="width: 7%;" /></div>');
+        // 2. Establecer la fecha de hoy en los campos de filtro
+        $('#fechaDesdeFiltro').val(fechaDeHoy);
+        $('#fechaHastaFiltro').val(fechaDeHoy);
 
-            // Realizar la petición AJAX con los parámetros
-            $("#divContenido").load("/Reportes/PagoTarjetaReportes/FiltrarPagosTarjeta/", {
-                fechaDesde: fechaDesde,
-                fechaHasta: fechaHasta,
-                estado: estado,
-                nroDocumentoNotificacion: nroDocumentoNotificacion,
-                nombreApellidoNotificacion: nombreApellidoNotificacion,
-                monto: monto,
-            }, function (response, status, xhr) {
-                if (status == "error") {
-                    var msg = "Error al cargar la página: ";
-                    $("#ContenedorProyectos").html(msg + xhr.status + " " + xhr.statusText);
+
+        var tabla = $('#tablaPagos').DataTable({
+            "processing": true,
+            "serverSide": true, 
+            "order": [[ 3, 'desc' ]],
+            "ajax": {
+                "url": "/Reportes/PagoTarjetaReportes/FiltrarPagosTarjeta",
+                "type": "POST",
+                "dataType": "json",
+                "data": function (d) {
+                    d.FechaDesde = $('#fechaDesdeFiltro').val();
+                    d.FechaHasta = $('#fechaHastaFiltro').val();
+                    d.EstadoId = $('#estadoFiltro').val();
+                    d.PersonaId = $('select[name="PersonaId"]').val();
+                    d.Monto = $('#montoFiltro').val();
+                },
+                "error": function (xhr, error, thrown) {
+                    alert("Error al cargar los datos. Por favor, intente de nuevo.");
                 }
-            });
-        
+            },
+            "columns": [                
+                 {
+                    "data": "persona.apellido",
+                    "name": "Persona.Apellido",
+                    "render": function (data, type, row) {
+                        return row.Persona.Apellido;
+                    }
+                },
+                 {
+                    "data": "persona.NroDocumento",
+                    "name": "Persona.NroDocumento",
+                    "render": function (data, type, row) {
+                        return row.Persona.NroDocumento;
+                    }
+                 },
+                {
+                    "data": "FechaVencimiento",
+                    "name": "FechaVencimiento",
+                    "render": function (data) {
+                        if (data) {
+                            return new Date(data).toLocaleDateString('es-AR');
+                        }
+                        return "";
+                    }
+                },
+                {
+                    "data": "FechaComprobante",
+                    "name": "FechaComprobante",
+                    "render": function (data) {
+                        if (data) {
+                            return new Date(data).toLocaleDateString('es-AR');
+                        }
+                        return "";
+                    }
+                },
+                {
+                    "data": "EstadoPago",
+                    "name": "EstadoPago",
+                    "render": function(data) {
+                        let etiquetaHtml = '';
+                        switch (data) {
+                            case 1: // Asumiendo que 1 es Pendiente
+                                etiquetaHtml = '<small class="label bg-yellow">Pendiente</small>';
+                                break;
+                            case 2: // Asumiendo que 2 es Pagado
+                                etiquetaHtml = '<small class="label bg-blue">Pagado</small>';
+                                break;
+                            case 3: // Asumiendo que 3 es Aprobado
+                                etiquetaHtml = '<small class="label bg-green">Aprobado</small>';
+                                break;
+                            case 4: // Asumiendo que 4 es Rechazado
+                                etiquetaHtml = '<small class="label bg-red">Rechazado</small>';
+                                break;
+                            default:
+                                etiquetaHtml = '<small class="label bg-gray">Desconocido</small>';
+                                break;
+                        }
+                        return etiquetaHtml;
+                    }
+                },
+                {
+                    "data": "MontoAdeudado",
+                    "name": "MontoAdeudado",
+                   "render": function(data) {
+                        if (data == null || isNaN(data)) {
+                            return '—';
+                        }
+                        const formatter = new Intl.NumberFormat('es-AR', {
+                            style: 'currency',
+                            currency: 'ARS',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        return formatter.format(data);
+                    }
+                },
+                {
+                   "data": "MontoInformado",
+                   "name": "MontoInformado",
+                   "render": function(data) {
+                        if (data == null || isNaN(data)) {
+                            return '—';
+                        }
+                        const formatter = new Intl.NumberFormat('es-AR', {
+                            style: 'currency',
+                            currency: 'ARS',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        return formatter.format(data);
+                    }
+                },
+                {
+                    "data": null,
+                    "orderable": false,
+                    "render": function (data, type, row) {
+                        if(row.EstadoPago!=1){
+                            return ` <a onclick="VerComprobante('${row.Id}')" title="Ver Comprobante" class="btn btn-warning btn-xs"><i class="fa fa-file-photo-o"></i></a>`;
+                        }else{
+                            return "";
+                        }
+                    }
+                }
+            ],
+            // Traducción al español
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+            }
         });
 
-        $("#botonLimpiarFiltro").on("click", function()
-        {
+        $('#botonFiltrarReporte').on('click', function (e) {
+            e.preventDefault();
+            tabla.ajax.reload();
+        });
+
+        $("#botonLimpiarFiltro").on("click", function () {
             $("#fechaDesdeFiltro").val('');
             $("#fechaHastaFiltro").val('');
-            $('select[name="NroDocumentoNotificacion"]').selectpicker('val', '');
-            $('select[name="nombreApellidoNotificacion"]').selectpicker('val', '');
-            $("#montoFiltro").selectpicker('val', '');
-           $("#divContenido").empty()
-           
+            $("#estadoFiltro").val('');
+            $("#montoFiltro").val('');
+
+            $('select[name="PersonaId"]').val(null).trigger('change');
+
+            tabla.ajax.reload();
         });
 
-     });
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
 
+        $('.export-link').on('click', function(e) {
+            e.preventDefault();
 
+            // Obtenemos el formato deseado (xlsx, csv, o txt)
+            var format = $(this).data('format');
 
-    </script>
+            // Recolectamos los valores actuales de los filtros
+            var params = {
+                FechaDesde: $('#fechaDesdeFiltro').val(),
+                FechaHasta: $('#fechaHastaFiltro').val(),
+                EstadoId: $('#estadoFiltro').val(),
+                PersonaId: $('select[name="PersonaId"]').val(),
+                Monto: $('#montoFiltro').val(),
+                formato: format // Añadimos el formato a los parámetros
+            };
+
+            // Construimos la URL con los parámetros
+            var url = "/Reportes/PagoTarjetaReportes/Exportar?" + $.param(params);
+
+            // Redirigimos para que comience la descarga
+            window.location.href = url;
+        });
+    });
+</script>

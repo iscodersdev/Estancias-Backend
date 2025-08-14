@@ -58,7 +58,7 @@ namespace EstanciasCore.Interface
         /// <param name="periodoId"></param>
         /// <param name="usuarioId"></param>
         /// <returns></returns>
-        Task<TempalteResumenDTO> PrepararDatosDTO(CombinedData datosMovimientos, Periodo periodo, Usuario usuario);
+        Task<TempalteResumenDTO> PrepararDatosDTO(CombinedData datosMovimientos, Periodo periodo, UsuarioParaProcesarDTO usuario);
 
         //Task ActualizarMovimientosAsync(Usuario usuario);
         //Task ActualizarMovimientosAsyncModificado(Usuario usuario);

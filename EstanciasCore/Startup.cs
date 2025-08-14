@@ -61,9 +61,13 @@ namespace EstanciasCore
             services.AddHttpContextAccessor();
             services.AddTransient<NotificacionAPIService>();
             services.AddTransient<IDatosTarjetaService, DatosTarjetaService>();
+            services.AddTransient<IResumenTarjetaService, ResumenTarjetaService>();
             services.AddTransient<MercadoPagoServices>();
 
-			services.AddSession();
+            //Genera Resumen Mensual
+            services.AddHostedService<ResumenMensualWorker>();
+
+            services.AddSession();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddMvcOptions(options => {
                     options.MaxModelValidationErrors = 50;

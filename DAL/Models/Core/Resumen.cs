@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DAL.Models
 {
@@ -35,7 +36,12 @@ namespace DAL.Models
         public decimal Monto { get; set; }
         public decimal MontoAdeudado { get; set; }
         public DateTime Fecha { get; set; }
+        public int PeriodoId { get; set; }
+        [ForeignKey("PeriodoId")]
         public virtual Periodo Periodo { get; set; }
+        public string UsuarioId { get; set; }
+
+        [ForeignKey("UsuarioId")]
         public virtual Usuario Usuario { get; set; }
         public byte[] Adjunto { get; set; }
     }

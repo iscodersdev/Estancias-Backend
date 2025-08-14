@@ -1,113 +1,149 @@
 ﻿using DAL.Data;
-using DAL.Mobile;
-using DAL.Models;
 using EstanciasCore.Interface;
 using EstanciasCore.Services;
-using iText.Layout.Element;
-using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EstanciasCore.Worker
+public class ResumenMensualWorker : BackgroundService
 {
-    public class ResumenTarjetaWorker : IHostedService
+    private readonly ILogger<ResumenMensualWorker> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IConfiguration _configuration;
+    private readonly string[] _adminEmails;
+
+    // Estado del worker
+    private DateTime? _ultimaEjecucionMarcada = null;
+    private int _intentosHoy = 0;
+    private int _ultimoDiaDeIntentos = 0;
+
+    public ResumenMensualWorker(ILogger<ResumenMensualWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
     {
-        private Timer _timer;
-        private bool _seEjecutoEsteMes = false;
-        private readonly EstanciasContext _db;
-        private readonly IDatosTarjetaService _datosServices;
-        private readonly ICompositeViewEngine _viewEngine;
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+        _configuration = configuration;
 
-        public ResumenTarjetaWorker(EstanciasContext db, IDatosTarjetaService datosServices, ICompositeViewEngine viewEngine)
+        var emails = _configuration["NotificationSettings:AdminEmails"];
+        _adminEmails = emails?.Split(';', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Worker de Resúmenes Mensuales iniciado.");
+
+        while (!stoppingToken.IsCancellationRequested)
         {
-            _db = db;
-            _datosServices = datosServices;
-            _viewEngine = viewEngine;
-        }
-
-        public Task StartAsync(CancellationToken cancellationToken)
-        {
-            Console.WriteLine("Worker iniciado.");
-            // El timer revisará la fecha cada hora.
-            _timer = new Timer(RevisarFechaYEjecutar, null, TimeSpan.Zero, TimeSpan.FromHours(1));
-            return Task.CompletedTask;
-        }
-
-        private void RevisarFechaYEjecutar(object state)
-        {
-            var ahora = DateTime.Now;
-
-            // Si cambiamos de mes, reseteamos el flag.
-            if (ahora.Day < 26)
+            try
             {
-                _seEjecutoEsteMes = false;
-            }
-
-            // Si es el día 26 y no lo hemos corrido este mes...
-            if (ahora.Day == 26 && !_seEjecutoEsteMes)
-            {
-                Console.WriteLine($"[{DateTime.Now}] Es día 26. Iniciando generación de resúmenes...");
-
-                // --- AQUÍ VA TU LÓGICA DE GENERACIÓN DE PDF ---
-                GenerarResumenesPDF();
-                // ---------------------------------------------
-
-                _seEjecutoEsteMes = true; // Marcamos como ejecutado para no repetirlo en el día.
-                Console.WriteLine("Generación de resúmenes completada.");
-            }
-            else
-            {
-                Console.WriteLine($"[{DateTime.Now}] No es día de ejecución. Próxima revisión en 1 hora.");
-            }
-        }
-
-        private async Task GenerarResumenesPDF()
-        {
-            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-            DateTime fechaActual = DateTime.Now;
-            DatosEstructura datosEstructura = _db.DatosEstructura.FirstOrDefault();
-            Periodo periodo = _db.Periodo.Where(p => p.FechaHasta == fechaActual).FirstOrDefault();
-            IQueryable<Usuario> usuarios = _db.Usuarios.Where(x => x.Personas!=null).Where(u => (u.Personas.NroTarjeta != null && u.Personas.NroTarjeta != "") &&  (u.Personas.NroDocumento != null && u.Personas.NroDocumento != ""));
-
-
-            foreach (var itemUsuario in usuarios)
-            {
-                var datosMovimientos = await _datosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, itemUsuario.Personas.NroDocumento, Convert.ToInt64(itemUsuario.Personas.NroTarjeta), 100, 0);
-                if (datosMovimientos.Detalle.Resultado=="EXITO")
+                using (var scope = _scopeFactory.CreateScope())
                 {
-                    comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
-                            .GroupBy(m => new { m.Descripcion, m.Fecha })
-                            .Select(g => new MovimientoTarjetaDTO
-                            {
-                                Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-                                TipoMovimiento = g.Key.Descripcion,
-                                Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-                            })
-                            .ToList();
+                    var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
 
-                    comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
-                    .Select(g => new MovimientoTarjetaDTO
+                    // Consulta corregida para ser más directa
+                    var procedimiento = await context.Procedimientos
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.Codigo == "GenerarResumen", stoppingToken);
+
+                    if (procedimiento != null && procedimiento.Activo && DebeEjecutarHoy(procedimiento.DiaEjecucion))
                     {
-                        Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
-                        TipoMovimiento = g.Descripcion,
-                        Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
-                    }).ToList());
+                        await EjecutarProcesoConNotificaciones(scope);
+                    }
                 }
             }
-            Console.WriteLine("...Simulando creación de PDFs...");
-            Thread.Sleep(5000); // Simula 5 segundos de trabajo
-        }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ocurrió un error fatal en el ciclo del worker.");
+                // Opcional: Enviar un email de fallo crítico si el propio worker falla
+                await EnviarNotificacionAsync("Error Crítico en Worker", $"El worker de resúmenes ha fallado de forma inesperada. Error: {ex.Message}");
+            }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+        }
+    }
+
+    private async Task EjecutarProcesoConNotificaciones(IServiceScope scope)
+    {
+        string resultadoFinal = "FALLIDO"; // Estado por defecto
+        _intentosHoy++;
+
+        try
         {
-            Console.WriteLine("Worker detenido.");
-            _timer?.Change(Timeout.Infinite, 0);
+            // 1. ENVIAR EMAIL DE INICIO
+            await EnviarNotificacionAsync(
+                "Inicio del Proceso de Resúmenes",
+                $"El proceso ha comenzado a las {DateTime.Now:G}. (Intento {_intentosHoy})"
+            );
+
+            // 2. EJECUTAR LÓGICA DE NEGOCIO
+            var resumenService = scope.ServiceProvider.GetRequiredService<IResumenTarjetaService>();
+            bool exito = await resumenService.GenerarResumenTarjetas();
+            resultadoFinal = exito ? "ÉXITO" : "FINALIZADO CON ADVERTENCIAS";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error crítico durante la ejecución del servicio en el intento {_intentosHoy}.");
+            resultadoFinal = $"FALLIDO CRÍTICAMENTE: {ex.Message}";
+        }
+        finally
+        {
+            // 3. ENVIAR EMAIL DE FINALIZACIÓN (SIEMPRE SE EJECUTA)
+            await EnviarNotificacionAsync(
+                $"Proceso de Resúmenes Finalizado con Estado: {resultadoFinal}",
+                $"La ejecución ha concluido a las {DateTime.Now:G}. El resultado fue: {resultadoFinal}."
+            );
+
+            // 4. MARCAR COMO EJECUTADO PARA NO REPETIR HOY
+            _ultimaEjecucionMarcada = DateTime.Today;
+        }
+    }
+
+    // --- MÉTODO PRIVADO QUE USA TU LÓGICA DE EMAIL ---
+    private Task EnviarNotificacionAsync(string asunto, string cuerpoHTML)
+    {
+        if (_adminEmails.Length == 0)
+        {
+            _logger.LogWarning("No hay emails de administrador configurados. Se omite el envío de notificación.");
             return Task.CompletedTask;
         }
+
+        _logger.LogInformation($"Preparando email: '{asunto}'");
+        foreach (var emailDestino in _adminEmails)
+        {
+            try
+            {
+                // --- TU LÍNEA DE CÓDIGO INTEGRADA AQUÍ ---
+                common.EnviarMail(emailDestino.Trim(), asunto, cuerpoHTML, "");
+                _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Fallo al enviar el email de notificación a: {emailDestino}");
+            }
+        }
+        return Task.CompletedTask;
+    }
+
+    private bool DebeEjecutarHoy(int diaDeEjecucionDesdeBD)
+    {
+        var ahora = DateTime.Now;
+
+        if (ahora.Day != _ultimoDiaDeIntentos)
+        {
+            _intentosHoy = 0;
+            _ultimaEjecucionMarcada = null;
+            _ultimoDiaDeIntentos = ahora.Day;
+        }
+
+        bool esDiaDeEjecucion = ahora.Day == diaDeEjecucionDesdeBD;
+        bool yaSeEjecuto = _ultimaEjecucionMarcada.HasValue && _ultimaEjecucionMarcada.Value.Date == ahora.Date;
+        bool limiteDeIntentosSuperado = _intentosHoy >= 3;
+
+        return esDiaDeEjecucion && !yaSeEjecuto && !limiteDeIntentosSuperado;
     }
 }
