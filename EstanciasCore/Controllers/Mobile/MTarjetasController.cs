@@ -91,7 +91,6 @@ namespace EstanciasCore.API.Controllers.Billetera
                 var fechaMesActualCuotas = DateTime.Now;
                 //var fechaMesActualCuotas = new DateTime(2025,09,01);
 
-
                 int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
                 //Fecha para Punitorios
@@ -125,7 +124,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                     MontoCuota = await _datosServices.CalcularMontoCuota(datosMovimientos, fechaActualCuotas);
 
                     //Calcula Cuota del Proximo Mes
-                    MontoProximaCuota = await _datosServices.CalcularMontoProximaCuota(datosMovimientos, fechaActualCuotas);
+                    MontoProximaCuota = await _datosServices.CalcularMontoProximaCuota(datosMovimientos, fechaActualCuotasProximo);
 
                     //Calculo de Punitorios
                     MontoPunitorios = await _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
@@ -138,7 +137,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 DeudaTotal = MontoCuota + MontoPunitorios;
                 TotalRedondeo = Math.Round(DeudaTotal, 2);
 
-                var fechaVencimiento = new DateTime(fechaActualCuotasProximo.Year, fechaActualCuotasProximo.Month, 15);
+                var fechaVencimiento = new DateTime(fechaActualCuotasProximo.Year, fechaMesActualCuotas.Month, 15);
 
                 return new JsonResult(
                     new ListaMovimientoTarjetaDTO

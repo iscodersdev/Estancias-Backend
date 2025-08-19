@@ -46,12 +46,13 @@ namespace EstanciasCore.Controllers
         public IActionResult UsuariosDataTable()
         {
             //var usuarios = _context.Users.ToList();
-            var query = from usu in _context.Users
+            var query = from usu in _context.Users.Where(x=>x.UserName!="admin@admin.com")
                 select new UserDTViewModel
                 {
                     Id = usu.Id,
                     Usuario = usu.UserName,
                     Nombre = (usu.Personas!=null) ? usu.Personas.Apellido+" "+usu.Personas.Nombres : " ",
+                    NroTarjeta = (usu.Personas!=null) ? usu.Personas.NroTarjeta : " ",
                     Empresa ="",
                     Administrador = usu.Administradores,
                     AdministradorTexto = usu.Administradores==true ? "SI" : "NO",

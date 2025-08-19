@@ -1,13 +1,8 @@
 ﻿using DAL.Data;
-using DAL.DTOs;
 using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
-using DAL.DTOs.Servicios.DatosTarjeta;
 using DAL.Mobile;
 using DAL.Models;
-using DAL.Models.Core;
-using EstanciasCore.Areas.Administracion.ViewModels;
-using EstanciasCore.Controllers;
 using EstanciasCore.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,15 +13,10 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
-using Serilog.Core;
 using System;  
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -245,13 +235,14 @@ namespace EstanciasCore.Services
 
         public async Task<decimal> CalcularMontoProximaCuota(CombinedData datosMovimientos, DateTime fechaActualCuotasProximo)
         {
+            DateTime fechaInicio = new DateTime(fechaActualCuotasProximo.Year, fechaActualCuotasProximo.Month, 1);
             List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
             CultureInfo.CurrentCulture = new CultureInfo("es-AR");
 
             var totalDetallesCuotaProximoMes = datosMovimientos.DetallesSolicitud
                    .Where(result => result?.DetallesCuota != null)
                    .SelectMany(result => result.DetallesCuota)
-                   .Where(detalle => (common.ConvertirFecha(detalle.Fecha).Month == fechaActualCuotasProximo.Month) && (common.ConvertirFecha(detalle.Fecha).Year <= fechaActualCuotasProximo.Year))
+                   .Where(detalle => (common.ConvertirFecha(detalle.Fecha) >= fechaInicio && common.ConvertirFecha(detalle.Fecha)<=fechaActualCuotasProximo))
                    .Select(e => new { monto = e.Monto }).ToList();
 
             var totalMontoProximaCuota = totalDetallesCuotaProximoMes.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
