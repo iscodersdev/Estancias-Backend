@@ -118,7 +118,7 @@ public class ResumenDeudaController : EstanciasCoreController
 
                 //totalMontoCuota = totalDetallesCuota.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
                 //CultureInfo.CurrentCulture = new CultureInfo("es-AR");
-                montoPunitoriosTotal = _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
+                montoPunitoriosTotal = await _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
             }
 
             ViewBag.UsuarioId = usuario.Id;

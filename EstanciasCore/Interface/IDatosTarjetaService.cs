@@ -1,6 +1,7 @@
 ﻿using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
 using DAL.DTOs.Servicios.DatosTarjeta;
+using DAL.Mobile;
 using DAL.Models;
 using EstanciasCore.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -11,34 +12,7 @@ using System.Threading.Tasks;
 namespace EstanciasCore.Interface
 {
     public interface IDatosTarjetaService
-    {
-        /// <summary>
-        /// Obtiene los datos de una persona a partir de su número de documento.
-        /// </summary>
-        /// <param name="documento"></param>
-        /// <returns></returns>
-        Task<ApiResponseObtenerPersonaDTO> ObtenerPersonaAsync(string documento);
-
-        /// <summary>
-        /// Obtiene los créditos asociados a una persona.
-        /// </summary>
-        /// <param name="PersonaId"></param>
-        /// <returns></returns>
-        Task<ApiResponseObtenerCreditos> ObtenerCreditosAsync(string PersonaId);
-
-        /// <summary>
-        /// Obtiene los detalles de un crédito específico a partir de su ID de solicitud.
-        /// </summary>
-        /// <param name="SolicitudId"></param>
-        /// <returns></returns>
-        Task<ApiResponseCreditoDetalles> ObtenerCreditoDetallesAsync(int SolicitudId);
-
-        /// <summary>
-        /// obtiene la deuda de una operación específica a partir del número de documento.
-        /// </summary>
-        /// <param name="documento"></param>
-        /// <returns></returns>
-        Task<DeudaApiResponseLOAN> ObtenerDeudaOperacionAsync(string documento);
+    {       
 
         /// <summary>
         /// Consulta los movimiento sy montos de loan API Antigua.
@@ -71,9 +45,30 @@ namespace EstanciasCore.Interface
         /// <param name="cuotas"></param>
         /// <param name="fechaDeCalculo"></param>
         /// <returns></returns>
-        decimal CalcularPunitorios(List<SolicitudDetail> cuotas);
+        Task<decimal> CalcularPunitorios(List<SolicitudDetail> cuotas);
 
-        //Task<ObtenerCreditosResponse> ObtenerCreditosAsync(string login, string clave, int PersonaId);
-        //Task<LoginUsuarioResponse> LoginApiLoanAsync(string usuario, string clave);
+        /// <summary>
+        /// Calcula el monto de la cuotas a pagar.
+        /// </summary>
+        /// <param name="datosMovimientos"></param>
+        /// <param name="fechaActualCuotas"></param>
+        /// <returns></returns>
+        Task<decimal> CalcularMontoCuota(CombinedData datosMovimientos, DateTime fechaActualCuotas);
+
+        /// <summary>
+        /// Calcula el monto de la proxima cuotas a pagar.
+        /// </summary>
+        /// <param name="datosMovimientos"></param>
+        /// <param name="fechaActualCuotas"></param>
+        /// <returns></returns>
+        Task<decimal> CalcularMontoProximaCuota(CombinedData datosMovimientos, DateTime fechaActualCuotasProximo);
+
+        /// <summary>
+        /// Obtiene los ultimos movimientos de la tarjeta.
+        /// </summary>
+        /// <param name="datosMovimientos"></param>
+        /// <param name="fechaActualCuotas"></param>
+        /// <returns></returns>
+        Task<List<MovimientoTarjetaDTO>> ObtieneUltimosMovimientos(CombinedData datosMovimientos, int top);
     }
 }

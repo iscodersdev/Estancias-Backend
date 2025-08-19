@@ -586,25 +586,18 @@ namespace EstanciasCore.Services
         /// <returns>Un string con la fecha formateada.</returns>
         public static string ObtenerFechaCalculada(DateTime fecha)
         {
-            // Primero determinamos el mes y año de referencia.
-            DateTime fechaReferencia;
-            if (fecha.Day <= 15)
+            var fechaMesActualCuotas = DateTime.Now;
+            DateTime fechaResultadoPunitorios;
+
+            if (fechaMesActualCuotas.Day>15)
             {
-                // Si el día es 15 o menor, usamos el mes y año actuales.
-                fechaReferencia = fecha;
+                fechaResultadoPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 31);
             }
             else
             {
-                // Si el día es mayor a 15, usamos el mes y año del mes siguiente.
-                fechaReferencia = fecha.AddMonths(1);
+                fechaResultadoPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
             }
-
-            // Ahora, creamos la fecha final usando el año y mes de referencia,
-            // pero forzando que el día sea siempre 15.
-            DateTime fechaResultado = new DateTime(fechaReferencia.Year, fechaReferencia.Month, 15);
-
-            // Finalmente, formateamos y devolvemos el resultado.
-            return fechaResultado.ToString("dd/MM/yyyy");
+            return fechaResultadoPunitorios.ToString("dd/MM/yyyy");
         }
 
         //public static HttpStatusCode EnviaNotificationWonderPushId(string title, string message, string[] deviceId)

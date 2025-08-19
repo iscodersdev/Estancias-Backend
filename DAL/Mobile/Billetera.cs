@@ -43,6 +43,7 @@ namespace DAL.Mobile
         public string NroTarjeta { get; set; }
         public string FechaVencimiento { get; set; }
         public string MontoAdeudado { get; set; }
+        public string MontoInformado { get; set; }
         public string FechaPagoProximaCuota { get; set; }
         public string FechaComprobante { get; set; }
         public virtual EstadoPago EstadoPago { get; set; }

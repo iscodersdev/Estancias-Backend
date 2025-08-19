@@ -66,6 +66,7 @@ namespace EstanciasCore.Controllers
                             Usuario = (p.Persona!=null) ? p.Persona.Email : "---",
                             NroTarjeta =(p.Persona!=null) ? p.Persona.NroTarjeta : "---",
                             MontoAdeudado = p.MontoAdeudado.ToString().Replace(".", ","),
+                            MontoInformado = p.MontoInformado.ToString().Replace(".", ","),
                             FechaVencimiento = (p.FechaVencimiento ?? DateTime.MinValue).ToString("dd/MM/yyyy"),
                             FechaComprobante = (p.FechaComprobante ?? DateTime.MinValue).ToString("dd/MM/yyyy"),
                             EstadoPago = p.EstadoPago.ToString(),

@@ -30,6 +30,7 @@ namespace DAL.DTOs
         public string NroTarjeta { get; set; }
         public string FechaVencimiento { get; set; }
         public string MontoAdeudado { get; set; }
+        public string MontoInformado { get; set; }
         public string FechaPagoProximaCuota { get; set; }
         public string FechaComprobante { get; set; }
         public string EstadoPago { get; set; }

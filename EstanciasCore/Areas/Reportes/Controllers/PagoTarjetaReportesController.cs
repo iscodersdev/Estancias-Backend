@@ -110,6 +110,21 @@ namespace EstanciasCore.Areas.Reportes.Controllers
             }
         }
 
+        public JsonResult NombreApellidoComboJson(string q)
+        {
+            var items = _context.Usuarios
+                .Where(x => x.Personas.Nombres.Contains(q) || x.Personas.Apellido.Contains(q) || x.Personas.NroDocumento.Contains(q))
+                .Select(x => new
+                {
+                    Text = $"{x.Personas.Apellido}, {x.Personas.Nombres} - {x.Personas.NroDocumento}",
+                    Value = x.Personas.Id,
+                    Subtext = $"{x.UserName}",
+                    Icon = "fa fa-user"
+                }).Take(10).ToArray();
+
+            return Json(items);
+        }
+
 
 
         private IQueryable<PagoTarjeta> _getFilteredQuery(FiltroPagosViewModel filtros)
@@ -125,7 +140,7 @@ namespace EstanciasCore.Areas.Reportes.Controllers
             if (filtros.PersonaId.HasValue && filtros.PersonaId > 0)
                 query = query.Where(p => p.Persona.Id == filtros.PersonaId.Value);
             if (!string.IsNullOrEmpty(filtros.Monto) && decimal.TryParse(filtros.Monto, out decimal montoDecimal))
-                query = query.Where(p => p.MontoAdeudado == montoDecimal);
+                query = query.Where(p => p.MontoAdeudado == montoDecimal || p.MontoInformado == montoDecimal);
 
             return query;
         }

@@ -62,126 +62,6 @@ namespace EstanciasCore.Services
             _httpClient = new HttpClient();
         }
 
-
-        public async Task<ApiResponseObtenerPersonaDTO> ObtenerPersonaAsync(string documento)
-        {
-            DatosEstructura datosEstructura = await _context.DatosEstructura.FirstOrDefaultAsync();
-
-            // Creamos el cuerpo de la petición según la documentación.
-            var requestBody = new
-            {
-                LoginInterface = new LoginInterface
-                {
-                    Login = datosEstructura.UsernameWS.ToLower(),
-                    Clave = datosEstructura.PasswordWS.ToLower(),
-                    Token = "" // El token va vacío en la petición de login.
-                },
-                Documento = documento
-            };
-
-            var jsonSerializado = JsonConvert.SerializeObject(requestBody);
-
-            var jsonContent = new StringContent(jsonSerializado, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERPERSONA", jsonContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<ApiResponseObtenerPersonaDTO>(jsonResponse);
-            }
-            return null;
-        }
-
-        public async Task<ApiResponseObtenerCreditos> ObtenerCreditosAsync(string PersonaId)
-        {
-            DatosEstructura datosEstructura = await _context.DatosEstructura.FirstOrDefaultAsync();
-
-            // Creamos el cuerpo de la petición según la documentación.
-            var requestBody = new
-            {
-                LoginInterface = new LoginInterface
-                {
-                    Login = datosEstructura.UsernameWS.ToLower(),
-                    Clave = datosEstructura.PasswordWS.ToLower(),
-                    Token = "" // El token va vacío en la petición de login.
-                },
-                IdPersona = PersonaId
-            };
-
-            var jsonSerializado = JsonConvert.SerializeObject(requestBody);
-
-            var jsonContent = new StringContent(jsonSerializado, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERCREDITOS", jsonContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<ApiResponseObtenerCreditos>(jsonResponse);
-            }
-            return null;
-        }
-
-        public async Task<ApiResponseCreditoDetalles> ObtenerCreditoDetallesAsync(int SolicitudId)
-        {
-            DatosEstructura datosEstructura = await _context.DatosEstructura.FirstOrDefaultAsync();
-
-            // Creamos el cuerpo de la petición según la documentación.
-            var requestBody = new
-            {
-                LoginInterface = new LoginInterface
-                {
-                    Login = datosEstructura.UsernameWS.ToLower(),
-                    Clave = datosEstructura.PasswordWS.ToLower(),
-                    Token = "" // El token va vacío en la petición de login.
-                },
-                IdSolicitud = SolicitudId
-            };
-
-            var jsonSerializado = JsonConvert.SerializeObject(requestBody);
-
-            var jsonContent = new StringContent(jsonSerializado, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/ECOMMERCE/OBTENERCREDITODETALLES", jsonContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<ApiResponseCreditoDetalles>(jsonResponse);
-            }
-            return null;
-        }
-
-        public async Task<DeudaApiResponseLOAN> ObtenerDeudaOperacionAsync(string documento)
-        {
-            DatosEstructura datosEstructura = await _context.DatosEstructura.FirstOrDefaultAsync();
-
-            // Creamos el cuerpo de la petición según la documentación.
-            var requestBody = new
-            {
-                loginServicio = new
-                {
-                    Login = datosEstructura.UsernameWS.ToLower(),
-                    Clave = datosEstructura.PasswordWS.ToLower(),
-                },
-                Documento = documento
-            };
-
-            var jsonSerializado = JsonConvert.SerializeObject(requestBody);
-
-            var jsonContent = new StringContent(jsonSerializado, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync($"{_apiBaseUrl}API/COLLECTION/OBTENERDEUDAOPERACION", jsonContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<DeudaApiResponseLOAN>(jsonResponse);
-            }
-            return null;
-        }
-
         private async Task<string> ObtenerDatos(string usuario, string clave, long documento, long numeroTarjeta, long cantidadMovimientos)
         {
             string soapRequest =
@@ -228,9 +108,6 @@ namespace EstanciasCore.Services
 
         public async Task<CombinedData> ConsultarMovimientos(string usuario, string clave, string documento, long numeroTarjeta, long cantidadMovimientos, int tipomovimientotarjeta)
         {
-
-            //var movi = ObtenerCreditosAsync(usuario, clave, documento);
-
             var cliente = new TarjetaObtenerDatosClient();
 
             string soapResponse = await ObtenerDatos(usuario, clave, Convert.ToInt32(documento), numeroTarjeta, cantidadMovimientos);
@@ -332,21 +209,94 @@ namespace EstanciasCore.Services
             return combinedResults;
         }
 
-        public decimal CalcularPunitorios(List<SolicitudDetail> cuotas)
+        public async Task<decimal> CalcularMontoCuota(CombinedData datosMovimientos, DateTime fechaActualCuotas)
+        {
+            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+
+            comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
+                        .GroupBy(m => new { m.Descripcion, m.Fecha })
+                        .Select(g => new MovimientoTarjetaDTO
+                        {
+                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            TipoMovimiento = g.Key.Descripcion,
+                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                        })
+                        .ToList();
+
+            comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+            .Select(g => new MovimientoTarjetaDTO
+            {
+                Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
+                TipoMovimiento = g.Descripcion,
+                Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
+            }).ToList());
+
+            //Montos a Pagar con Deuda pero sin Punitorios
+            var totalDetallesCuota = datosMovimientos.DetallesSolicitud
+            .Where(result => result?.DetallesCuota != null)
+            .SelectMany(result => result.DetallesCuota)
+            .Where(detalle => (common.ConvertirFecha(detalle.Fecha) <= fechaActualCuotas))
+            .Select(e => new { monto = e.Monto }).ToList();
+
+            var totalMontoCuota = totalDetallesCuota.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
+            return totalMontoCuota;
+        }
+
+        public async Task<decimal> CalcularMontoProximaCuota(CombinedData datosMovimientos, DateTime fechaActualCuotasProximo)
+        {
+            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+
+            var totalDetallesCuotaProximoMes = datosMovimientos.DetallesSolicitud
+                   .Where(result => result?.DetallesCuota != null)
+                   .SelectMany(result => result.DetallesCuota)
+                   .Where(detalle => (common.ConvertirFecha(detalle.Fecha).Month == fechaActualCuotasProximo.Month) && (common.ConvertirFecha(detalle.Fecha).Year <= fechaActualCuotasProximo.Year))
+                   .Select(e => new { monto = e.Monto }).ToList();
+
+            var totalMontoProximaCuota = totalDetallesCuotaProximoMes.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
+            return totalMontoProximaCuota;
+        }
+
+
+        public async Task<List<MovimientoTarjetaDTO>> ObtieneUltimosMovimientos(CombinedData datosMovimientos, int top)
+        {
+            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+
+            comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
+                        .GroupBy(m => new { m.Descripcion, m.Fecha })
+                        .Select(g => new MovimientoTarjetaDTO
+                        {
+                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            TipoMovimiento = g.Key.Descripcion,
+                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                        })
+                        .ToList();
+
+            comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+            .Select(g => new MovimientoTarjetaDTO
+            {
+                Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
+                TipoMovimiento = g.Descripcion,
+                Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
+            }).ToList());
+
+            List<MovimientoTarjetaDTO> MovientosOrdenadosPorFecha = comprasAgrupadas.OrderByDescending(x => common.ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(20)).ToList();
+            return MovientosOrdenadosPorFecha;
+        }
+
+        public async Task<decimal> CalcularPunitorios(List<SolicitudDetail> cuotas)
         {
             int anioActual = DateTime.Now.Year; // -> 2025
             int mesActual = DateTime.Now.Month; // -> 8
 
-            // El servicio calcula automáticamente el último día hábil
-            DateTime fechaDeCalculo = ObtenerFechaDeCalculoCorrecta();
+            // El servicio calcula automáticamente fa fecha de corte para los Punitorios.
+            DateTime fechaCorteMora = ObtenerFechaDeCalculoCorrecta();
 
             // 1. Calcular la tasa diaria
-            int diasDelAnio = DateTime.IsLeapYear(fechaDeCalculo.Year) ? 366 : 365;
+            int diasDelAnio = DateTime.IsLeapYear(fechaCorteMora.Year) ? 366 : 365;
             decimal tasaDiaria = (TNA / diasDelAnio);
-
-            // 2. Identificar cuotas en mora según la regla de negocio.
-            // La regla es: se consideran cuotas con vencimiento hasta UN MES ANTES de la fecha de cálculo.
-            DateTime fechaCorteMora = fechaDeCalculo.AddMonths(-1);
 
             List<DetalleCuota> cuotasEnMora = cuotas
                 .SelectMany(result => result.DetallesCuota)
@@ -365,7 +315,7 @@ namespace EstanciasCore.Services
             foreach (var cuota in cuotasEnMora)
             {
                 // Se calculan los días de mora desde el vencimiento hasta la fecha de cálculo
-                int diasEnMora = (int)(fechaDeCalculo.Date -  common.ConvertirFecha(cuota.Fecha)).TotalDays;
+                int diasEnMora = (int)(fechaCorteMora.Date -  common.ConvertirFecha(cuota.Fecha)).TotalDays;
 
                 // Se multiplica el monto por la tasa diaria y por los días en mora
                 decimal monto = Convert.ToDecimal(cuota.Monto.Replace(".", ","));
@@ -376,7 +326,7 @@ namespace EstanciasCore.Services
             return totalPunitorios;
         }
 
-        public decimal CalcularPunitoriosResumen(List<SolicitudDetail> cuotas)
+        public async Task<decimal> CalcularPunitoriosResumen(List<SolicitudDetail> cuotas)
         {
             int anioActual = DateTime.Now.Year; // -> 2025
             int mesActual = DateTime.Now.Month; // -> 8
@@ -463,7 +413,7 @@ namespace EstanciasCore.Services
                     .Select(e => new { monto = Convert.ToDecimal(e.Monto.Replace(".", ",")) }).ToList();
 
             CultureInfo.CurrentCulture = new CultureInfo("es-AR");
-            decimal montoPunitoriosTotal = CalcularPunitoriosResumen(datosMovimientos.DetallesSolicitud);
+            decimal montoPunitoriosTotal = await CalcularPunitoriosResumen(datosMovimientos.DetallesSolicitud);
 
             decimal saldo = totalDetallesCuota.Sum(e => e.Monto);
             tempalteResumenDTO.SaldoAnterior = montoPunitoriosTotal;
@@ -500,51 +450,6 @@ namespace EstanciasCore.Services
             }
         }
 
-        //public void ActualizarMovimientosAsync(Usuario usuario, CombinedData datosMovimientos)
-        //{
-        //    int LoanPersonaId = 0;
-        //    decimal totalMontoCuota = 0;
-        //    decimal montoPunitoriosTotal = 0;
-        //    var fechaActual = DateTime.Now;
-        //    List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-
-        //    Periodo periodo = _context.Periodo.Where(x => x.FechaDesde <= fechaActual && x.FechaHasta >= fechaActual).FirstOrDefault();
-        //    DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
-
-        //    var montoDisponible = "0";
-
-        //    if (datosMovimientos.Detalle.Resultado=="EXITO")
-        //    {
-        //        montoDisponible = datosMovimientos.Detalle.MontoDisponible;
-        //        comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR" && (x.Fecha>=periodo.FechaDesde && x.Fecha<=periodo.FechaHasta))
-        //        .GroupBy(m => new { m.Descripcion, m.Fecha })
-        //        .Select(g => new MovimientoTarjetaDTO
-        //        {
-        //            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-        //            TipoMovimiento = g.Key.Descripcion,
-        //            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-        //        })
-        //        .ToList();
-
-        //        comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR" && (x.Fecha>=periodo.FechaDesde && x.Fecha<=periodo.FechaHasta))
-        //        .Select(g => new MovimientoTarjetaDTO
-        //        {
-        //            Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
-        //            TipoMovimiento = g.Descripcion,
-        //            Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
-        //        }).ToList());
-
-        //        var totalDetallesCuota = datosMovimientos.DetallesSolicitud
-        //        .Where(result => result?.DetallesCuota != null)
-        //        .SelectMany(result => result.DetallesCuota)
-        //        .Where(detalle => (common.ConvertirFecha(detalle.Fecha) <= periodo.FechaVencimiento))
-        //        .Select(e => new { monto = e.Monto }).ToList();
-
-        //        totalMontoCuota = totalDetallesCuota.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
-        //        CultureInfo.CurrentCulture = new CultureInfo("es-AR");
-        //        montoPunitoriosTotal = CalcularPunitorios(datosMovimientos.DetallesSolicitud);
-        //    }
-        //}
 
         #region Extra 
             private IView FindView(ActionContext actionContext, string viewName)
@@ -571,22 +476,14 @@ namespace EstanciasCore.Services
             }
 
             /// <summary>
-            /// Calcula el último día hábil de un mes y año específicos.
+            /// Calcula el último día de un mes y año específicos.
             /// </summary>
             /// <param name="anio">El año.</param>
             /// <param name="mes">El mes.</param>
             /// <returns>El último día hábil del mes.</returns>
-            private DateTime ObtenerUltimoDiaHabil(int anio, int mes)
+            private DateTime ObtenerUltimoDia(int anio, int mes)
             {
-                // Empezamos por el último día del mes
                 DateTime ultimoDia = new DateTime(anio, mes, DateTime.DaysInMonth(anio, mes));
-
-                // Retrocedemos si es sábado o domingo
-                while (ultimoDia.DayOfWeek == DayOfWeek.Saturday || ultimoDia.DayOfWeek == DayOfWeek.Sunday)
-                {
-                    ultimoDia = ultimoDia.AddDays(-1);
-                }
-
                 return ultimoDia;
             }
 
@@ -601,8 +498,8 @@ namespace EstanciasCore.Services
                 }
                 else
                 {
-                    // Si es día 15 o posterior, la fecha de cálculo es el último día hábil del mes actual.
-                    return ObtenerUltimoDiaHabil(hoy.Year, hoy.Month);
+                    // Si es día 15 o posterior, la fecha de cálculo es el último día del mes actual.
+                    return ObtenerUltimoDia(hoy.Year, hoy.Month);
                 }
             }
         #endregion
