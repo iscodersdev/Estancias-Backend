@@ -1,9 +1,9 @@
 # Carpeta de Visual Studio
 .vs/
-.DAL/bin
-.DAL/obj
-.EstanciasCore/bin
-.EstanciasCore/obj
+DAL/bin
+DAL/obj
+EstanciasCore/bin
+EstanciasCore/obj
 
 # Archivos de opciones de usuario específicos
 *.suo
