@@ -259,7 +259,8 @@ namespace EstanciasCore.Services
                         .GroupBy(m => new { m.Descripcion, m.Fecha })
                         .Select(g => new MovimientoTarjetaDTO
                         {
-                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            //Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            Monto =  ((g.Sum(m => Convert.ToDecimal(m.Monto)))+(g.Sum(m => Convert.ToDecimal(m.Recargo)))).ToString(),
                             TipoMovimiento = g.Key.Descripcion,
                             Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
                         })
