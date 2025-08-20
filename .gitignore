@@ -1,0 +1,35 @@
+# Carpeta de Visual Studio
+.vs/
+.DAL/bin
+.DAL/obj
+.EstanciasCore/bin
+.EstanciasCore/obj
+
+# Archivos de opciones de usuario específicos
+*.suo
+*.user
+
+# Archivos de compilación y salida
+[Bb]in/
+[Oo]bj/
+[Rr]elease/
+[Dd]ebug/
+
+# Archivos generados por el sistema operativo
+Thumbs.db
+.DS_Store
+
+# Paquetes y dependencias (si usas nuget.config para restaurar)
+packages/
+*.nupkg
+
+# Registros y resultados de pruebas
+*.log
+*.trx
+TestResult/
+
+# Otros archivos generados por el IDE
+*.cache
+*.ide
+*.bak
+*~
