@@ -4,6 +4,8 @@ DAL/bin
 DAL/obj
 EstanciasCore/bin
 EstanciasCore/obj
+[Bb]in/
+[Oo]bj/
 
 # Archivos de opciones de usuario específicos
 *.suo
