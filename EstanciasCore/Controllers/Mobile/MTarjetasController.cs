@@ -112,7 +112,7 @@ namespace EstanciasCore.API.Controllers.Billetera
 
                 DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
                 
-                var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10, 0).Result;
+                var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 100, 0).Result;
                 if (datosMovimientos.Detalle.Resultado=="EXITO")
                 {
                     CultureInfo.CurrentCulture = new CultureInfo("es-AR");
