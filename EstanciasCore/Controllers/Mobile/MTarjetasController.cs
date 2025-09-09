@@ -137,7 +137,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 DeudaTotal = MontoCuota + MontoPunitorios;
                 TotalRedondeo = Math.Round(DeudaTotal, 2);
 
-                var fechaVencimiento = new DateTime(fechaActualCuotasProximo.Year, fechaMesActualCuotas.Month, 15);
+                var fechaVencimiento = new DateTime(fechaActualCuotasProximo.Year, fechaMesActualCuotas.Month, 10);
 
                 return new JsonResult(
                     new ListaMovimientoTarjetaDTO
