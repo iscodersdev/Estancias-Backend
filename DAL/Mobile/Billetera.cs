@@ -85,6 +85,7 @@ namespace DAL.Mobile
 		public string EstadoPagoDescripcion { get; set; }
 		public byte[] ComprobantePago { get; set; }
         public string FechaComprobante { get; set; }
+        public string Observacion { get; set; }
     }
 
 

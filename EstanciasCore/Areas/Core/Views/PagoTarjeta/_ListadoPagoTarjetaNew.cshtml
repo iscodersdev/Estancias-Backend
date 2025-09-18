@@ -46,10 +46,9 @@
 <modal title="Ver Comprobante" callback-modal="true" function="VerComprobante" load-url="/Core/PagoTarjeta/_VerComprobante/" size="Large"></modal>
 
 <script>
+    var tablaPagos
     $(document).ready(function () {
-
-        var tablaPagos = $('#listadoPagos').DataTable({
-
+        tablaPagos = $('#listadoPagos').DataTable({
             serverSide: true,
             processing: true,
             "language": {
@@ -68,6 +67,15 @@
             ],
             columns: [
                 { data: "Id", title: "Id" },
+                {
+                    data: null,
+                    title: '<input type="checkbox" id="selectAll">',
+                    orderable: false,
+                    className: 'select-checkbox',
+                    render: function (data, type, row) {
+                        return '<input type="checkbox" class="row-checkbox" value="' + row.Id + '">';
+                    }
+                },
                 { data: "FechaOrden", title: "FechaOrden",  visible: false},
                 { data: "Persona", title: "Cliente" },
                 { data: "NroDocumento", title: "NroDocumento" },
@@ -108,17 +116,140 @@
                             }
                         }else{                       
                             action = "Sin Comprobante"
-                        }                              
+                        }
+
+                        if (row['EstadoPagoId'] == 4 && row['Observacion']!="") {
+                            action = action + ` <a onclick="MostrarAlertaObservacion('${row['Observacion']}')" title="Ver Observación" class="btn btn-info btn-xs"><i class="fa fa-info-circle"></i></a>`;
+                        }
                         return action;
                     }
                 }],                
             "order": [0, 'desc'],
-
-        });
-        
+            "drawCallback": function (settings) {
+                // Desmarcar "selectAll" si hay menos filas seleccionadas que el total
+                var allSelected = $('.row-checkbox').length === $('.row-checkbox:checked').length && $('.row-checkbox').length > 0;
+                $('#selectAll').prop('checked', allSelected);
+            }
+        });        
     });
 
-    
+
+    // Obtener IDs de los registros seleccionados
+        const getSelectedIds = () => {
+            const selectedIds = [];
+            $('.row-checkbox:checked').each(function () {
+                selectedIds.push($(this).val());
+            });
+            return selectedIds;
+        };
+
+        // Lógica de los botones de acción masiva
+        $('#aprobacion-masiva-btn').on('click', function () {
+            const selectedIds = getSelectedIds();
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    title: 'Advertencia',
+                    text: 'Debe seleccionar al menos un registro para aprobar.',
+                    icon: 'warning'
+                });
+                return;
+            }
+            AprobarMasivo(selectedIds);
+        });
+
+        $('#rechazo-masivo-btn').on('click', function () {
+            const selectedIds = getSelectedIds();
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    title: 'Advertencia',
+                    text: 'Debe seleccionar al menos un registro para rechazar.',
+                    icon: 'warning'
+                });
+                return;
+            }
+            RechazarMasivo(selectedIds);
+        });
+
+        // Aquí se agregan las funciones para Aprobación y Rechazo masivos
+        const AprobarMasivo = (ids) => {
+            Swal.fire({
+                title: "¿Aprobar Pagos seleccionados?",
+                text: "Esta acción no se puede revertir.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sí, aprobar!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/Core/PagoTarjeta/AprobarMasivo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(ids)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data)
+                        if (data.success) {
+                            Swal.fire('Aprobados!', 'Los pagos han sido aprobados.', 'success');
+                            tablaPagos.ajax.reload(); // Recargar la tabla
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(error => Swal.fire('Error', 'Error al procesar la solicitud.', 'error'));
+                }
+            });
+        };
+
+        const RechazarMasivo = (ids) => {
+            Swal.fire({
+                title: "¿Rechazar Pagos seleccionados?",
+                text: "Especifique el motivo para todos los pagos seleccionados.",
+                icon: "warning",
+                input: 'textarea', // Esto crea un campo de texto para la observación
+                inputLabel: 'Motivo del rechazo:',
+                inputPlaceholder: 'Escribe aquí la razón del rechazo...',
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sí, rechazar!",
+                cancelButtonText: "Cancelar",
+                preConfirm: (observacion) => {
+                    if (!observacion) {
+                        Swal.showValidationMessage('Por favor, escribe un motivo para el rechazo.');
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const dataToSend = {
+                        ids: ids,
+                        observacion: result.value
+                    };
+                    fetch('/Core/PagoTarjeta/RechazarMasivo', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(dataToSend)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                         if (data.success) {
+                            Swal.fire('Rechazados!', 'Los pagos han sido rechazados.', 'success');
+                            tablaPagos.ajax.reload();
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error)
+                        Swal.fire('Error', 'Error al procesar la solicitud.', 'error');
+                    });
+                }
+            });
+        };
+
         $("#botonFiltrar").on("click", function()
         {
             var estado =  $("#estadoFiltro").val()
@@ -141,88 +272,109 @@
         });
 
 
-    const AprobarComprobante = (id) => {
-        Swal.fire({
-            title: "¿Aprobar Pago?",
-            text: "Una vez aprobado no se prodra regresar al estado anterior!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Aceptar"
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch('/Core/PagoTarjeta/AprobarComprobante/' + id)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(data); // Aquí puedes manipular los datos obtenidos
-                        //if (result.isConfirmed) {
-                        if (result.isConfirmed && data==true) {
-                            Swal.fire({
-                                title: "Aprobado!",
-                                text: "El Pago se Aprobó.",
-                                icon: "success"
-                            });
-                        }else{
+        const AprobarComprobante = (id) => {
+            Swal.fire({
+                title: "¿Aprobar Pago?",
+                text: "Una vez aprobado no se prodra regresar al estado anterior!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Aceptar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/Core/PagoTarjeta/AprobarComprobante/' + id)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(data); // Aquí puedes manipular los datos obtenidos
+                            //if (result.isConfirmed) {
+                            if (result.isConfirmed && data==true) {
+                                Swal.fire({
+                                    title: "Aprobado!",
+                                    text: "El Pago se Aprobó.",
+                                    icon: "success"
+                                });
+                            }else{
+                                Swal.fire({
+                                    title: "Error!",
+                                    text: "Error al aprobar el Pago.",
+                                    icon: "danger"
+                                });
+                            }
+                            location.reload();
+                        })
+                        .catch(error => {
                             Swal.fire({
                                 title: "Error!",
-                                text: "Error al aprobar el Pago.",
+                                text: "Error al obtener los datos:" + error,
                                 icon: "danger"
                             });
-                        }
-                        location.reload();
-                    })
-                    .catch(error => {
-                        Swal.fire({
-                            title: "Error!",
-                            text: "Error al obtener los datos:" + error,
-                            icon: "danger"
                         });
-                    });
-                }
-        });        
-    };
+                    }
+            });        
+        };
 
 
-    const RechazarComprobante = (id) => {
+      const RechazarComprobante = (id) => {
         Swal.fire({
-            title: "¿Rechazar Pago?",
-            text: "Una vez rechazado no se prodra regresar al estado anterior!",
-            icon: "warning",
+            title: 'Rechazar Pago',
+            text: 'Una vez rechazado no se podrá regresar al estado anterior.',
+            icon: 'warning',
+            input: 'textarea', // Cambia a un campo de texto para la observación
+            inputLabel: 'Motivo del rechazo:',
+            inputPlaceholder: 'Escribe aquí la razón del rechazo...',
             showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Aceptar"
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Aceptar',
+            preConfirm: (observacion) => {
+                if (!observacion) {
+                    Swal.showValidationMessage('Por favor, escribe un motivo para el rechazo.');
+                }
+            }
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch('/Core/PagoTarjeta/RechazarComprobante/' + id)
-                    .then(response => response.json())
+                const body = {
+                    id: id,
+                    observacion: result.value
+                };
+                fetch('/Core/PagoTarjeta/RechazarComprobante/' + id, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
-                        console.log(data); // Aquí puedes manipular los datos obtenidos
-                        //if (result.isConfirmed) {
-                        if (result.isConfirmed && data == true) {
+                        if (data === true) {
                             Swal.fire({
-                                title: "Rechazado!",
-                                text: "El Pago se Rechazó.",
-                                icon: "success"
+                                title: 'Rechazado!',
+                                text: 'El Pago se rechazó correctamente.',
+                                icon: 'success'
                             });
                         } else {
                             Swal.fire({
-                                title: "Error!",
-                                text: "Error al rechazar el Pago.",
-                                icon: "danger"
+                                title: 'Error!',
+                                text: 'Error al rechazar el Pago.',
+                                icon: 'error'
                             });
                         }
                         location.reload();
                     })
                     .catch(error => {
                         Swal.fire({
-                            title: "Error!",
-                            text: "Error al obtener los datos:" + error,
-                            icon: "danger"
+                            title: 'Error!',
+                            text: 'Error al obtener los datos: ' + error,
+                            icon: 'error'
                         });
                     });
-                }
+            }
         });
     };
 
@@ -253,6 +405,32 @@
     );
 
 
+    function MostrarAlertaObservacion(observacion) {
+        Swal.fire({
+            title: 'Observación del Pago',
+            text: observacion,
+            icon: 'info',
+            confirmButtonText: 'Cerrar'
+        });
+    }
 
+    $('#exportar-excel-btn').on('click', function () {
+        const selectedIds = getSelectedIds();
+        if (selectedIds.length === 0) {
+            Swal.fire({
+                title: 'Advertencia',
+                text: 'Debe seleccionar al menos un registro para exportar.',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: "Función de exportar",
+            text: `Se exportarán los registros seleccionados en formato .xlsx`,
+            icon: "info"
+        });
+        window.location.href = '@Url.Action("ExportarExcel")' + '?ids=' + selectedIds.join(',');
+    });
 
 </script>

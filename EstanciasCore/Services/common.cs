@@ -274,18 +274,14 @@ namespace EstanciasCore.Services
             }
             try
             {
-                //string usuario = "novedades@estancias.org.ar";
-                string usuario = "albarracin_sergio@hotmail.com";
-
-                // string password = "BWSNmr7qGLdHYKz2";
-                string password = "w2cPVg3n9Xq6C7KO";
-
-                var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
-                string host = "smtp-relay.sendinblue.com";
+                string usuario = "7ed2ee002@smtp-brevo.com";
+                string password = "UzdvJfpAtByYwx60";
+                var origen = new MailAddress("no-reply@itarconsulting.com.ar", "Estancias ");
+                string host = "smtp-relay.brevo.com";
                 int puerto = 587;
                 bool ssl = true;
                 NetworkCredential credenciales = new NetworkCredential(usuario, password);
-                MailMessage correo = new MailMessage("noresponder@estancias.org.ar", mail.Mail, mail.Titulo, cuerpoHTMLGmail(mail.Titulo, mail.Html, ""));
+                MailMessage correo = new MailMessage("noresponder@estancias.com.ar", mail.Mail, mail.Titulo, cuerpoHTMLGmail(mail.Titulo, mail.Html, ""));
                 correo.From = origen;
                 correo.IsBodyHtml = true;
                 SmtpClient servicio = new SmtpClient(host, puerto);

@@ -483,7 +483,7 @@ namespace EstanciasCore.Services
             {
                 DateTime hoy = DateTime.Now;
 
-                if (hoy.Day < 15)
+                if (hoy.Day <= 15)
                 {
                     // Si es antes del día 15, la fecha de cálculo es el 15 del mes actual.
                     return new DateTime(hoy.Year, hoy.Month, 15);

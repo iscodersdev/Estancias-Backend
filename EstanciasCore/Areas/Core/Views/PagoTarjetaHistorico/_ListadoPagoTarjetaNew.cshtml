@@ -6,7 +6,16 @@
 <div class="box box-info">
     <div class="box-header with-border filtro-grilla">
         <span class="txt-titulo-box">Listado de Comprobantes</span>
-        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+        <div class="pull-right">
+            <a class="btn bg-green btn-sm" id="exportar-excel-btn">
+                <i class="fa fa-file-excel-o"></i> Exportar en Excel
+            </a>
+            <a class="btn bg-blue btn-sm" id="aprobacion-masiva-btn">
+                <i class="fa fa-check"></i> Aprobación masiva
+            </a>
+            <a class="btn bg-red btn-sm" id="rechazo-masivo-btn">
+                <i class="fa fa-remove"></i> Rechazo masivo
+            </a>
         </div>
     </div>
 
@@ -46,10 +55,10 @@
 <modal title="Ver Comprobante" callback-modal="true" function="VerComprobante" load-url="/Core/PagoTarjetaHistorico/_VerComprobante/" size="Large"></modal>
 
 <script>
+     var tablaPagos;
     $(document).ready(function () {
 
-        var tablaPagos = $('#listadoPagos').DataTable({
-
+        tablaPagos = $('#listadoPagos').DataTable({
             serverSide: true,
             processing: true,
             "language": {
@@ -62,12 +71,21 @@
             rowId: 'Id',
             "columnDefs": [
                 {
-                    "targets": [0], // Ocultar la tercera columna (índice 2)
+                    "targets": [0],
                     "visible": false,
                 }
             ],
-            columns: [
+            columns: [                 
                 { data: "Id", title: "Id" },
+                {
+                    data: null,
+                    title: '<input type="checkbox" id="selectAll">',
+                    orderable: false,
+                    className: 'select-checkbox',
+                    render: function (data, type, row) {
+                        return '<input type="checkbox" class="row-checkbox" value="' + row.Id + '">';
+                    }
+                },
                 { data: "FechaOrden", title: "FechaOrden",  visible: false},
                 { data: "Persona", title: "Cliente" },
                 { data: "NroDocumento", title: "NroDocumento" },
@@ -107,17 +125,157 @@
                             }
                         }else{                       
                             action = "Sin Comprobante"
-                        }                              
+                        }
+                        if (row['EstadoPagoId'] == 4 && row['Observacion']!="") {
+                            action = action + ` <a onclick="MostrarAlertaObservacion('${row['Observacion']}')" title="Ver Observación" class="btn btn-info btn-xs"><i class="fa fa-info-circle"></i></a>`;
+                        }
                         return action;
                     }
                 }],                
             "order": [0, 'desc'],
-
+            "drawCallback": function (settings) {
+                // Desmarcar "selectAll" si hay menos filas seleccionadas que el total
+                var allSelected = $('.row-checkbox').length === $('.row-checkbox:checked').length && $('.row-checkbox').length > 0;
+                $('#selectAll').prop('checked', allSelected);
+            }
         });
         
+            // Evento para el checkbox "Seleccionar todos"
+        $('#listadoPagos thead').on('change', '#selectAll', function () {
+            var isChecked = this.checked;
+            $('.row-checkbox').prop('checked', isChecked);
+        });
+
+        // Evento para desmarcar "Seleccionar todos" si un checkbox individual es desmarcado
+        $('#listadoPagos tbody').on('change', '.row-checkbox', function () {
+            if (!this.checked) {
+                $('#selectAll').prop('checked', false);
+            } else {
+                var allChecked = $('.row-checkbox').length === $('.row-checkbox:checked').length;
+                $('#selectAll').prop('checked', allChecked);
+            }
+        });
     });
 
-    
+
+
+        // Obtener IDs de los registros seleccionados
+        const getSelectedIds = () => {
+            const selectedIds = [];
+            $('.row-checkbox:checked').each(function () {
+                selectedIds.push($(this).val());
+            });
+            return selectedIds;
+        };
+
+        // Lógica de los botones de acción masiva
+        $('#aprobacion-masiva-btn').on('click', function () {
+            const selectedIds = getSelectedIds();
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    title: 'Advertencia',
+                    text: 'Debe seleccionar al menos un registro para aprobar.',
+                    icon: 'warning'
+                });
+                return;
+            }
+            AprobarMasivo(selectedIds);
+        });
+
+        $('#rechazo-masivo-btn').on('click', function () {
+            const selectedIds = getSelectedIds();
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    title: 'Advertencia',
+                    text: 'Debe seleccionar al menos un registro para rechazar.',
+                    icon: 'warning'
+                });
+                return;
+            }
+            RechazarMasivo(selectedIds);
+        });       
+
+        // Aquí se agregan las funciones para Aprobación y Rechazo masivos
+        const AprobarMasivo = (ids) => {
+            Swal.fire({
+                title: "¿Aprobar Pagos seleccionados?",
+                text: "Esta acción no se puede revertir.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sí, aprobar!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/Core/PagoTarjetaHistorico/AprobarMasivo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(ids)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data)
+                        if (data.success) {
+                            Swal.fire('Aprobados!', 'Los pagos han sido aprobados.', 'success');
+                            tablaPagos.ajax.reload(); // Recargar la tabla
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(error => Swal.fire('Error', 'Error al procesar la solicitud.', 'error'));
+                }
+            });
+        };
+
+        const RechazarMasivo = (ids) => {
+            Swal.fire({
+                title: "¿Rechazar Pagos seleccionados?",
+                text: "Especifique el motivo para todos los pagos seleccionados.",
+                icon: "warning",
+                input: 'textarea', // Esto crea un campo de texto para la observación
+                inputLabel: 'Motivo del rechazo:',
+                inputPlaceholder: 'Escribe aquí la razón del rechazo...',
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sí, rechazar!",
+                cancelButtonText: "Cancelar",
+                preConfirm: (observacion) => {
+                    if (!observacion) {
+                        Swal.showValidationMessage('Por favor, escribe un motivo para el rechazo.');
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const dataToSend = {
+                        ids: ids,
+                        observacion: result.value
+                    };
+                    fetch('/Core/PagoTarjetaHistorico/RechazarMasivo', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(dataToSend)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                         if (data.success) {
+                            Swal.fire('Rechazados!', 'Los pagos han sido rechazados.', 'success');
+                            tablaPagos.ajax.reload();
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error)
+                        Swal.fire('Error', 'Error al procesar la solicitud.', 'error');
+                    });
+                }
+            });
+        };   
+
+
         $("#botonFiltrar").on("click", function()
         {
             var estado =  $("#estadoFiltro").val()
@@ -127,8 +285,8 @@
             }
             $('#listadoPagos').DataTable().columns().search('').draw();
             $('#listadoPagos').DataTable()
-                .column(9).search(estado) // Asumiendo que 'estado' es la columna 0
-                .column(5).search(fecha) // Asumiendo que 'fecha' es la columna 1
+                .column(10).search(estado)
+                .column(6).search(fecha)
                 .draw(); 
         });        
         
@@ -154,8 +312,6 @@
                 fetch('/Core/PagoTarjetaHistorico/AprobarComprobante/' + id)
                     .then(response => response.json())
                     .then(data => {
-                        console.log(data); // Aquí puedes manipular los datos obtenidos
-                        //if (result.isConfirmed) {
                         if (result.isConfirmed && data==true) {
                             Swal.fire({
                                 title: "Aprobado!",
@@ -188,50 +344,67 @@
             title: "¿Rechazar Pago?",
             text: "Una vez rechazado no se prodra regresar al estado anterior!",
             icon: "warning",
+            input: 'textarea',
+            inputLabel: 'Motivo del rechazo:',
+            inputPlaceholder: 'Escribe aquí la razón del rechazo...',
             showCancelButton: true,
             confirmButtonColor: "#3085d6",
             cancelButtonColor: "#d33",
-            confirmButtonText: "Aceptar"
-        }).then((result) => {
+            confirmButtonText: "Aceptar",
+            preConfirm: (observacion) => {
+                if (!observacion) {
+                    Swal.showValidationMessage('Por favor, escribe un motivo para el rechazo.');
+                }
+            }
+        }).then((result) => { 
+            
+            const body = {
+                id: id,
+                observacion: result.value
+            };
             if (result.isConfirmed) {
-                fetch('/Core/PagoTarjetaHistorico/RechazarComprobante/' + id)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(data); // Aquí puedes manipular los datos obtenidos
-                        //if (result.isConfirmed) {
-                        if (result.isConfirmed && data == true) {
-                            Swal.fire({
-                                title: "Rechazado!",
-                                text: "El Pago se Rechazó.",
-                                icon: "success"
-                            });
-                        } else {
-                            Swal.fire({
-                                title: "Error!",
-                                text: "Error al rechazar el Pago.",
-                                icon: "danger"
-                            });
-                        }
-                        location.reload();
-                    })
-                    .catch(error => {
+                fetch('/Core/PagoTarjetaHistorico/RechazarComprobante/' + id, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    //if (result.isConfirmed) {
+                    if (result.isConfirmed && data == true) {
+                        Swal.fire({
+                            title: "Rechazado!",
+                            text: "El Pago se Rechazó.",
+                            icon: "success"
+                        });
+                    } else {
                         Swal.fire({
                             title: "Error!",
-                            text: "Error al obtener los datos:" + error,
+                            text: "Error al rechazar el Pago.",
                             icon: "danger"
                         });
+                    }
+                    location.reload();
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Error al obtener los datos:" + error,
+                        icon: "danger"
                     });
-                }
+                });
+            }
         });
     };
 
-     // Agregar la lógica de filtrado
     $.fn.dataTable.ext.search.push(
       function(settings, data, dataIndex) {
         var fechaRango = $('#fecha').val();
         var estado = $('#estado').val();
-        var fecha = data[4]; // índice de la columna FechaVencimiento
-        var estadoPagoId = data[7]; // índice de la columna EstadoPago
+        var fecha = data[4];
+        var estadoPagoId = data[7];
 
         if (fechaRango !== '') {
           var fechas = fechaRango.split(' - ');
@@ -251,6 +424,34 @@
       }
     );
 
+    function MostrarAlertaObservacion(observacion) {
+        Swal.fire({
+            title: 'Observación del Pago',
+            text: observacion,
+            icon: 'info',
+            confirmButtonText: 'Cerrar'
+        });
+    }
+
+
+    $('#exportar-excel-btn').on('click', function () {
+        const selectedIds = getSelectedIds();
+        if (selectedIds.length === 0) {
+            Swal.fire({
+                title: 'Advertencia',
+                text: 'Debe seleccionar al menos un registro para exportar.',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: "Función de exportar",
+            text: `Se exportarán los registros seleccionados en formato .xlsx`,
+            icon: "info"
+        });
+        window.location.href = '@Url.Action("ExportarExcel")' + '?ids=' + selectedIds.join(',');
+    });
 
 
 

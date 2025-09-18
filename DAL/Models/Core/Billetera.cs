@@ -125,6 +125,7 @@ namespace DAL.Models.Core
             public int Id { get; set; }
             public virtual Persona Persona { get; set; }
             public string NroTarjeta { get; set; }
+            public string Observacion { get; set; }
             public DateTime? FechaVencimiento { get; set; } = new DateTime();
             public Decimal MontoAdeudado { get; set; }
             public Decimal MontoInformado { get; set; }

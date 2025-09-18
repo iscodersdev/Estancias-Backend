@@ -722,6 +722,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                             EstadoPagoDescripcion = item.EstadoPago.GetType().GetField(item.EstadoPago.ToString()).Name,
                             ComprobantePago = item.ComprobantePago,
                             FechaComprobante = item.FechaComprobante.ToString(),
+                            Observacion = item.Observacion,
                         });
                         pagotarjetaDTO.Mensaje = "Listado de Comprobantes";
                         pagotarjetaDTO.Status = 200;

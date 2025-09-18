@@ -3,6 +3,7 @@ using DAL.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace DAL.DTOs
 {
@@ -11,7 +12,7 @@ namespace DAL.DTOs
         public int Id { get; set; }
         public string Persona { get; set; }
         public string NroDocumento { get; set; }
-        public string Usuario  { get; set; }
+        public string Usuario { get; set; }
         public string NroTarjeta { get; set; }
         public DateTime FechaVencimiento { get; set; } = new DateTime();
         public Decimal MontoAdeudado { get; set; }
@@ -37,5 +38,19 @@ namespace DAL.DTOs
         public int EstadoPagoId { get; set; }
         public bool ComprobantePago { get; set; }
         public int FechaOrden { get; set; }
+        public string Observacion { get; set; }
+    }
+
+    public class RechazarComprobanteDTO
+    {
+        public int Id { get; set; }
+        [JsonPropertyName("observacion")]
+        public string Observacion { get; set; }
+    }
+
+    public class RechazarComprobanteMasivoDTO
+    {
+        public List<int> Ids { get; set; }
+        public string Observacion { get; set; }
     }
 }
