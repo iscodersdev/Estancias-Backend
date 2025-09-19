@@ -247,6 +247,19 @@ namespace EstanciasCore.Services
             return true;
         }
 
+        public static bool EnviarMailAdjunto(string destinatario, string titulo, string texto, string cliente, byte[] Adjunto = null, string NombreArchivo = null)
+        {
+            MailAPI mail = new MailAPI();
+            mail.Mail = destinatario;
+            mail.Html = texto;
+            mail.Titulo = titulo;
+            DateTime oFec = DateTime.Now;
+            var code = Encrypt(mail.Titulo + mail.Html, "SendMail"); ;
+            mail.Token = code;
+            var resultado = EnviarMailSendinBlueAdjunto(mail, Adjunto);
+            return true;
+        }
+
         public static decimal CalculaCFT(double capital, int cantidadcuotas, double montocuota)
         {
             try
@@ -296,8 +309,74 @@ namespace EstanciasCore.Services
                 return false;
             }
             return true;
-
         }
+
+        public static async Task<bool> EnviarMailSendinBlueAdjunto(MailAPI mail, byte[] PdfBytes)
+        {
+            if (mail.Mail == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                string usuario = "7ed2ee002@smtp-brevo.com";
+                string password = "UzdvJfpAtByYwx60";
+                var origen = new MailAddress("no-reply@itarconsulting.com.ar", "Estancias ");
+                string host = "smtp-relay.brevo.com";
+                int puerto = 587;
+                bool ssl = true;
+
+                NetworkCredential credenciales = new NetworkCredential(usuario, password);
+                MailMessage correo = new MailMessage();
+                correo.From = origen;
+                correo.To.Add(mail.Mail);
+                correo.Subject = mail.Titulo;
+                correo.IsBodyHtml = true;
+                correo.Body = cuerpoHTMLGmail(mail.Titulo, mail.Html, "");
+
+                // **Parte modificada para adjuntar el PDF**
+                if (PdfBytes != null && PdfBytes.Length > 0)
+                {
+                    // Usa un MemoryStream con un bloque 'using' para gestionar los recursos
+                    using (MemoryStream ms = new MemoryStream(PdfBytes))
+                    {
+                        // Crea el adjunto con el MemoryStream
+                        Attachment adjunto = new Attachment(ms, "Resumen.pdf", "application/pdf");
+                        correo.Attachments.Add(adjunto);
+
+                        // Configura y envía el correo
+                        using (SmtpClient servicio = new SmtpClient(host, puerto))
+                        {
+                            servicio.Credentials = credenciales;
+                            servicio.EnableSsl = ssl;
+
+                            // Usa el método asíncrono y espera a que se complete
+                            await servicio.SendMailAsync(correo);
+                        }
+                    } // El MemoryStream se libera aquí
+                }
+                else
+                {
+                    // Si no hay PDF, envía el correo sin adjunto
+                    using (SmtpClient servicio = new SmtpClient(host, puerto))
+                    {
+                        servicio.Credentials = credenciales;
+                        servicio.EnableSsl = ssl;
+
+                        await servicio.SendMailAsync(correo);
+                    }
+                }
+
+                return true; // Éxito
+            }
+            catch
+            {
+                return false; // Error
+            }
+        }
+
+
         public static bool EnviarMailGmail(MailAPI mail)
         {
             if (mail.Mail == null)

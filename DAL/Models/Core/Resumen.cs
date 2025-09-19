@@ -53,7 +53,7 @@ namespace DAL.Models
         public virtual Usuario Usuario { get; set; }
         public virtual Periodo Periodo { get; set; }
         public virtual ResumenTarjeta ResumenTarjeta { get; set; }
-        public virtual CanalesDistribucion CanalesDistribucion { get; set; }
+        public string CanalesDistribucion { get; set; }
         public string Estado { get; set; }
         public DateTime Fecha { get; set; }
     }

@@ -613,6 +613,7 @@ namespace EstanciasCore.Controllers
                 //}
                 //else if (conf.Id==1)
                 //{
+
                 EnvioDeMail(cliente.Usuario.UserName, "Recuperar Contraseña", viewHtml.Result);
                 //EnvioDeMail("jorgecutuli@gmail.com", "Recuperar Contraseña", viewHtml.Result);
                 uat.Mensaje = "Para Recuperar su Contrasena Se Ha Enviado un Correo a la Casilla: " + cliente.Usuario.UserName.Substring(0, 2) + asteriscos.Substring(0, correoinicial[0].Length - 2) + "@" + correoinicial[1] + " En el Caso de No Verlo en Bandeja De Entrada, revise su Correo No Deseado o SPAM";

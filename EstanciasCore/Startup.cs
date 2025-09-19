@@ -66,6 +66,7 @@ namespace EstanciasCore
 
             //Genera Resumen Mensual
             services.AddHostedService<ResumenMensualWorker>();
+            services.AddHostedService<EnvioDeResumenWorker>();
 
             services.AddSession();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
