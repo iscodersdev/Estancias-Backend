@@ -245,20 +245,14 @@ public class ResumenTarjetaService : IResumenTarjetaService
                     MontoDisponible = Math.Round(Convert.ToDecimal(datosMovimientos.Detalle.MontoDisponible.Replace(".", ",")), 2);
 
                     //Calcula Cuota del Mes
-                    var MontoCuotaDetalles = await scopedDatosServices.CalcularMontoCuotaDetalles(datosMovimientos, fechaActual);
-
-                    //Calcula Cuota del Proximo Mes
-                    //MontoProximaCuota = await scopedDatosServices.CalcularMontoProximaCuota(datosMovimientos, fechaActualCuotasProximo);
+                    var datosResumen = await scopedDatosServices.CuotasDetallesResumen(datosMovimientos, fechaActual);
 
                     //Calculo de Punitorios
-                    //MontoPunitorios = await scopedDatosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
-
-                    //Movimientos Tarjeta
-                    //comprasAgrupadas = await scopedDatosServices.ObtieneUltimosMovimientos(datosMovimientos, 20);
+                    var datosResumenConPunitorios = scopedDatosServices.CalcularPunitoriosResumen(datosResumen).Result;
 
 
 
-                    var datosParaResumenDTO = (TempalteResumenDTO)await scopedDatosServices.PrepararDatosDTO(datosMovimientos, periodo, usuario);
+                    var datosParaResumenDTO = (TempalteResumenDTO)await scopedDatosServices.PrepararDatosResumen(datosMovimientos, datosResumen, periodo, usuario);
                     if (datosParaResumenDTO == null) return;
 
                     var html = await scopedDatosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
@@ -276,6 +270,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
                     var resumenTarjeta = new ResumenTarjeta
                     {
                         Fecha = fechaActual,
+                        FechaVencimiento = periodo.FechaVencimiento,
                         Monto = datosParaResumenDTO.SaldoActual,
                         MontoAdeudado = datosParaResumenDTO.SaldoAnterior,
                         NroComprobante = codigo,

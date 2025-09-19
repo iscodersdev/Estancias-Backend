@@ -1,10 +1,11 @@
 @using System.Globalization
 @using DAL.DTOs.Reportes
+@using DAL.DTOs.Servicios
 @model TempalteResumenDTO
 @{
     Layout = null;
-    // Se define la cultura de Argentina para usarla en el formato de moneda.
-    var culturaAR = new CultureInfo("es-AR");
+    // Se define la cultura de Argentina para usarla en el formato de moneda.
+    var culturaAR = new CultureInfo("es-AR");
 }
 <!DOCTYPE html>
 <html>
@@ -14,103 +15,103 @@
     <style>
 
         /* Estilos sin cambios */
-                body {
-                        font-family: Arial, Helvetica, sans-serif;
-                        font-size: 9pt;
-                        color: #333;
-            margin: 0; /* Añadido para eliminar el margen por defecto del body */
+        body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 9pt;
+        color: #333;
+        margin: 0; /* Añadido para eliminar el margen por defecto del body */
 
         }
 
         /* --- INICIO DE NUEVOS ESTILOS --- */
         .banner-superior {
-            background-color: #b4b4b4; /* Color azul verdoso del Banco Nación */
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        background-color: #b4b4b4; /* Color azul verdoso del Banco Nación */
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         }
 
         .logo-banco {
-            height: 40px; /* Ajusta la altura del logo según tu imagen */
+        height: 40px; /* Ajusta la altura del logo según tu imagen */
         }
 
         .imagen-tarjeta {
-            height: 76px; /* Ajusta la altura de la tarjeta según tu imagen */
+        height: 76px; /* Ajusta la altura de la tarjeta según tu imagen */
         }
         /* --- FIN DE NUEVOS ESTILOS --- */
 
-                .resumen-container {
-                        width: 100%;
-                        margin: 0 auto;
-            padding: 15px; /* Añadido para dar espacio al contenido principal */
-            box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+        .resumen-container {
+        width: 100%;
+        margin: 0 auto;
+        padding: 15px; /* Añadido para dar espacio al contenido principal */
+        box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
 
         }
 
-                .header-table {
-                        width: 100%;
-                        border-bottom: 1px solid #000;
-                        padding-bottom: 5px;
-                        margin-bottom: 10px;
+        .header-table {
+        width: 100%;
+        border-bottom: 1px solid #000;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
 
         }
 
-                    .header-table td {
-                            vertical-align: top;
-                            padding: 2px 0;
+        .header-table td {
+        vertical-align: top;
+        padding: 2px 0;
 
         }
 
-                .header-right {
-                        text-align: right;
+        .header-right {
+        text-align: right;
 
         }
 
-                .data-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin-top: 15px;
+        .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
 
         }
 
-                    .data-table td {
-                            padding: 4px;
+        .data-table td {
+        padding: 4px;
 
         }
 
-                    .data-table .section-title td {
-                            font-weight: bold;
-                            border-bottom: 1px solid #999;
-                            padding-bottom: 5px;
-                            font-size: 10pt;
+        .data-table .section-title td {
+        font-weight: bold;
+        border-bottom: 1px solid #999;
+        padding-bottom: 5px;
+        font-size: 10pt;
 
         }
 
-                    .data-table .table-header td {
-                            font-weight: bold;
+        .data-table .table-header td {
+        font-weight: bold;
 
         }
 
-                .text-right {
-                        text-align: right;
+        .text-right {
+        text-align: right;
 
         }
 
-                .text-center {
-                        text-align: center;
+        .text-center {
+        text-align: center;
 
         }
 
-                .summary-total-row td {
-                        font-weight: bold;
-                        border-top: 1px solid #999;
-                        padding-top: 5px;
+        .summary-total-row td {
+        font-weight: bold;
+        border-top: 1px solid #999;
+        padding-top: 5px;
 
         }
 
-                .bold {
-                        font-weight: bold;
+        .bold {
+        font-weight: bold;
 
         }
 
@@ -133,7 +134,7 @@
                     <div></div>
                 </td>
                 <td class="header-right">
-                   @*  <div>Hoja: 1 / 3</div> *@
+                    @*  <div>Hoja: 1 / 3</div> *@
                     <div><span class="bold">Nº Socio: </span>@Model.NroSocio</div>
                     <div><span class="bold">Nº Tarjeta:</span> @Model.NroTarjeta</div>
                 </td>
@@ -144,17 +145,23 @@
             <tr>
                 <td class="bold">Período Desde:</td>
                 <td>@Model.PeriodoDesde</td>
-                <td class="bold">Vencimiento:</td>
-                <td class="text-right">@Model.Vencimiento</td>
-            </tr>
-            <tr>
                 <td class="bold">Período Hasta:</td>
-                <td>@Model.PeriodoHasta</td>
-                <td class="bold">Saldo actual:</td>
-                <td class="text-right">@Model.SaldoActual.ToString("C", culturaAR)</td>
+                <td class="text-right">@Model.PeriodoHasta</td>
             </tr>
             <tr>
-               @*  <td class="bold">Vencimiento actual:</td>
+                <td class="bold">Vencimiento:</td>
+                <td>@Model.Vencimiento</td>
+                <td class="bold">Saldo Pendiente:</td>
+                <td class="text-right">@Model.SaldoPendiente.ToString("C", culturaAR)</td>
+            </tr>
+            <tr>
+                <td class="bold">Saldo actual:</td>
+                <td>@Model.SaldoActual.ToString("C", culturaAR)</td>
+                <td class="bold">Saldo Total:</td>
+                <td class="text-right">@Model.SaldoTotal.ToString("C", culturaAR)</td>
+            </tr>
+            <tr>
+                @*  <td class="bold">Vencimiento actual:</td>
                 <td>@Model.Periodo.FechaVencimiento.ToString("dd-MMM-yy")</td> *@
                 @*  <td class="bold">Pago Mínimo:</td>
                 <td class="text-right">@Model.PagoMinimo.ToString("C", culturaAR)</td> *@
@@ -165,21 +172,28 @@
             <tr class="section-title">
                 <td colspan="2">RESUMEN CONSOLIDADO</td>
             </tr>
+            @if (Model.ConsumosAnteriores.Count() > 0)
+            {
+                <tr>
+                    <td class="bold">CONSUMOS ANTERIORES</td>
+                    <td class="text-right">$ @Model.SaldoPendiente.ToString("N2", culturaAR)</td>
+                </tr>
+            }
             <tr>
-                <td class="bold">PUNITORIOS</td>
-                <td class="text-right">$ @Model.SaldoAnterior.ToString("N2", culturaAR)</td>
+                <td class="bold">CONSUMOS DEL MES</td>
+                <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
             </tr>
             @if (Model.Pagos != 0)
             {
                 <tr>
                     <td>SU PAGO</td>
-                    <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
+                    <td class="text-right">$ @Model.SaldoTotal.ToString("N2", culturaAR)</td>
                 </tr>
             }
-            <tr>
-                <td class="bold">TOTAL CONSUMOS DEL MES</td>
-                <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
-            </tr>
+            @*             <tr>
+                <td class="bold">TOTAL</td>
+                <td class="text-right">$ @Model.SaldoTotal.ToString("N2", culturaAR)</td>
+            </tr> *@
             @if (Model.Intereses > 0)
             {
                 <tr>
@@ -195,7 +209,7 @@
                 </tr>
             }
             <tr class="summary-total-row">
-                <td>SALDO ACTUAL</td>
+                <td>TOTAL</td>
                 <td class="text-right">$ @Model.SaldoTotal.ToString("N2", culturaAR)</td>
             </tr>
         </table>
@@ -214,21 +228,54 @@
             <tr class="table-header">
                 <td colspan="5" style="background-color: #eee;">CUOTAS DEL MES</td>
             </tr>
-            @foreach (var mov in Model.DetallesCuotas)
+            @foreach (var mov in (List<ResultadoCuotasDTO>)Model.ConsumosDelMes)
             {
                 <tr>
                     <td>@mov.Fecha</td>
-                    <td>@mov.Concepto</td>
-                    <td class="text-center">@mov.NroSolicitud</td>
-                    <td class="text-center">@mov.NroCuota/@mov.TotalDeCuotas</td>
-                    <td class="text-right">$ @mov.Monto.ToString("N2", culturaAR)</td>
+                    <td>@mov.Descripcion</td>
+                    <td class="text-center">@mov.Codigo</td>
+                    <td class="text-center">@mov.NumeroCuota/@mov.NumeroCuotaTotal</td>
+                    <td class="text-right">$ @(Convert.ToDecimal(mov.Monto).ToString("N2", culturaAR))</td>
                 </tr>
             }
             <tr class="summary-total-row">
-                <td colspan="4">TOTAL TITULAR @Model.Nombre</td>
+                <td colspan="4">TOTAL DEL MES</td>
                 <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
             </tr>
         </table>
+
+        @if (Model.ConsumosAnteriores.Count() > 0)
+        {
+            <table class="data-table">
+                <tr class="section-title">
+                    <td colspan="5">CONSUMOS ANTERIORES (Estos consumos tienen aplicado punitorios)</td>
+                </tr>
+                <tr class="table-header">
+                    <td>Fecha</td>
+                    <td>Concepto</td>
+                    <td class="text-center">N° Solicitud</td>
+                    <td class="text-center">Cuota</td>
+                    <td class="text-right">Pesos</td>
+                </tr>
+                <tr class="table-header">
+                    <td colspan="5" style="background-color: #eee;">CUOTAS ANTERIORES</td>
+                </tr>
+                @foreach (var mov in (List<ResultadoCuotasDTO>)Model.ConsumosAnteriores)
+                {
+                    <tr>
+                        <td>@mov.Fecha</td>
+                        <td>@mov.Descripcion</td>
+                        <td class="text-center">@mov.Codigo</td>
+                        <td class="text-center">@mov.NumeroCuota/@mov.NumeroCuotaTotal</td>
+                        <td class="text-right">$ @(Convert.ToDecimal(mov.Monto).ToString("N2", culturaAR))</td>
+                    </tr>
+                }
+                <tr class="summary-total-row">
+                    <td colspan="4">TOTAL</td>
+                    <td class="text-right">$ @Model.SaldoPendiente.ToString("N2", culturaAR)</td>
+                </tr>
+            </table>
+        }        
     </div>
 </body>
 </html>

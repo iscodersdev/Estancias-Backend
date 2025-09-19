@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
 using System;  
 using System.Collections.Generic;
 using System.Globalization;
@@ -26,6 +27,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
+using static EstanciasCore.Services.DatosTarjetaService;
 namespace EstanciasCore.Services
 {
     public class DatosTarjetaService : IDatosTarjetaService
@@ -233,63 +235,6 @@ namespace EstanciasCore.Services
             return totalMontoCuota;
         }
 
-        public async Task<List<ResultadoCuotas>> CalcularMontoCuotaDetalles(CombinedData datosMovimientos, DateTime fechaActualCuotas)
-        {
-            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
-
-            comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
-                        .GroupBy(m => new { m.Descripcion, m.Fecha })
-                        .Select(g => new MovimientoTarjetaDTO
-                        {
-                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-                            TipoMovimiento = g.Key.Descripcion,
-                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-                        })
-                        .ToList();
-
-            comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
-            .Select(g => new MovimientoTarjetaDTO
-            {
-                Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
-                TipoMovimiento = g.Descripcion,
-                Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
-            }).ToList());
-
-            //Montos a Pagar con Deuda pero sin Punitorios
-            //var totalDetallesCuota = datosMovimientos.DetallesSolicitud
-            //.Where(result => result?.DetallesCuota != null)
-            //.SelectMany(result => result.DetallesCuota)
-            //.Where(detalle => (common.ConvertirFecha(detalle.Fecha) <= fechaActualCuotas))
-            //.ToList();
-
-            List<ResultadoCuotas> totalDetallesCuota = datosMovimientos.DetallesSolicitud
-              .Where(result => result?.DetallesCuota != null)
-              .SelectMany(result => result.DetallesCuota
-                .Where(detalle => common.ConvertirFecha(detalle.Fecha) <= fechaActualCuotas)
-                .Select(detalle => new ResultadoCuotas
-                {
-                    Descripcion = result.NombreComercio,
-                    Codigo = result.NumeroSolicitud,
-                    Fecha = detalle.Fecha,
-                    NumeroCuota = detalle.NumeroCuota,
-                    Monto = detalle.Monto
-                })).OrderBy(e=>e.Fecha).OrderBy(d=>d.Codigo)
-              .ToList();
-
-            return totalDetallesCuota;
-        }
-
-        public class ResultadoCuotas
-        {
-            // Esta clase representa el objeto plano que necesitas
-            public string Codigo { get; set; }
-            public string Descripcion { get; set; }
-            public string Fecha { get; set; }
-            public string NumeroCuota { get; set; }
-            public string Monto { get; set; }
-        }
-
         public async Task<decimal> CalcularMontoProximaCuota(CombinedData datosMovimientos, DateTime fechaActualCuotasProximo)
         {
             DateTime fechaInicio = new DateTime(fechaActualCuotasProximo.Year, fechaActualCuotasProximo.Month, 1);
@@ -304,35 +249,6 @@ namespace EstanciasCore.Services
 
             var totalMontoProximaCuota = totalDetallesCuotaProximoMes.Sum(e => Convert.ToDecimal(e.monto.Replace(".", ",")));
             return totalMontoProximaCuota;
-        }
-
-
-        public async Task<List<MovimientoTarjetaDTO>> ObtieneUltimosMovimientos(CombinedData datosMovimientos, int top)
-        {
-            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
-
-            comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
-                        .GroupBy(m => new { m.Descripcion, m.Fecha })
-                        .Select(g => new MovimientoTarjetaDTO
-                        {
-                            //Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
-                            Monto =  ((g.Sum(m => Convert.ToDecimal(m.Monto)))+(g.Sum(m => Convert.ToDecimal(m.Recargo)))).ToString(),
-                            TipoMovimiento = g.Key.Descripcion,
-                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
-                        })
-                        .ToList();
-
-            comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
-            .Select(g => new MovimientoTarjetaDTO
-            {
-                Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
-                TipoMovimiento = g.Descripcion,
-                Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
-            }).ToList());
-
-            List<MovimientoTarjetaDTO> MovientosOrdenadosPorFecha = comprasAgrupadas.OrderByDescending(x => common.ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(20)).ToList();
-            return MovientosOrdenadosPorFecha;
         }
 
         public async Task<decimal> CalcularPunitorios(List<SolicitudDetail> cuotas)
@@ -375,48 +291,114 @@ namespace EstanciasCore.Services
             return totalPunitorios;
         }
 
-        public async Task<decimal> CalcularPunitoriosResumen(List<SolicitudDetail> cuotas)
+        public async Task<List<MovimientoTarjetaDTO>> ObtieneUltimosMovimientos(CombinedData datosMovimientos, int top)
         {
+            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+
+            comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
+                        .GroupBy(m => new { m.Descripcion, m.Fecha })
+                        .Select(g => new MovimientoTarjetaDTO
+                        {
+                            //Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            Monto =  ((g.Sum(m => Convert.ToDecimal(m.Monto)))+(g.Sum(m => Convert.ToDecimal(m.Recargo)))).ToString(),
+                            TipoMovimiento = g.Key.Descripcion,
+                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                        })
+                        .ToList();
+
+            comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+            .Select(g => new MovimientoTarjetaDTO
+            {
+                Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
+                TipoMovimiento = g.Descripcion,
+                Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
+            }).ToList());
+
+            List<MovimientoTarjetaDTO> MovientosOrdenadosPorFecha = comprasAgrupadas.OrderByDescending(x => common.ConvertirFecha(x.Fecha)).Take(Convert.ToInt32(20)).ToList();
+            return MovientosOrdenadosPorFecha;
+        }
+
+
+
+        //Métodos Para Resumen Tarjeta        
+        public async Task<List<ResultadoCuotasDTO>> CuotasDetallesResumen(CombinedData datosMovimientos, DateTime fechaActualCuotas)
+        {
+            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+
+            comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
+                        .GroupBy(m => new { m.Descripcion, m.Fecha })
+                        .Select(g => new MovimientoTarjetaDTO
+                        {
+                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            TipoMovimiento = g.Key.Descripcion,
+                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                        })
+                        .ToList();
+
+            comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+            .Select(g => new MovimientoTarjetaDTO
+            {
+                Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
+                TipoMovimiento = g.Descripcion,
+                Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
+            }).ToList());
+
+            List<ResultadoCuotasDTO> totalDetallesCuota = datosMovimientos.DetallesSolicitud
+              .Where(result => result?.DetallesCuota != null)
+              .SelectMany(result => result.DetallesCuota
+                .Where(detalle => common.ConvertirFecha(detalle.Fecha) <= fechaActualCuotas)
+                .Select(detalle => new ResultadoCuotasDTO
+                {
+                    Descripcion = result.NombreComercio,
+                    Codigo = result.NumeroSolicitud,
+                    Fecha = detalle.Fecha,
+                    NumeroCuota = detalle.NumeroCuota,
+                    Monto = detalle.Monto,
+                    NumeroCuotaTotal = datosMovimientos.DetallesSolicitud.Where(x=>x.NumeroSolicitud==result.NumeroSolicitud).Max(e => Convert.ToInt32(e.DetallesCuota.Max(c => c.NumeroCuota))).ToString()
+                })).OrderBy(e => e.Fecha).OrderBy(d => d.Codigo)
+              .ToList();
+
+            return totalDetallesCuota;
+        }
+        public async Task<List<ResultadoCuotasDTO>> CalcularPunitoriosResumen(List<ResultadoCuotasDTO> cuotas)
+        {
+            var culturaAR = new CultureInfo("es-AR");
+            List<ResultadoCuotasDTO> cuotasConPunitorios = new List<ResultadoCuotasDTO>();
             int anioActual = DateTime.Now.Year; // -> 2025
             int mesActual = DateTime.Now.Month; // -> 8
 
-            const int diaDeCalculo = 26;
-            DateTime fechaDeCalculo = new DateTime(anioActual, mesActual, diaDeCalculo);
+            DateTime fechaCorteMora = ObtenerFechaDeCalculoCorrecta();
 
-            int diasDelAnio = DateTime.IsLeapYear(fechaDeCalculo.Year) ? 366 : 365;
+
+            int diasDelAnio = DateTime.IsLeapYear(fechaCorteMora.Year) ? 366 : 365;
             decimal tasaDiaria = (TNA / diasDelAnio);
-            DateTime fechaCorteMora = fechaDeCalculo.AddMonths(-1);
 
-            List<DetalleCuota> cuotasEnMora = cuotas
-                .SelectMany(result => result.DetallesCuota)
-                .Where(c => common.ConvertirFecha(c.Fecha) <= fechaCorteMora.Date)
-                .ToList();
-
-            if (!cuotasEnMora.Any())
+            foreach (var cuota in cuotas)
             {
-                return 0;
+                ResultadoCuotasDTO resultadoCuotas = new ResultadoCuotasDTO();
+                resultadoCuotas = cuota;
+                if (common.ConvertirFecha(cuota.Fecha) <= fechaCorteMora.Date)
+                {
+                    int diasEnMora = (int)(fechaCorteMora.Date - common.ConvertirFecha(cuota.Fecha)).TotalDays;
+                    decimal monto = Convert.ToDecimal(cuota.Monto.Replace(".", ","));
+                    decimal punitorioCuota = monto * tasaDiaria * diasEnMora; 
+                    decimal montoTotal = monto + punitorioCuota; // Realiza la suma de dos decimales
+                    resultadoCuotas.Monto = montoTotal.ToString();
+                }
+                cuotasConPunitorios.Add(resultadoCuotas);
             }
-
-            decimal totalPunitorios = 0;
-
-            foreach (var cuota in cuotasEnMora)
-            {
-                int diasEnMora = (int)(fechaDeCalculo.Date - common.ConvertirFecha(cuota.Fecha)).TotalDays;
-                decimal monto = Convert.ToDecimal(cuota.Monto.Replace(".", ","));
-                decimal punitorioCuota = monto * tasaDiaria * diasEnMora;
-
-                totalPunitorios += punitorioCuota;
-            }
-            return totalPunitorios;
+            return cuotasConPunitorios;
         }
-         
-        public async Task<TempalteResumenDTO> PrepararDatosDTO(CombinedData datosMovimientos, Periodo periodo, UsuarioParaProcesarDTO usuario)
+        public async Task<TempalteResumenDTO> PrepararDatosResumen(CombinedData datosMovimientos, List<ResultadoCuotasDTO> datos, Periodo periodo, UsuarioParaProcesarDTO usuario)
         {
             TempalteResumenDTO tempalteResumenDTO = new TempalteResumenDTO();
             List<DetallesCuotasResumenDTO>  detallesCuotasResumenDTO = new List<DetallesCuotasResumenDTO>();
             ResumenTarjeta resumenTarjeta = _context.ResumenTarjeta.Where(x=>x.Usuario.Personas.NroDocumento==datosMovimientos.Detalle.Documento).OrderByDescending(r => r.Id).FirstOrDefault();
             tempalteResumenDTO.SaldoAnterior = resumenTarjeta!=null?(resumenTarjeta.Monto+resumenTarjeta.MontoAdeudado):0;
             tempalteResumenDTO.SaldoActual = 0; 
+            tempalteResumenDTO.SaldoPendiente = 0; 
             tempalteResumenDTO.SaldoTotal = 0; 
             tempalteResumenDTO.Pagos = 0; 
             tempalteResumenDTO.Intereses = 0; 
@@ -429,45 +411,21 @@ namespace EstanciasCore.Services
             tempalteResumenDTO.Domicilio =  datosMovimientos.Detalle.Direccion; 
             tempalteResumenDTO.PeriodoDesde = periodo.FechaDesde.ToString("dd/MMM/yyyy"); 
             tempalteResumenDTO.PeriodoHasta = periodo.FechaHasta.ToString("dd/MMM/yyyy");
-            tempalteResumenDTO.Vencimiento = periodo.FechaVencimiento.ToString("dd/MMM/yyyy");
+            tempalteResumenDTO.Vencimiento = periodo.FechaVencimiento.ToString("dd/MMM/yyyy");   
 
+            var consumosAnteriores = datos.Where(result => result?.Fecha != null)
+                .Where(detalle => (common.ConvertirFecha(detalle.Fecha) < periodo.FechaDesde)).ToList();
 
+            var consumosDelMes = datos.Where(result => result?.Fecha != null)
+                .Where(detalle => (common.ConvertirFecha(detalle.Fecha) >= periodo.FechaDesde) && (common.ConvertirFecha(detalle.Fecha) <= periodo.FechaHasta)).ToList();
 
-            var totalDetallesCuota = datosMovimientos.DetallesSolicitud
-                .Where(result => result?.DetallesCuota != null)
-                .SelectMany(result => result.DetallesCuota,
-                    (result, detalle) => new DetallesCuotasResumenDTO
-                    {
-                        NroSolicitud = result.NumeroSolicitud,
-                        Fecha = detalle.Fecha,
-                        Concepto = result.NombreComercio,
-                        NroCuota = detalle.NumeroCuota,
-                        Monto = Convert.ToDecimal(detalle.Monto.Replace(".", ",")),
-                    })
-                .Where(detalle => (common.ConvertirFecha(detalle.Fecha) >= periodo.FechaDesde) && (common.ConvertirFecha(detalle.Fecha) <= periodo.FechaHasta));
+            tempalteResumenDTO.ConsumosAnteriores = consumosAnteriores;
+            tempalteResumenDTO.ConsumosDelMes = consumosDelMes;
 
-            foreach (var item in totalDetallesCuota)
-            {
-                var cuota = datosMovimientos.DetallesSolicitud.Where(x => x.NumeroSolicitud==item.NroSolicitud).Select(e => e.DetallesCuota.Max(c => c.NumeroCuota)).FirstOrDefault();
-                DetallesCuotasResumenDTO detalle = item;
-                detalle.TotalDeCuotas = cuota;
-                detallesCuotasResumenDTO.Add(detalle);
-            }
-            tempalteResumenDTO.DetallesCuotas = detallesCuotasResumenDTO;
+            tempalteResumenDTO.SaldoPendiente = consumosAnteriores.Sum(x=>Convert.ToDecimal(x.Monto));
+            tempalteResumenDTO.SaldoActual = consumosDelMes.Sum(x => Convert.ToDecimal(x.Monto));
+            tempalteResumenDTO.SaldoTotal = tempalteResumenDTO.SaldoPendiente+tempalteResumenDTO.SaldoActual;
 
-            var cuotasVencidas = datosMovimientos.DetallesSolicitud
-                    .Where(result => result?.DetallesCuota != null)
-                    .SelectMany(result => result.DetallesCuota)
-                    .Where(detalle => (common.ConvertirFecha(detalle.Fecha) < periodo.FechaDesde))
-                    .Select(e => new { monto = Convert.ToDecimal(e.Monto.Replace(".", ",")) }).ToList();
-
-            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
-            decimal montoPunitoriosTotal = await CalcularPunitoriosResumen(datosMovimientos.DetallesSolicitud);
-
-            decimal saldo = totalDetallesCuota.Sum(e => e.Monto);
-            tempalteResumenDTO.SaldoAnterior = montoPunitoriosTotal;
-            tempalteResumenDTO.SaldoActual = saldo;
-            tempalteResumenDTO.SaldoTotal = saldo+ montoPunitoriosTotal;
             return tempalteResumenDTO;
         }
 

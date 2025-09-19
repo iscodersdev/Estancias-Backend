@@ -28,41 +28,12 @@ namespace EstanciasCore.Interface
         Task<CombinedData> ConsultarMovimientos(string usuario, string clave, String documento, long numeroTarjeta, long cantidadMovimientos, int tipomovimientotarjeta);
 
         /// <summary>
-        /// Prepara los datos necesarios para el resumen de un periodo específico y un usuario.
-        /// </summary>
-        /// <param name="periodoId"></param>
-        /// <param name="usuarioId"></param>
-        /// <returns></returns>
-        Task<TempalteResumenDTO> PrepararDatosDTO(CombinedData datosMovimientos, Periodo periodo, UsuarioParaProcesarDTO usuario);
-
-        //Task ActualizarMovimientosAsync(Usuario usuario);
-        //Task ActualizarMovimientosAsyncModificado(Usuario usuario);
-        //Task<JsonResult> ActualizarMovimientosAsync();
-        Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model);
-
-        /// <summary>
-        /// Calcula los punitorios de una lista de cuotas a partir de una fecha de cálculo.
-        /// </summary>
-        /// <param name="cuotas"></param>
-        /// <param name="fechaDeCalculo"></param>
-        /// <returns></returns>
-        Task<decimal> CalcularPunitorios(List<SolicitudDetail> cuotas);
-
-        /// <summary>
         /// Calcula el monto de la cuotas a pagar.
         /// </summary>
         /// <param name="datosMovimientos"></param>
         /// <param name="fechaActualCuotas"></param>
         /// <returns></returns>
         Task<decimal> CalcularMontoCuota(CombinedData datosMovimientos, DateTime fechaActualCuotas);
-
-        /// <summary>
-        /// Metodo que calcula el detalle de las cuotas a pagar.
-        /// </summary>
-        /// <param name="datosMovimientos"></param>
-        /// <param name="fechaActualCuotas"></param>
-        /// <returns></returns>
-        Task<List<ResultadoCuotas>> CalcularMontoCuotaDetalles(CombinedData datosMovimientos, DateTime fechaActualCuotas);
 
         /// <summary>
         /// Calcula el monto de la proxima cuotas a pagar.
@@ -73,11 +44,53 @@ namespace EstanciasCore.Interface
         Task<decimal> CalcularMontoProximaCuota(CombinedData datosMovimientos, DateTime fechaActualCuotasProximo);
 
         /// <summary>
+        /// Calcula los punitorios de una lista de cuotas a partir de una fecha de cálculo.
+        /// </summary>
+        /// <param name="cuotas"></param>
+        /// <param name="fechaDeCalculo"></param>
+        /// <returns></returns>
+        Task<decimal> CalcularPunitorios(List<SolicitudDetail> cuotas);
+
+        /// <summary>
         /// Obtiene los ultimos movimientos de la tarjeta.
         /// </summary>
         /// <param name="datosMovimientos"></param>
         /// <param name="fechaActualCuotas"></param>
         /// <returns></returns>
         Task<List<MovimientoTarjetaDTO>> ObtieneUltimosMovimientos(CombinedData datosMovimientos, int top);
+
+        /// <summary>
+        /// Prepara los datos necesarios para el resumen de un periodo específico y un usuario.
+        /// </summary>
+        /// <param name="periodoId"></param>
+        /// <param name="usuarioId"></param>
+        /// <returns></returns>
+        Task<TempalteResumenDTO> PrepararDatosResumen(CombinedData datosMovimientos, List<ResultadoCuotasDTO> datos, Periodo periodo, UsuarioParaProcesarDTO usuario);
+
+        /// <summary>
+        /// Calcula los punitorios de una lista de cuotas a partir de una fecha de cálculo.
+        /// </summary>
+        /// <param name="cuotas"></param>
+        /// <returns></returns>
+        Task<List<ResultadoCuotasDTO>> CalcularPunitoriosResumen(List<ResultadoCuotasDTO> cuotas);
+
+        /// <summary>
+        /// Metodo que calcula el detalle de las cuotas a pagar.
+        /// </summary>
+        /// <param name="datosMovimientos"></param>
+        /// <param name="fechaActualCuotas"></param>
+        /// <returns></returns>
+        Task<List<ResultadoCuotasDTO>> CuotasDetallesResumen(CombinedData datosMovimientos, DateTime fechaActualCuotas);
+
+        /// <summary>
+        /// Prepara los datos necesarios para el resumen de un periodo específico y un usuario.
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <param name="viewName"></param>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model);
+
+
     }
 }

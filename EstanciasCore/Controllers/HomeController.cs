@@ -8,6 +8,11 @@ using System.Linq;
 using System;
 using System.Globalization;
 using EstanciasCore.Interface;
+using DAL.DTOs.Servicios;
+using iText.Html2pdf;
+using System.IO;
+using OfficeOpenXml.FormulaParsing.Utilities;
+using System.Threading.Tasks;
 
 namespace EstanciasCore.Controllers
 {
@@ -27,21 +32,75 @@ namespace EstanciasCore.Controllers
         public IActionResult Index()
         {
             //_resumen.GenerarResumenTarjetas();
-            DateTime fecha = DateTime.Now;
-            var movimientos = _datosTarjeta.ConsultarMovimientos("APPESTANCIAS", "appcpe01", "30463400", 0000010012018003, 100, 1).Result;
-            var datosTarjeta = _datosTarjeta.CalcularMontoCuotaDetalles(movimientos, fecha).Result;
 
             AddPageAlerts(PageAlertType.Success, $"Bienvenido {User.Identity.Name}!");        
             var usuario = _context.Usuarios.FirstOrDefault(x => x.Email == User.Identity.Name);
             ViewBag.title1 = "Socios Con App";
             ViewBag.title4 = "Cantidad Socios Nuevos del Mes";
             
-                @ViewBag.Uno = _context.Clientes.Count().ToString();
-                @ViewBag.Cuatro = _context.Clientes.Where(x => x.FechaIngreso.Date >= DateTime.Today.AddDays(-30).Date).Count();
+            @ViewBag.Uno = _context.Clientes.Count().ToString();
+            @ViewBag.Cuatro = _context.Clientes.Where(x => x.FechaIngreso.Date >= DateTime.Today.AddDays(-30).Date).Count();
            
             return View();
-
         }
+
+        public async Task<IActionResult> DescargarResumen(string dni)
+        {
+            Usuario usuarioLocal = _context.Usuarios.Where(x => x.Personas.NroDocumento == dni).FirstOrDefault();
+            DateTime fecha = DateTime.Now;
+            var movimientos = _datosTarjeta.ConsultarMovimientos("APPESTANCIAS", "appcpe01", dni, Convert.ToInt32(usuarioLocal.Personas.NroTarjeta), 100, 1).Result;
+            var datosResumen = _datosTarjeta.CuotasDetallesResumen(movimientos, fecha).Result;
+            Periodo periodo = _context.Periodo.Where(x => x.FechaDesde <= fecha && x.FechaHasta >= fecha).FirstOrDefault();
+
+            UsuarioParaProcesarDTO usuarioDTO = new UsuarioParaProcesarDTO()
+            {
+                NroDocumento = usuarioLocal.Personas.NroDocumento,
+                NombreCompleto = usuarioLocal.Personas.GetNombreCompleto(),
+                Id = usuarioLocal.Id,
+                UserName = User.Identity.Name,
+                NroTarjeta = usuarioLocal.Personas.NroTarjeta
+            };
+
+            var datosParaResumenDTO = _datosTarjeta.PrepararDatosResumen(movimientos, datosResumen, periodo, usuarioDTO).Result;
+
+            var html = await _datosTarjeta.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
+
+            byte[] pdfBytesPDF;
+            using (var memoryStream = new MemoryStream())
+            {
+                HtmlConverter.ConvertToPdf(html, memoryStream);
+                pdfBytesPDF = memoryStream.ToArray();
+            }
+
+            return File(pdfBytesPDF, "application/pdf", "ResumenBancario.pdf");
+        }
+
+        public async Task<IActionResult> DescargarResumenHtml(string dni)
+        {
+            Usuario usuarioLocal = _context.Usuarios.Where(x => x.Personas.NroDocumento == dni).FirstOrDefault();
+            DateTime fecha = DateTime.Now;
+            var movimientos = _datosTarjeta.ConsultarMovimientos("APPESTANCIAS", "appcpe01", dni, Convert.ToInt64(usuarioLocal.Personas.NroTarjeta), 100, 1).Result;
+            var datosResumen = _datosTarjeta.CuotasDetallesResumen(movimientos, fecha).Result;
+            var datosResumenConPunitorios = _datosTarjeta.CalcularPunitoriosResumen(datosResumen).Result;
+
+            Periodo periodo = _context.Periodo.Where(x => x.FechaDesde <= fecha && x.FechaHasta >= fecha).FirstOrDefault();
+
+            UsuarioParaProcesarDTO usuarioDTO = new UsuarioParaProcesarDTO()
+            {
+                NroDocumento = usuarioLocal.Personas.NroDocumento,
+                NombreCompleto = usuarioLocal.Personas.GetNombreCompleto(),
+                Id = usuarioLocal.Id,
+                UserName = User.Identity.Name,
+                NroTarjeta = usuarioLocal.Personas.NroTarjeta
+            };
+
+            var datosParaResumenDTO = _datosTarjeta.PrepararDatosResumen(movimientos, datosResumenConPunitorios, periodo, usuarioDTO).Result;
+
+            var html = await _datosTarjeta.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
+
+            return View("ResumenBancarioTemplate", datosParaResumenDTO);
+        }
+
         public IActionResult MailRegistro()
         {
             return View("MailRegistro");

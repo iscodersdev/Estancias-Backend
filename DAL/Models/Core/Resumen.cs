@@ -36,6 +36,7 @@ namespace DAL.Models
         public decimal Monto { get; set; }
         public decimal MontoAdeudado { get; set; }
         public DateTime Fecha { get; set; }
+        public DateTime FechaVencimiento { get; set; }
         public int PeriodoId { get; set; }
         [ForeignKey("PeriodoId")]
         public virtual Periodo Periodo { get; set; }
@@ -44,5 +45,23 @@ namespace DAL.Models
         [ForeignKey("UsuarioId")]
         public virtual Usuario Usuario { get; set; }
         public byte[] Adjunto { get; set; }
+    }
+
+    public class DistribucionResumen
+    {
+        public int Id { get; set; }
+        public virtual Usuario Usuario { get; set; }
+        public virtual Periodo Periodo { get; set; }
+        public virtual ResumenTarjeta ResumenTarjeta { get; set; }
+        public virtual CanalesDistribucion CanalesDistribucion { get; set; }
+        public string Estado { get; set; }
+        public DateTime Fecha { get; set; }
+    }
+
+    public class CanalesDistribucion
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public decimal Activo { get; set; }
     }
 }
