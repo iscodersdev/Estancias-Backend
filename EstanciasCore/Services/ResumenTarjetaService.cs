@@ -1,6 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
+using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
 using EstanciasCore.API.Controllers.Billetera;
@@ -205,8 +206,18 @@ public class ResumenTarjetaService : IResumenTarjetaService
             // 1. CREAMOS UN SCOPE NUEVO Y AISLADO PARA ESTA TAREA
             using (var scope = _scopeFactory.CreateScope())
             {
+                decimal MontoCuota = 0;
+                decimal MontoProximaCuota = 0;
+                decimal MontoPunitorios = 0;
+                decimal DeudaTotal = 0;
+                decimal TotalRedondeo = 0;
+                decimal MontoDisponible = 0;
+                List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
                 //DateTime fechaActual = new DateTime(2025, 7, 25); //Cambiar para modo Prueba
                 DateTime fechaActual = DateTime.Now;
+                int diasEnMes = DateTime.DaysInMonth(fechaActual.Year, fechaActual.Month);
+                DateTime fechaActualCuotas = new DateTime(fechaActual.Year, fechaActual.Month, diasEnMes);
+                DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
 
                 // 2. OBTENEMOS LOS SERVICIOS Y EL DBCONTEXT DE ESTE SCOPE
                 var scopedDatosServices = scope.ServiceProvider.GetRequiredService<IDatosTarjetaService>();
@@ -228,6 +239,25 @@ public class ResumenTarjetaService : IResumenTarjetaService
 
                 if (datosMovimientos.Detalle.Resultado == "EXITO")
                 {
+                    CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+
+                    //Monto Disponible
+                    MontoDisponible = Math.Round(Convert.ToDecimal(datosMovimientos.Detalle.MontoDisponible.Replace(".", ",")), 2);
+
+                    //Calcula Cuota del Mes
+                    var MontoCuotaDetalles = await scopedDatosServices.CalcularMontoCuotaDetalles(datosMovimientos, fechaActual);
+
+                    //Calcula Cuota del Proximo Mes
+                    //MontoProximaCuota = await scopedDatosServices.CalcularMontoProximaCuota(datosMovimientos, fechaActualCuotasProximo);
+
+                    //Calculo de Punitorios
+                    //MontoPunitorios = await scopedDatosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
+
+                    //Movimientos Tarjeta
+                    //comprasAgrupadas = await scopedDatosServices.ObtieneUltimosMovimientos(datosMovimientos, 20);
+
+
+
                     var datosParaResumenDTO = (TempalteResumenDTO)await scopedDatosServices.PrepararDatosDTO(datosMovimientos, periodo, usuario);
                     if (datosParaResumenDTO == null) return;
 

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using static EstanciasCore.Services.DatosTarjetaService;
 
 namespace EstanciasCore.Interface
 {
@@ -54,6 +55,14 @@ namespace EstanciasCore.Interface
         /// <param name="fechaActualCuotas"></param>
         /// <returns></returns>
         Task<decimal> CalcularMontoCuota(CombinedData datosMovimientos, DateTime fechaActualCuotas);
+
+        /// <summary>
+        /// Metodo que calcula el detalle de las cuotas a pagar.
+        /// </summary>
+        /// <param name="datosMovimientos"></param>
+        /// <param name="fechaActualCuotas"></param>
+        /// <returns></returns>
+        Task<List<ResultadoCuotas>> CalcularMontoCuotaDetalles(CombinedData datosMovimientos, DateTime fechaActualCuotas);
 
         /// <summary>
         /// Calcula el monto de la proxima cuotas a pagar.

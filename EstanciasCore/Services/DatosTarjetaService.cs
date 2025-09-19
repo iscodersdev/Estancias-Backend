@@ -233,6 +233,63 @@ namespace EstanciasCore.Services
             return totalMontoCuota;
         }
 
+        public async Task<List<ResultadoCuotas>> CalcularMontoCuotaDetalles(CombinedData datosMovimientos, DateTime fechaActualCuotas)
+        {
+            List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+            CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+
+            comprasAgrupadas = datosMovimientos.Movimientos.Where(x => x.Descripcion=="PAGOS DE CUOTA REGULAR")
+                        .GroupBy(m => new { m.Descripcion, m.Fecha })
+                        .Select(g => new MovimientoTarjetaDTO
+                        {
+                            Monto =  (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ","))==null ? g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", "."))).ToString().Replace(".", ",") : (g.Sum(m => Convert.ToDecimal(m.Monto.Replace(",", ".")) + Convert.ToDecimal(m.Recargo.Replace(",", "."))).ToString().Replace(".", ",")),
+                            TipoMovimiento = g.Key.Descripcion,
+                            Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy")
+                        })
+                        .ToList();
+
+            comprasAgrupadas.AddRange(datosMovimientos.Movimientos.Where(x => x.Descripcion!="PAGOS DE CUOTA REGULAR")
+            .Select(g => new MovimientoTarjetaDTO
+            {
+                Monto = g.Monto.Replace(",", ".").ToString().Replace(".", ","),
+                TipoMovimiento = g.Descripcion,
+                Fecha = g.Fecha.Date.ToString("dd/MM/yyyy")
+            }).ToList());
+
+            //Montos a Pagar con Deuda pero sin Punitorios
+            //var totalDetallesCuota = datosMovimientos.DetallesSolicitud
+            //.Where(result => result?.DetallesCuota != null)
+            //.SelectMany(result => result.DetallesCuota)
+            //.Where(detalle => (common.ConvertirFecha(detalle.Fecha) <= fechaActualCuotas))
+            //.ToList();
+
+            List<ResultadoCuotas> totalDetallesCuota = datosMovimientos.DetallesSolicitud
+              .Where(result => result?.DetallesCuota != null)
+              .SelectMany(result => result.DetallesCuota
+                .Where(detalle => common.ConvertirFecha(detalle.Fecha) <= fechaActualCuotas)
+                .Select(detalle => new ResultadoCuotas
+                {
+                    Descripcion = result.NombreComercio,
+                    Codigo = result.NumeroSolicitud,
+                    Fecha = detalle.Fecha,
+                    NumeroCuota = detalle.NumeroCuota,
+                    Monto = detalle.Monto
+                })).OrderBy(e=>e.Fecha).OrderBy(d=>d.Codigo)
+              .ToList();
+
+            return totalDetallesCuota;
+        }
+
+        public class ResultadoCuotas
+        {
+            // Esta clase representa el objeto plano que necesitas
+            public string Codigo { get; set; }
+            public string Descripcion { get; set; }
+            public string Fecha { get; set; }
+            public string NumeroCuota { get; set; }
+            public string Monto { get; set; }
+        }
+
         public async Task<decimal> CalcularMontoProximaCuota(CombinedData datosMovimientos, DateTime fechaActualCuotasProximo)
         {
             DateTime fechaInicio = new DateTime(fechaActualCuotasProximo.Year, fechaActualCuotasProximo.Month, 1);

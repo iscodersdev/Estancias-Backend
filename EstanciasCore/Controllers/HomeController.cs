@@ -7,6 +7,7 @@ using DAL.Models;
 using System.Linq;
 using System;
 using System.Globalization;
+using EstanciasCore.Interface;
 
 namespace EstanciasCore.Controllers
 {
@@ -14,13 +15,22 @@ namespace EstanciasCore.Controllers
     {
         private readonly SignInManager<Usuario> _signInManager;
         private readonly UserService<Usuario> _userManager;
-        public HomeController(EstanciasContext context, UserService<Usuario> userManager, SignInManager<Usuario> signInManager) : base(context)
+        private readonly IResumenTarjetaService _resumen;
+        private readonly IDatosTarjetaService _datosTarjeta;
+        public HomeController(EstanciasContext context, UserService<Usuario> userManager, SignInManager<Usuario> signInManager, IResumenTarjetaService resumen, IDatosTarjetaService datosTarjeta) : base(context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _resumen = resumen;
+            _datosTarjeta=datosTarjeta;
         }
         public IActionResult Index()
         {
+            //_resumen.GenerarResumenTarjetas();
+            DateTime fecha = DateTime.Now;
+            var movimientos = _datosTarjeta.ConsultarMovimientos("APPESTANCIAS", "appcpe01", "30463400", 0000010012018003, 100, 1).Result;
+            var datosTarjeta = _datosTarjeta.CalcularMontoCuotaDetalles(movimientos, fecha).Result;
+
             AddPageAlerts(PageAlertType.Success, $"Bienvenido {User.Identity.Name}!");        
             var usuario = _context.Usuarios.FirstOrDefault(x => x.Email == User.Identity.Name);
             ViewBag.title1 = "Socios Con App";
