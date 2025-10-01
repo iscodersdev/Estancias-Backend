@@ -11,7 +11,14 @@ using EstanciasCore.Interface;
 using EstanciasCore.Services;
 using iText.Html2pdf;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +33,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static EstanciasCore.Services.common;
 using static EstanciasCore.Services.MercadoPagoServices;
 using PagoTarjetaDTO = DAL.Mobile.PagoTarjetaDTO;
 
@@ -42,8 +50,10 @@ namespace EstanciasCore.API.Controllers.Billetera
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<MTarjetasController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly ICompositeViewEngine _viewEngine;
+        private readonly IServiceProvider _serviceProvider;
 
-        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory scopeFactory, ILogger<MTarjetasController> logger, IConfiguration configuration) : base(context)
+        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory scopeFactory, ILogger<MTarjetasController> logger, IConfiguration configuration, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider) : base(context)
         {
             _datosServices = datosServices;
             _mp = mp;
@@ -51,6 +61,8 @@ namespace EstanciasCore.API.Controllers.Billetera
             _scopeFactory = scopeFactory;
             _logger = logger;
             _configuration = configuration;
+            _viewEngine=viewEngine;
+            _serviceProvider=serviceProvider;
         }
 
         [HttpPost("Alta")]
@@ -220,6 +232,58 @@ namespace EstanciasCore.API.Controllers.Billetera
                 string nombreArchivo = $"Resumen_{usuario.Personas.NroDocumento}_{fechaString}";
 
                 return File(resumenTarjeta.Adjunto, "application/pdf", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
+            }
+        }
+
+        [HttpPost("EnvioDeResumen")]
+        public async Task<IActionResult> EnvioDeResumen(EnvioDeResumen body)
+        {
+            try
+            {
+                var usuario = TraeUsuarioUAT(body.UAT);
+                if (usuario == null)
+                {
+                    return BadRequest(new { Mensaje = "UAT de Usuario no válida o inexistente." });
+                }
+                Periodo periodo = _context.Periodo.OrderByDescending(x => x.Id).FirstOrDefault();
+                if (periodo==null)
+                {
+                    return UnprocessableEntity(new { Mensaje = "El Período con el ID proporcionado no existe." });
+                }
+                var resumen = _context.ResumenTarjeta.Where(x => x.Usuario.Personas.NroDocumento== body.NroDocumento && x.Periodo.Id==periodo.Id).FirstOrDefault();
+                if (resumen == null)
+                {
+                    return BadRequest(new { Mensaje = "No Existe ningún resumen." });
+                }
+
+                byte[] pdfBytes = resumen.Adjunto;
+                DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
+                var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
+                {
+                    Fecha = fechaVencimiento.ToString("dd/MM/yyyy"),
+                    Monto = resumen.Monto+resumen.MontoAdeudado,
+                };
+
+                string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
+                string asunto = $"Tu resumen del mes de {mesNombre} ya está disponible";
+                string fechaString = DateTime.Now.ToString("ddMMyyyy");
+                string nombreArchivo = $"Resumen_{resumen.Usuario.Personas.NroDocumento}_{fechaString}";
+
+                var viewHtml = await RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
+                if (body.email!=null)
+                {
+                    await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = body.email, Titulo = asunto, Html = viewHtml }, pdfBytes);
+                }
+                else
+                {
+                    await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resumen.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+                }
+                    
+                return Ok(new { Mensaje = "Resumen enviado correctamente.", NombreArchivo = nombreArchivo });
             }
             catch (Exception ex)
             {
@@ -914,5 +978,52 @@ namespace EstanciasCore.API.Controllers.Billetera
 
             return fechaReversa;
         }
+
+        private string ConvertirNumeroAMes(int numeroMes)
+        {
+            CultureInfo culturaAR = new CultureInfo("es-AR");
+            return culturaAR.DateTimeFormat.GetMonthName(numeroMes);
+        }
+
+        private async Task<string> RenderViewToString(ICompositeViewEngine viewEngine, IServiceProvider serviceProvider, string viewName, DetallesCuotasResumenDTO model, string mesNombre)
+        {
+            var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
+            var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
+
+            using (var sw = new StringWriter())
+            {
+                var viewResult = viewEngine.FindView(actionContext, viewName, false);
+
+                if (viewResult.View == null)
+                {
+                    throw new ArgumentNullException($"No se pudo encontrar la vista '{viewName}'");
+                }
+
+                var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
+                {
+                    Model = model
+                };
+
+                var viewContext = new ViewContext(
+                    actionContext,
+                    viewResult.View,
+                    viewDictionary,
+                    new TempDataDictionary(actionContext.HttpContext, serviceProvider.GetRequiredService<ITempDataProvider>()),
+                    sw,
+                    new HtmlHelperOptions()
+                );
+
+                await viewResult.View.RenderAsync(viewContext);
+                string html = sw.ToString();
+                var culturaAR = new CultureInfo("es-AR");
+
+                string textoModificado = html.Replace("TextoFechaReemplazar", model.Fecha);
+                textoModificado = textoModificado.Replace("TextoMontoReemplazar", model.Monto.ToString("N2", culturaAR));
+                textoModificado = textoModificado.Replace("TextoMesEscritoReemplazar", mesNombre);
+
+                return textoModificado;
+            }
+        }
+ 
     }
 }

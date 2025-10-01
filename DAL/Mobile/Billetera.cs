@@ -266,4 +266,12 @@ namespace DAL.Mobile
         public int CantMovimientos { get; set; }
     }
 
+    public class EnvioDeResumen
+    {
+        public string UAT { get; set; }
+        public string NroDocumento { get; set; }
+        public string email { get; set; } = null;
+        public int PeriodoId { get; set; }
+    }
+
 }

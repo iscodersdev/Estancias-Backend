@@ -31,6 +31,7 @@ namespace EstanciasCore.Controllers
         }
         public IActionResult Index()
         {
+            //_resumen.GenerarResumenTarjetas();
             AddPageAlerts(PageAlertType.Success, $"Bienvenido {User.Identity.Name}!");        
             var usuario = _context.Usuarios.FirstOrDefault(x => x.Email == User.Identity.Name);
             ViewBag.title1 = "Socios Con App";

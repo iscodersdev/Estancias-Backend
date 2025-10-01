@@ -6,7 +6,16 @@
 <div class="box box-info">
     <div class="box-header with-border filtro-grilla">
         <span class="txt-titulo-box">Listado de Comprobantes</span>
-        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+        <div class="pull-right">
+            <a class="btn bg-green btn-sm" id="exportar-excel-btn">
+                <i class="fa fa-file-excel-o"></i> Exportar en Excel
+            </a>
+            <a class="btn bg-blue btn-sm" id="aprobacion-masiva-btn">
+                <i class="fa fa-check"></i> Aprobación masiva
+            </a>
+            <a class="btn bg-red btn-sm" id="rechazo-masivo-btn">
+                <i class="fa fa-remove"></i> Rechazo masivo
+            </a>
         </div>
     </div>
 
@@ -130,7 +139,23 @@
                 var allSelected = $('.row-checkbox').length === $('.row-checkbox:checked').length && $('.row-checkbox').length > 0;
                 $('#selectAll').prop('checked', allSelected);
             }
-        });        
+        });   
+        
+            // Evento para el checkbox "Seleccionar todos"
+        $('#listadoPagos thead').on('change', '#selectAll', function () {
+            var isChecked = this.checked;
+            $('.row-checkbox').prop('checked', isChecked);
+        });
+
+        // Evento para desmarcar "Seleccionar todos" si un checkbox individual es desmarcado
+        $('#listadoPagos tbody').on('change', '.row-checkbox', function () {
+            if (!this.checked) {
+                $('#selectAll').prop('checked', false);
+            } else {
+                var allChecked = $('.row-checkbox').length === $('.row-checkbox:checked').length;
+                $('#selectAll').prop('checked', allChecked);
+            }
+        });
     });
 
 
@@ -259,8 +284,8 @@
             }
             $('#listadoPagos').DataTable().columns().search('').draw();
             $('#listadoPagos').DataTable()
-                .column(9).search(estado) // Asumiendo que 'estado' es la columna 0
-                .column(5).search(fecha) // Asumiendo que 'fecha' es la columna 1
+                .column(10).search(estado) // Asumiendo que 'estado' es la columna 0
+                .column(6).search(fecha) // Asumiendo que 'fecha' es la columna 1
                 .draw(); 
         });        
         

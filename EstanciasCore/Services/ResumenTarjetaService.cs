@@ -46,6 +46,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
 
     public async Task<bool> GenerarResumenTarjetas()
     {
+        DatosEstructura datosEstructura = null;
         var stopwatch = Stopwatch.StartNew();
         try
         {
@@ -63,8 +64,9 @@ public class ResumenTarjetaService : IResumenTarjetaService
             {
                 var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
 
+                datosEstructura = await context.DatosEstructura.FirstOrDefaultAsync();
                 // Buscamos si ya existe un período para la fecha actual.
-                periodo = await context.Periodo.FirstOrDefaultAsync(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta);
+                periodo = await context.Periodo.FirstOrDefaultAsync(p => fechaActual.Date >= p.FechaDesde.Date && fechaActual.Date <= p.FechaHasta.Date);
 
                 if (periodo == null)
                 {
@@ -135,7 +137,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
                     }
 
                     // Creamos una tarea por cada usuario del lote
-                    var tasks = usuariosDelLote.Select(usuario => ProcessarUsuarioAsync(usuario, semaphore, resumenesGenerados, usuariosFallidos));
+                    var tasks = usuariosDelLote.Select(usuario => ProcessarUsuarioAsync(usuario, semaphore, resumenesGenerados, usuariosFallidos, datosEstructura, periodo));
                     await Task.WhenAll(tasks);
                 }
             }
@@ -187,7 +189,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
         }
     }
 
-    private async Task ProcessarUsuarioAsync(UsuarioParaProcesarDTO usuario, SemaphoreSlim semaphore, ConcurrentBag<ResumenTarjeta> resumenes, ConcurrentBag<(string, string)> fallidos)
+    private async Task ProcessarUsuarioAsync(UsuarioParaProcesarDTO usuario, SemaphoreSlim semaphore, ConcurrentBag<ResumenTarjeta> resumenes, ConcurrentBag<(string, string)> fallidos, DatosEstructura datosEstructura, Periodo periodo)
     {
         await semaphore.WaitAsync();
         try
@@ -224,9 +226,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
                 var scopedContext = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
 
                 // 3. OBTENEMOS LOS DATOS DE CONFIGURACIÓN DENTRO DEL MISMO SCOPE
-                //    Esto es más seguro que pasarlos desde fuera.
-                DatosEstructura datosEstructura = await scopedContext.DatosEstructura.FirstOrDefaultAsync();                
-                Periodo periodo = await scopedContext.Periodo.FirstOrDefaultAsync(p => fechaActual >= p.FechaDesde && fechaActual <= p.FechaHasta);
+                //    Esto es más seguro que pasarlos desde fuera.              
 
                 if (datosEstructura == null || periodo == null)
                 {
@@ -252,7 +252,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
 
 
 
-                    var datosParaResumenDTO = (TempalteResumenDTO)await scopedDatosServices.PrepararDatosResumen(datosMovimientos, datosResumen, periodo, usuario);
+                    var datosParaResumenDTO = (TempalteResumenDTO)await scopedDatosServices.PrepararDatosResumen(datosMovimientos, datosResumenConPunitorios, periodo, usuario);
                     if (datosParaResumenDTO == null) return;
 
                     var html = await scopedDatosServices.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
@@ -272,7 +272,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
                         Fecha = fechaActual,
                         FechaVencimiento = periodo.FechaVencimiento,
                         Monto = datosParaResumenDTO.SaldoActual,
-                        MontoAdeudado = datosParaResumenDTO.SaldoAnterior,
+                        MontoAdeudado = datosParaResumenDTO.SaldoPendiente,
                         NroComprobante = codigo,
                         Adjunto = pdfBytesPDF,
                         PeriodoId = periodo.Id,

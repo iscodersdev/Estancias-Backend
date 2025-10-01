@@ -48,7 +48,7 @@ public class ResumenMensualWorker : BackgroundService
                     // Consulta corregida para ser más directa
                     var procedimiento = await context.Procedimientos
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(p => p.Codigo == "GenerarResumen", stoppingToken);
+                        .FirstOrDefaultAsync(p => p.Codigo == "GenerarResumen" && p.Activo == true, stoppingToken);
 
                     if (procedimiento != null && procedimiento.Activo && DebeEjecutarHoy(procedimiento.DiaEjecucion))
                     {

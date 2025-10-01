@@ -51,7 +51,7 @@ public class EnvioDeResumenWorker : BackgroundService
                     //DateTime fecha = new DateTime(2025, 10, 01);
                     DateTime fechaActual = new DateTime(fecha.Year, fecha.Month, 15);
                     var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
-                    var procedimiento = await context.Procedimientos.AsNoTracking().FirstOrDefaultAsync(p => p.Codigo == "EnvioResumen", stoppingToken);
+                    var procedimiento = await context.Procedimientos.AsNoTracking().FirstOrDefaultAsync(p => p.Codigo == "EnvioResumen" && p.Activo == true, stoppingToken);
 
                     if (procedimiento != null && fecha.Day == procedimiento.DiaEjecucion && (_ultimaEjecucionExitosa == null || _ultimaEjecucionExitosa.Value.Date != DateTime.Today))
                     {
@@ -81,7 +81,7 @@ public class EnvioDeResumenWorker : BackgroundService
             var viewEngine = scope.ServiceProvider.GetRequiredService<ICompositeViewEngine>();
             var serviceProvider = scope.ServiceProvider;
 
-            var resumenes = await context.ResumenTarjeta.Include(x => x.Periodo).Include(x=>x.Usuario).ThenInclude(x => x.Personas).Where(x=> x.PeriodoId==periodo.Id && x.Usuario.Personas.NroDocumento=="18548722")
+            var resumenes = await context.ResumenTarjeta.Include(x => x.Periodo).Include(x=>x.Usuario).ThenInclude(x => x.Personas).Where(x=> x.PeriodoId==periodo.Id)
                              .ToListAsync(stoppingToken);
 
             _logger.LogInformation($"Se encontraron {resumenes.Count} usuarios para enviar resúmenes.");
@@ -102,14 +102,14 @@ public class EnvioDeResumenWorker : BackgroundService
                     var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
                     {
                         Fecha = fechaVencimiento.ToString("dd/MM/yyyy"),
-                        Monto = resu.Monto,
+                        Monto = resu.Monto+resu.MontoAdeudado,
                     };
 
                     var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
 
                     // **Llama al método de envío con el PDF adjunto**
-                    //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
-                    await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+                    await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+                    //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
 
                     await GuardarRegistroCorreo(context, resu);
                     _logger.LogInformation($"Resumen enviado exitosamente a: {resu.Usuario.UserName}");
