@@ -2,6 +2,7 @@
 using Commons.Identity.Services;
 using DAL.Data;
 using DAL.DTOs;
+using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
 using DAL.DTOs.Servicios.DatosTarjeta;
 using DAL.Mobile;
@@ -318,7 +319,7 @@ namespace EstanciasCore.Controllers
                 Celular = (Registro.Celular != null) ? Registro.Celular : "",
                 Localidad = localidad,
                 Provincia = provincia,
-                Persona = new Persona()
+                Persona = new DAL.Models.Persona()
                 {
                     NroDocumento = Registro.NumeroDocumento.ToString(),
                     Apellido = Registro.Apellido,
@@ -515,7 +516,7 @@ namespace EstanciasCore.Controllers
             try
             {
                 int token = common.NiumeroRandom(100000, 999999);
-                Persona persona = new Persona();
+                DAL.Models.Persona persona = new DAL.Models.Persona();
                 //try
                 //{
                 //    persona = _context.Personas.FirstOrDefault(x => x.NroDocumento == uat.NumeroDocumento.ToString());
@@ -1049,11 +1050,21 @@ namespace EstanciasCore.Controllers
                 int token = common.NiumeroRandom(100000, 999999);
                 string html = "";
                 string email = "";
-                Usuario usuario = _context.Usuarios.Where(x => x.UserName == Registro.eMail).FirstOrDefault();
-                var clienteLocal = _context.Clientes.Where(x => x.Usuario.Email == Registro.eMail).FirstOrDefault();
+                Usuario usuario = _context.Usuarios.Where(x => x.Personas.NroTarjeta == Registro.NroTarjeta).FirstOrDefault();
+                var clienteLocal = _context.Clientes.Where(x => x.Usuario.Personas.NroTarjeta == Registro.NroTarjeta).FirstOrDefault();
+
+                
 
                 if (usuario!=null)
                 {
+                    if (usuario.activo == false)
+                    {
+                        _context.Clientes.Remove(usuario.Clientes);
+                        _context.Usuarios.Remove(usuario);
+                        _context.Personas.Remove(usuario.Personas);
+                        _context.SaveChanges();
+                    }
+
                     if (Registro.FormularioRegistro == 4) // Valida el token
                     {
                         //var persona = getPersonaloanByNroTarjeta(Registro.NroTarjeta.ToString());
@@ -1082,16 +1093,47 @@ namespace EstanciasCore.Controllers
                         return preregistro;
                     }
 
-                    //var tarjeta = NroTarjetaByNroTarjeta(Registro.NroTarjeta.ToString());
+                    if (Registro.FormularioRegistro == 5) // Valida con la tarjeta
+                    {
+                        var tarjeta = NroTarjetaByNroTarjeta(Registro.NroTarjeta.ToString());
+                        string result = tarjeta.NroTarjeta.TrimStart('0');
+                        var cliente = _context.Personas.Where(x => x.NroTarjeta != null).Where(x => x.NroTarjeta.TrimStart('0') == result).FirstOrDefault();
+                        if (cliente != null)
+                        {
+                            preregistro.Status = 500;
+                            preregistro.Mensaje = "El Nro de Tarjeta le Pertenece a un Socio ya registrado con el mail: " + cliente.Email;
+                            return preregistro;
+                        }
 
-                    //var persona = _context.Personas.Where(x => x.NroTarjeta == Registro.NroTarjeta.ToString()).FirstOrDefault();
-                    //if (persona!=null)
-                    //{
-                    //    preregistro.Status = 500;
-                    //    preregistro.Mensaje = "El Nro de Tarjeta le Pertenece a un Socio ya registrado!!";
-                    //    return preregistro;
-                    //}
+                        if (tarjeta != null)
+                        {
+                            if (Registro.NroTarjeta.TrimStart('0') == tarjeta.NroTarjeta.TrimStart('0'))
+                            {
+                                preregistro.Status = 200;
+                                preregistro.Mensaje = "Nro de tarjeta valida!!";
+                                var apellido = tarjeta.Nombres.Split(',');
+                                preregistro.Nombres = apellido[1];
+                                preregistro.Apellido = apellido[0];
+                                preregistro.eMail = tarjeta.Email;
+                                preregistro.NumeroDocumento = Convert.ToInt32(tarjeta.NroDocumento);
+                                preregistro.FormularioRegistro = 6;
+                                return preregistro;
 
+                            }
+                            else
+                            {
+                                preregistro.Status = 500;
+                                preregistro.Mensaje = "Nro de tarjeta Invalida!!";
+                                return preregistro;
+                            }
+                        }
+                        else
+                        {
+                            preregistro.Status = 500;
+                            preregistro.Mensaje = "No tiene tarjeta Estancias!!";
+                            return preregistro;
+                        }
+                    }
 
                     preregistro.Status = 200;
                     preregistro.Mensaje = "Socio Ya Ingresado, debera recuperar contraseña";
@@ -1255,6 +1297,36 @@ namespace EstanciasCore.Controllers
             }
         }
 
+        [HttpPost]
+        [Route("ValidarToken")]
+        [EnableCors("CorsPolicy")]
+        [AllowAnonymous]
+
+        public  MRegistraPersonaDTO ValidarToken([FromBody] MRegistraPersonaDTO Registro) //Utilizado por la App Mobile
+        {
+            var token = 0;
+            string html = "";
+            string email = "";
+            Usuario usuario = _context.Usuarios.Where(x => x.Personas.NroTarjeta == Registro.NroTarjeta).FirstOrDefault();
+            try {
+                if (usuario.Token == Registro.Token)
+                {
+                    usuario.activo = true;
+                    _context.Usuarios.Update(usuario);
+                    _context.SaveChanges();
+                }
+                Registro.Status = 200;
+                Registro.Mensaje = "Usuario validado!";
+                return Registro;
+            }
+            catch (Exception e) 
+            {
+                Registro.Status = 400;
+                Registro.Mensaje = "Error de validación de token!";
+                return Registro;
+            }
+            
+        }
 
         [HttpPost]
         [Route("RegistraPersona21")]
@@ -1279,7 +1351,7 @@ namespace EstanciasCore.Controllers
                 cliente.Localidad = _context.Localidad.Find(24860);
                 cliente.Provincia = _context.Provincia.Find(6);
 
-                cliente.Persona = new Persona()
+                cliente.Persona = new DAL.Models.Persona()
                 {
                     NroDocumento = personaLoan.NroDocumento.ToString(),
                     Apellido = Registro.Apellido,
@@ -1383,7 +1455,7 @@ namespace EstanciasCore.Controllers
                     }
                     else
                     {
-                        clienteLocal.Persona = new Persona()
+                        clienteLocal.Persona = new DAL.Models.Persona()
                         {
                             NroDocumento = Registro.NumeroDocumento.ToString(),
                             Apellido = Registro.Apellido,
@@ -1418,7 +1490,7 @@ namespace EstanciasCore.Controllers
                     cliente.Localidad = _context.Localidad.Find(24860);
                     cliente.Provincia = _context.Provincia.Find(6);
 
-                    Persona personaLocal = _context.Personas.Where(x => x.Email==Registro.Mail.Trim()).FirstOrDefault();
+                    DAL.Models.Persona personaLocal = _context.Personas.Where(x => x.Email==Registro.Mail.Trim()).FirstOrDefault();
 
                     if (personaLocal!=null)
                     {
@@ -1429,7 +1501,7 @@ namespace EstanciasCore.Controllers
                     }
                     else
                     {
-                        cliente.Persona = new Persona()
+                        cliente.Persona = new DAL.Models.Persona()
                         {
                             NroDocumento = Registro.NumeroDocumento.ToString(),
                             Apellido = Registro.Apellido,
@@ -1461,10 +1533,19 @@ namespace EstanciasCore.Controllers
                     // Generar un token de reseteo de contraseña
                     var tokenReset = await _userService.GeneratePasswordResetTokenAsync(user);
                     var result = await _userService.ResetPasswordAsync(user, tokenReset, Registro.Password1);
+                    // 6/10
+                    user.Token = token;
+                    user.activo = false;
                     _context.Usuarios.Update(user);
                     _context.SaveChanges();
                     Registro.Status = 200;
-                    Registro.Mensaje = "Registro con Éxito.";
+                    Registro.Mensaje = "Registro con Éxito, recibiras un correo para validar la cuenta!";
+
+                    //Envio de Token al Mail.
+                    var viewHtml = RenderViewToString("Home/MailValidaToken", token.ToString());
+                    EnvioDeMail(user.UserName, "Validar Email", viewHtml.Result);
+
+
                     return Registro;
                 }
                 else
