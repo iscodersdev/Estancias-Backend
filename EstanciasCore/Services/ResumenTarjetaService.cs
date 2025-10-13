@@ -218,8 +218,8 @@ public class ResumenTarjetaService : IResumenTarjetaService
                 //DateTime fechaActual = new DateTime(2025, 7, 25); //Cambiar para modo Prueba
                 DateTime fechaActual = DateTime.Now;
                 int diasEnMes = DateTime.DaysInMonth(fechaActual.Year, fechaActual.Month);
-                DateTime fechaActualCuotas = new DateTime(fechaActual.Year, fechaActual.Month, diasEnMes);
-                DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
+                DateTime fechaActualCuotas = new DateTime(fechaActual.Year, fechaActual.AddMonths(1).Month, 15);
+                //DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
 
                 // 2. OBTENEMOS LOS SERVICIOS Y EL DBCONTEXT DE ESTE SCOPE
                 var scopedDatosServices = scope.ServiceProvider.GetRequiredService<IDatosTarjetaService>();
@@ -245,7 +245,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
                     MontoDisponible = Math.Round(Convert.ToDecimal(datosMovimientos.Detalle.MontoDisponible.Replace(".", ",")), 2);
 
                     //Calcula Cuota del Mes
-                    var datosResumen = await scopedDatosServices.CuotasDetallesResumen(datosMovimientos, fechaActual);
+                    var datosResumen = await scopedDatosServices.CuotasDetallesResumen(datosMovimientos, fechaActualCuotas);
 
                     //Calculo de Punitorios
                     var datosResumenConPunitorios = scopedDatosServices.CalcularPunitoriosResumen(datosResumen).Result;

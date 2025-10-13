@@ -369,7 +369,7 @@ namespace EstanciasCore.Services
             int anioActual = DateTime.Now.Year; // -> 2025
             int mesActual = DateTime.Now.Month; // -> 8
 
-            DateTime fechaCorteMora = ObtenerFechaDeCalculoCorrecta();
+            DateTime fechaCorteMora = ObtenerFechaDeCalculoCorrectaResumen();
 
 
             int diasDelAnio = DateTime.IsLeapYear(fechaCorteMora.Year) ? 366 : 365;
@@ -508,6 +508,13 @@ namespace EstanciasCore.Services
                     // Si es día 15 o posterior, la fecha de cálculo es el último día del mes actual.
                     return ObtenerUltimoDia(hoy.Year, hoy.Month);
                 }
+            }
+
+            public DateTime ObtenerFechaDeCalculoCorrectaResumen()
+            {
+                DateTime hoy = DateTime.Now;
+                return new DateTime(hoy.Year, hoy.AddMonths(1).Month, 01);
+                
             }
         #endregion
 
