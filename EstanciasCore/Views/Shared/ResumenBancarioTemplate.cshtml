@@ -128,15 +128,15 @@
         <table class="header-table">
             <tr>
                 <td>
-                    <div class="bold">@Model.Nombre.ToUpper()</div>
+                    <div class="bold">@Model.Nombre.Replace(",", ", ").ToUpper()</div>
                     <div><span class="bold">Nº Documento:</span> @Model.NroDocumento</div>
-                    <div class="bold">@Model.Mail.ToLower()</div>
                     <div></div>
                 </td>
                 <td class="header-right">
                     @*  <div>Hoja: 1 / 3</div> *@
-                    <div><span class="bold">Nº Socio: </span>@Model.NroSocio</div>
+                   @*  <div><span class="bold">Nº Socio: </span>@Model.NroSocio</div> *@
                     <div><span class="bold">Nº Tarjeta:</span> @Model.NroTarjeta</div>
+                    <div class="bold">@Model.Mail.ToLower()</div>
                 </td>
             </tr>
         </table>
@@ -235,7 +235,7 @@
                     <td>@mov.Descripcion</td>
                     <td class="text-center">@mov.Codigo</td>
                     <td class="text-center">@mov.NumeroCuota/@mov.NumeroCuotaTotal</td>
-                    <td class="text-right">$ @(Convert.ToDecimal(mov.Monto).ToString("N2", culturaAR))</td>
+                    <td class="text-right">$ @(Convert.ToDecimal(mov.Monto.Replace(',', '.')).ToString("N2", culturaAR))</td>
                 </tr>
             }
             <tr class="summary-total-row">

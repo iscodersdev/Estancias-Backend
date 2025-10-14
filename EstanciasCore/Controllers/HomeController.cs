@@ -110,7 +110,7 @@ namespace EstanciasCore.Controllers
                 NroDocumento = usuarioLocal.Personas.NroDocumento,
                 NombreCompleto = usuarioLocal.Personas.GetNombreCompleto(),
                 Id = usuarioLocal.Id,
-                UserName = User.Identity.Name,
+                UserName = usuarioLocal.UserName,
                 NroTarjeta = usuarioLocal.Personas.NroTarjeta
             };
 

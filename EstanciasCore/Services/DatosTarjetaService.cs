@@ -395,8 +395,10 @@ namespace EstanciasCore.Services
         {
             TempalteResumenDTO tempalteResumenDTO = new TempalteResumenDTO();
             List<DetallesCuotasResumenDTO>  detallesCuotasResumenDTO = new List<DetallesCuotasResumenDTO>();
-            ResumenTarjeta resumenTarjeta = _context.ResumenTarjeta.Where(x=>x.Usuario.Personas.NroDocumento==datosMovimientos.Detalle.Documento).OrderByDescending(r => r.Id).FirstOrDefault();
-            tempalteResumenDTO.SaldoAnterior = resumenTarjeta!=null?(resumenTarjeta.Monto+resumenTarjeta.MontoAdeudado):0;
+            //Usuario user = _context.Usuarios.Where(x=>x.Personas.NroDocumento==datosMovimientos.Detalle.Documento).FirstOrDefault();
+            //ResumenTarjeta resumenTarjeta = _context.ResumenTarjeta.Where(x=>x.Usuario.Personas.NroDocumento==datosMovimientos.Detalle.Documento).OrderByDescending(r => r.Id).FirstOrDefault();
+            //tempalteResumenDTO.SaldoAnterior = resumenTarjeta!=null?(resumenTarjeta.Monto+resumenTarjeta.MontoAdeudado):0;
+            DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
             tempalteResumenDTO.SaldoActual = 0; 
             tempalteResumenDTO.SaldoPendiente = 0; 
             tempalteResumenDTO.SaldoTotal = 0; 
@@ -411,7 +413,7 @@ namespace EstanciasCore.Services
             tempalteResumenDTO.Domicilio =  datosMovimientos.Detalle.Direccion; 
             tempalteResumenDTO.PeriodoDesde = periodo.FechaDesde.ToString("dd/MMM/yyyy"); 
             tempalteResumenDTO.PeriodoHasta = periodo.FechaHasta.ToString("dd/MMM/yyyy");
-            tempalteResumenDTO.Vencimiento = periodo.FechaVencimiento.ToString("dd/MMM/yyyy");   
+            tempalteResumenDTO.Vencimiento = fechaVencimiento.ToString("dd/MMM/yyyy");   
 
             var consumosAnteriores = datos.Where(result => result?.Fecha != null)
                 .Where(detalle => (common.ConvertirFecha(detalle.Fecha).Date < periodo.FechaVencimiento.Date)).ToList();
