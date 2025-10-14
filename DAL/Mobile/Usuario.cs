@@ -47,6 +47,7 @@ namespace DAL.Models
         public string Domicilio { get; set; }
         public string NroTarjeta { get; set; }
         public bool Administrador { get; set; }
+        public bool verificado { get; set; }
     }
     public class MRegistraPersonaDTO
     {
@@ -112,6 +113,7 @@ namespace DAL.Models
         public int Status { get; set; }
         public string Mensaje { get; set; }
         public bool NecesitaRegistro { get; set; }
+        public bool verificado { get; set; }
         public List<MMutualesDTO> Mutuales { get; set; }
     }
     public class MMutualesDTO
