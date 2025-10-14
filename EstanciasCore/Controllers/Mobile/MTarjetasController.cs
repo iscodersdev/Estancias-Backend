@@ -100,8 +100,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                 decimal MontoDisponible = 0;
 
                 List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-                var fechaMesActualCuotas = DateTime.Now;
-                //var fechaMesActualCuotas = new DateTime(2025,09,01);
+                //var fechaMesActualCuotas = DateTime.Now;
+                var fechaMesActualCuotas = new DateTime(2025,10,01);
 
                 int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
@@ -211,25 +211,26 @@ namespace EstanciasCore.API.Controllers.Billetera
         {
             try
             {
-                var usuario = TraeUsuarioUAT(body.UAT);
-                if (usuario == null)
-                {
-                    return BadRequest(new { Mensaje = "UAT de Usuario no válida o inexistente." });
-                }
+                //var usuario = TraeUsuarioUAT(body.UAT);
+                //if (usuario == null)
+                //{
+                //    return BadRequest(new { Mensaje = "UAT de Usuario no válida o inexistente." });
+                //}
                 Periodo periodo = _context.Periodo.Where(p=>p.Id==body.PeriodoId).FirstOrDefault();
                 if (periodo==null)
                 {
                     return UnprocessableEntity(new { Mensaje = "El Período con el ID proporcionado no existe." });
                 }
-            
 
-                ResumenTarjeta resumenTarjeta = _context.ResumenTarjeta.Where(x => x.UsuarioId==usuario.Id && x.PeriodoId== periodo.Id).FirstOrDefault();
+                Usuario user = _context.Usuarios.Where(x => x.Personas.NroDocumento == body.NroDocumento).FirstOrDefault();
+
+                ResumenTarjeta resumenTarjeta = _context.ResumenTarjeta.Where(x => x.UsuarioId== user.Id && x.PeriodoId== periodo.Id).FirstOrDefault();
                 if (resumenTarjeta==null)
                 {
                     return NotFound(new { Mensaje = "No se encontró un resumen para el usuario y período especificados." });
                 }
                 string fechaString = DateTime.Now.ToString("ddMMyyyy");
-                string nombreArchivo = $"Resumen_{usuario.Personas.NroDocumento}_{fechaString}";
+                string nombreArchivo = $"Resumen_{user.Personas.NroDocumento}_{fechaString}";
 
                 return File(resumenTarjeta.Adjunto, "application/pdf", nombreArchivo);
             }

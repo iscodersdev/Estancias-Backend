@@ -65,8 +65,8 @@ namespace EstanciasCore
             services.AddTransient<MercadoPagoServices>();
 
             //Genera Resumen Mensual
-            services.AddHostedService<ResumenMensualWorker>();
-            services.AddHostedService<EnvioDeResumenWorker>();
+            //services.AddHostedService<ResumenMensualWorker>();
+            //services.AddHostedService<EnvioDeResumenWorker>();
 
             services.AddSession();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)

@@ -77,12 +77,33 @@ namespace EstanciasCore.Controllers
         public async Task<IActionResult> DescargarResumenHtml(string dni)
         {
             Usuario usuarioLocal = _context.Usuarios.Where(x => x.Personas.NroDocumento == dni).FirstOrDefault();
-            DateTime fecha = DateTime.Now;
+            //DateTime fecha = DateTime.Now;
+
+
+            DateTime fechaMesActualCuotas = new DateTime(2025, 10, 01);
+            int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
+
+            //Fecha para Punitorios
+            if (fechaMesActualCuotas.Day > 15)
+            {
+                DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+            }
+            else
+            {
+                DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
+            }
+
+            DateTime fechaActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+            DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
+
+
             var movimientos = _datosTarjeta.ConsultarMovimientos("APPESTANCIAS", "appcpe01", dni, Convert.ToInt64(usuarioLocal.Personas.NroTarjeta), 100, 1).Result;
-            var datosResumen = _datosTarjeta.CuotasDetallesResumen(movimientos, fecha).Result;
+
+            var datosResumen = _datosTarjeta.CuotasDetallesResumen(movimientos, fechaActualCuotas).Result;
+
             var datosResumenConPunitorios = _datosTarjeta.CalcularPunitoriosResumen(datosResumen).Result;
 
-            Periodo periodo = _context.Periodo.Where(x => x.FechaDesde <= fecha && x.FechaHasta >= fecha).FirstOrDefault();
+            Periodo periodo = _context.Periodo.Where(x => x.FechaVencimiento.Date==new DateTime(2025, 10, 15).Date).FirstOrDefault();
 
             UsuarioParaProcesarDTO usuarioDTO = new UsuarioParaProcesarDTO()
             {

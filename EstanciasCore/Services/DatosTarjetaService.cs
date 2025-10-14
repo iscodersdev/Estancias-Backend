@@ -369,7 +369,7 @@ namespace EstanciasCore.Services
             int anioActual = DateTime.Now.Year; // -> 2025
             int mesActual = DateTime.Now.Month; // -> 8
 
-            DateTime fechaCorteMora = ObtenerFechaDeCalculoCorrectaResumen();
+            DateTime fechaCorteMora = ObtenerFechaDeCalculoCorrecta();
 
 
             int diasDelAnio = DateTime.IsLeapYear(fechaCorteMora.Year) ? 366 : 365;
@@ -403,8 +403,8 @@ namespace EstanciasCore.Services
             tempalteResumenDTO.Pagos = 0; 
             tempalteResumenDTO.Intereses = 0; 
             tempalteResumenDTO.Impuestos = 0; 
-            tempalteResumenDTO.Nombre = datosMovimientos.Detalle.Nombre; 
-            tempalteResumenDTO.NroDocumento =  datosMovimientos.Detalle.Documento; 
+            tempalteResumenDTO.Nombre = datosMovimientos.Detalle.Nombre;
+            tempalteResumenDTO.NroDocumento =  datosMovimientos.Detalle.Documento;
             tempalteResumenDTO.Mail =  usuario.UserName; 
             tempalteResumenDTO.NroSocio = usuario.Id; 
             tempalteResumenDTO.NroTarjeta = usuario.NroTarjeta; 
@@ -414,10 +414,10 @@ namespace EstanciasCore.Services
             tempalteResumenDTO.Vencimiento = periodo.FechaVencimiento.ToString("dd/MMM/yyyy");   
 
             var consumosAnteriores = datos.Where(result => result?.Fecha != null)
-                .Where(detalle => (common.ConvertirFecha(detalle.Fecha) < periodo.FechaDesde)).ToList();
+                .Where(detalle => (common.ConvertirFecha(detalle.Fecha).Date < periodo.FechaVencimiento.Date)).ToList();
 
             var consumosDelMes = datos.Where(result => result?.Fecha != null)
-                .Where(detalle => (common.ConvertirFecha(detalle.Fecha) >= periodo.FechaDesde) && (common.ConvertirFecha(detalle.Fecha) <= periodo.FechaHasta)).ToList();
+                .Where(detalle => (common.ConvertirFecha(detalle.Fecha).Date >= periodo.FechaVencimiento.Date)).ToList();
 
             tempalteResumenDTO.ConsumosAnteriores = consumosAnteriores;
             tempalteResumenDTO.ConsumosDelMes = consumosDelMes;

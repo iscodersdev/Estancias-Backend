@@ -267,7 +267,7 @@
                         <td>@mov.Descripcion</td>
                         <td class="text-center">@mov.Codigo</td>
                         <td class="text-center">@mov.NumeroCuota/@mov.NumeroCuotaTotal</td>
-                        <td class="text-right">$ @(Convert.ToDecimal(mov.Monto).ToString("N2", culturaAR))</td>
+                        <td class="text-right">$ @(Convert.ToDecimal(mov.Monto.Replace(',', '.')).ToString("N2", culturaAR))</td>
                     </tr>
                 }
                 <tr class="summary-total-row">

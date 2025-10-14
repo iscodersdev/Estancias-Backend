@@ -8,6 +8,7 @@ namespace DAL.DTOs
     public class MovimientosTarjetaDTO : RespuestaAPI
     {       
         public int PeriodoId { get; set; }
+        public string NroDocumento { get; set; }
         public byte[] Adjunto { get; set; }
     }
 

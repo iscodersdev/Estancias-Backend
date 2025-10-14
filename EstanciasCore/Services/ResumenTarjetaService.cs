@@ -216,10 +216,20 @@ public class ResumenTarjetaService : IResumenTarjetaService
                 decimal MontoDisponible = 0;
                 List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
                 //DateTime fechaActual = new DateTime(2025, 7, 25); //Cambiar para modo Prueba
-                DateTime fechaActual = DateTime.Now;
-                int diasEnMes = DateTime.DaysInMonth(fechaActual.Year, fechaActual.Month);
-                DateTime fechaActualCuotas = new DateTime(fechaActual.Year, fechaActual.AddMonths(1).Month, 15);
-                //DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
+                DateTime fechaMesActualCuotas = DateTime.Now;
+                int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
+
+                if (fechaMesActualCuotas.Day > 15)
+                {
+                    DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+                }
+                else
+                {
+                    DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
+                }
+
+                DateTime fechaActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+                DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
 
                 // 2. OBTENEMOS LOS SERVICIOS Y EL DBCONTEXT DE ESTE SCOPE
                 var scopedDatosServices = scope.ServiceProvider.GetRequiredService<IDatosTarjetaService>();
@@ -235,7 +245,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
                 }
 
                 // 4. EJECUTAMOS TU LÓGICA DE NEGOCIO ORIGINAL
-                var datosMovimientos = await scopedDatosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, usuario.NroDocumento, numeroTarjetaConvertido, 100, 0);
+                var datosMovimientos = await scopedDatosServices.ConsultarMovimientos(datosEstructura.UsernameWS, datosEstructura.PasswordWS, usuario.NroDocumento, numeroTarjetaConvertido, 100, 1);
 
                 if (datosMovimientos.Detalle.Resultado == "EXITO")
                 {
@@ -264,12 +274,12 @@ public class ResumenTarjetaService : IResumenTarjetaService
                         pdfBytesPDF = memoryStream.ToArray();
                     }
 
-                    var codigo = common.Encrypt(datosParaResumenDTO.NroDocumento, fechaActual.ToString("ddMMyyyy"));
+                    var codigo = common.Encrypt(datosParaResumenDTO.NroDocumento, fechaMesActualCuotas.ToString("ddMMyyyy"));
 
                     // 5. CREAMOS EL RESUMEN USANDO IDs, NO ENTIDADES COMPLETAS
                     var resumenTarjeta = new ResumenTarjeta
                     {
-                        Fecha = fechaActual,
+                        Fecha = fechaMesActualCuotas,
                         FechaVencimiento = periodo.FechaVencimiento,
                         Monto = datosParaResumenDTO.SaldoActual,
                         MontoAdeudado = datosParaResumenDTO.SaldoPendiente,
