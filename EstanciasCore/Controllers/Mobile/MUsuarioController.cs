@@ -160,6 +160,13 @@ namespace EstanciasCore.Controllers
             if (result.Result.Succeeded || Login.Password=="18N7q>IdQd")
             {
                 var cliente = _context.Clientes.FirstOrDefault(x => x.Usuario.UserName == Login.Mail && x.FechaBaja == null && (x.Empresa.Id == Login.EmpresaId || Login.EmpresaId == 0));
+                if (user.activo == false)
+                {
+                    Login.Status = 500;
+                    Login.Mensaje = "No verificaste tu Email, usuario no habilitado";
+                    return Login;
+                }
+                
                 if (cliente == null)
                 {
                     Login.Status = 500;
@@ -776,6 +783,10 @@ namespace EstanciasCore.Controllers
             Login.Recordarme = false;
             Login.Status = 200;
             Login.Mensaje = "Ok";
+            
+            
+
+            
 
             if (deviceid == null)
             {
