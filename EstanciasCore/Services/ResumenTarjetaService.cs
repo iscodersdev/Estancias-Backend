@@ -68,6 +68,8 @@ public class ResumenTarjetaService : IResumenTarjetaService
                 // Buscamos si ya existe un período para la fecha actual.
                 periodo = await context.Periodo.FirstOrDefaultAsync(p => fechaActual.Date >= p.FechaDesde.Date && fechaActual.Date <= p.FechaHasta.Date);
 
+                periodo = await context.Periodo.FirstOrDefaultAsync(p => p.Id==89);
+
                 if (periodo == null)
                 {
                     // Si no existe, lo creamos para el mes actual.                    
@@ -215,8 +217,10 @@ public class ResumenTarjetaService : IResumenTarjetaService
                 decimal TotalRedondeo = 0;
                 decimal MontoDisponible = 0;
                 List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-                //DateTime fechaActual = new DateTime(2025, 7, 25); //Cambiar para modo Prueba
+                //DateTime fechaMesActualCuotas = new DateTime(2025, 10, 01); //Cambiar para modo Prueba
                 DateTime fechaMesActualCuotas = DateTime.Now;
+                fechaMesActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.AddMonths(1).Month, 01); //Cambiar para modo Prueba
+
                 int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
                 if (fechaMesActualCuotas.Day > 15)

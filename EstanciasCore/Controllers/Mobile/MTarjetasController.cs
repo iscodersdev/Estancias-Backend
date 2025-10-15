@@ -250,7 +250,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 {
                     return BadRequest(new { Mensaje = "UAT de Usuario no válida o inexistente." });
                 }
-                Periodo periodo = _context.Periodo.OrderByDescending(x => x.Id).FirstOrDefault();
+                Periodo periodo = _context.Periodo.Where(x=>x.Id==body.PeriodoId).OrderByDescending(x => x.Id).FirstOrDefault();
                 if (periodo==null)
                 {
                     return UnprocessableEntity(new { Mensaje = "El Período con el ID proporcionado no existe." });
