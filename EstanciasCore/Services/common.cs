@@ -247,6 +247,19 @@ namespace EstanciasCore.Services
             return true;
         }
 
+        public static bool EnviarMailAdjunto(string destinatario, string titulo, string texto, string cliente, byte[] Adjunto = null, string NombreArchivo = null)
+        {
+            MailAPI mail = new MailAPI();
+            mail.Mail = destinatario;
+            mail.Html = texto;
+            mail.Titulo = titulo;
+            DateTime oFec = DateTime.Now;
+            var code = Encrypt(mail.Titulo + mail.Html, "SendMail"); ;
+            mail.Token = code;
+            var resultado = EnviarMailSendinBlueAdjunto(mail, Adjunto);
+            return true;
+        }
+
         public static decimal CalculaCFT(double capital, int cantidadcuotas, double montocuota)
         {
             try
@@ -274,34 +287,108 @@ namespace EstanciasCore.Services
             }
             try
             {
-                //string usuario = "novedades@estancias.org.ar";
-                string usuario = "albarracin_sergio@hotmail.com";
-
-                // string password = "BWSNmr7qGLdHYKz2";
-                string password = "w2cPVg3n9Xq6C7KO";
-
+                string usuario = "39ad53001@smtp-brevo.com";
+                string password = "K90kxAdQmTtjpJHv";
+                //var origen = new MailAddress("sender@servicemailing.com.ar", "Estancias ");
                 var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
-                string host = "smtp-relay.sendinblue.com";
+                string host = "smtp-relay.brevo.com";
                 int puerto = 587;
                 bool ssl = true;
                 NetworkCredential credenciales = new NetworkCredential(usuario, password);
-                MailMessage correo = new MailMessage("noresponder@estancias.org.ar", mail.Mail, mail.Titulo, cuerpoHTMLGmail(mail.Titulo, mail.Html, ""));
+                MailMessage correo = new MailMessage("noresponder@estancias.com.ar", mail.Mail, mail.Titulo, cuerpoHTMLGmail(mail.Titulo, mail.Html, ""));
                 correo.From = origen;
                 correo.IsBodyHtml = true;
                 SmtpClient servicio = new SmtpClient(host, puerto);
-                servicio.UseDefaultCredentials = true;
+                servicio.UseDefaultCredentials = false;
                 servicio.Credentials = credenciales;
                 servicio.EnableSsl = ssl;
                 string token = "";
                 servicio.SendAsync(correo, token);
+
+                //string usuario = "7ed2ee002@smtp-brevo.com";
+                //string password = "UzdvJfpAtByYwx60";
+                //var origen = new MailAddress("no-reply@itarconsulting.com.ar", "Estancias ");
+                //string host = "smtp-relay.brevo.com";
+                //int puerto = 587;
+                //bool ssl = true;
+                //NetworkCredential credenciales = new NetworkCredential(usuario, password);
+                //MailMessage correo = new MailMessage("noresponder@estancias.com.ar", mail.Mail, mail.Titulo, cuerpoHTMLGmail(mail.Titulo, mail.Html, ""));
+                //correo.From = origen;
+                //correo.IsBodyHtml = true;
+                //SmtpClient servicio = new SmtpClient(host, puerto);
+                //servicio.UseDefaultCredentials = true;
+                //servicio.Credentials = credenciales;
+                //servicio.EnableSsl = ssl;
+                //string token = "";
+                //servicio.SendAsync(correo, token);
             }
             catch
             {
                 return false;
             }
             return true;
-
         }
+
+        public static async Task<bool> EnviarMailSendinBlueAdjunto(MailAPI mail, byte[] PdfBytes)
+        {
+            if (mail.Mail == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                string usuario = "39ad53001@smtp-brevo.com";
+                string password = "K90kxAdQmTtjpJHv";
+                //var origen = new MailAddress("sender@servicemailing.com.ar", "Estancias ");
+                var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
+                string host = "smtp-relay.brevo.com";
+                int puerto = 587;
+                bool ssl = true;
+
+                NetworkCredential credenciales = new NetworkCredential(usuario, password);
+                MailMessage correo = new MailMessage();
+                correo.From = origen;
+                correo.To.Add(mail.Mail);
+                correo.Subject = mail.Titulo;
+                correo.IsBodyHtml = true;
+                correo.Body = cuerpoHTMLGmail(mail.Titulo, mail.Html, "");
+
+                if (PdfBytes != null && PdfBytes.Length > 0)
+                {
+                    using (MemoryStream ms = new MemoryStream(PdfBytes))
+                    {
+                        Attachment adjunto = new Attachment(ms, "Resumen.pdf", "application/pdf");
+                        correo.Attachments.Add(adjunto);
+
+                        using (SmtpClient servicio = new SmtpClient(host, puerto))
+                        {
+                            servicio.Credentials = credenciales;
+                            servicio.EnableSsl = ssl;
+                            await servicio.SendMailAsync(correo);
+                        }
+                    } 
+                }
+                else
+                {
+                    using (SmtpClient servicio = new SmtpClient(host, puerto))
+                    {
+                        servicio.Credentials = credenciales;
+                        servicio.EnableSsl = ssl;
+
+                        await servicio.SendMailAsync(correo);
+                    }
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
         public static bool EnviarMailGmail(MailAPI mail)
         {
             if (mail.Mail == null)
@@ -555,6 +642,51 @@ namespace EstanciasCore.Services
 
         }
 
+        private static void SetearCultureInfoES()
+        {
+            CultureInfo cultura = new CultureInfo("es-ES");
+            CultureInfo.CurrentCulture = cultura;
+            CultureInfo.CurrentUICulture = cultura;
+        }
+
+        public static DateTime ConvertirFecha(string fecha)
+        {
+            SetearCultureInfoES();
+            DateTime fechaIngresada;
+            if (DateTime.TryParse(fecha, out fechaIngresada))
+            {
+                return fechaIngresada;
+            }
+            else
+            {
+                return fechaIngresada;
+            }
+        }
+
+        /// <summary>
+        /// Calcula una fecha formateada según una regla específica.
+        /// - Si el día de la fecha de entrada es 15 o menor, devuelve esa misma fecha.
+        /// - Si el día es mayor a 15, devuelve la fecha correspondiente al mes siguiente.
+        /// El formato de salida es siempre "dd/MM/yyyy".
+        /// </summary>
+        /// <param name="fecha">La fecha de entrada para el cálculo.</param>
+        /// <returns>Un string con la fecha formateada.</returns>
+        public static string ObtenerFechaCalculada(DateTime fecha)
+        {
+            var fechaMesActualCuotas = DateTime.Now;
+            DateTime fechaResultadoPunitorios;
+
+            if (fechaMesActualCuotas.Day>15)
+            {
+                fechaResultadoPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 31);
+            }
+            else
+            {
+                fechaResultadoPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
+            }
+            return fechaResultadoPunitorios.ToString("dd/MM/yyyy");
+        }
+
         //public static HttpStatusCode EnviaNotificationWonderPushId(string title, string message, string[] deviceId)
         //{
         //	HttpClient _httpClient = new HttpClient();
@@ -805,6 +937,38 @@ namespace EstanciasCore.Services
             }
             return;
         }
+        /// <summary>
+        /// Convierte Fehca con HH:mm:ss
+        /// </summary>
+        /// <param name="fechaStr"></param>
+        /// <returns></returns>
+        public static DateTime? ConvertirFechaCompleta(string fechaStr)
+        {
+            // 1. Define el formato de tu string. Ejemplo: "2025-10-27 11:25:32"
+            string formato = "yyyy-MM-dd HH:mm";
+
+            DateTime fechaDT;
+
+            // 2. Intenta la conversión
+            bool exito = DateTime.TryParseExact(
+                fechaStr,
+                formato,
+                CultureInfo.InvariantCulture, // Usar cultura invariable (sin depender de la región del sistema)
+                DateTimeStyles.None,
+                out fechaDT
+            );
+
+            if (exito)
+            {
+                return fechaDT;
+            }
+            else
+            {
+                // Devuelve null (o lanza tu propia excepción si lo prefieres)
+                return null;
+            }
+        }
+
     }
 
     public class BaseDataAccess
@@ -1022,26 +1186,7 @@ namespace EstanciasCore.Services
             }
             return returnValue;
         }
-        private void SetearCultureInfoES()
-        {
-            CultureInfo cultura = new CultureInfo("es-ES");
-            CultureInfo.CurrentCulture = cultura;
-            CultureInfo.CurrentUICulture = cultura;
-        }
 
-        public DateTime ConvertirFecha(string fecha)
-        {
-            SetearCultureInfoES();
-            DateTime fechaIngresada;
-            if (DateTime.TryParse(fecha, out fechaIngresada))
-            {
-                return fechaIngresada;
-            }
-            else
-            {
-                return fechaIngresada;
-            }
-        }
-
+        
     }
 }

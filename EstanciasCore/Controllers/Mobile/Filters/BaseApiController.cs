@@ -29,10 +29,6 @@ namespace EstanciasCore.API.Controllers
         {
             return _context.UAT.Where(u => u.Token == uat).Select(u => u.Cliente.Usuario).FirstOrDefault();
         }
-        public Usuario TraeUsuarioByPersonaId(int PersonaId)
-        {
-            return _context.UAT.Where(u => u.Cliente.Persona.Id == PersonaId).Select(u => u.Cliente.Usuario).FirstOrDefault();
-        }
 
         public Usuario TraeUsuario(string nombreUsuario)
         {

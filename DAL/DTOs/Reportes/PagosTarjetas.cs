@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DAL.Models.Core;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -54,5 +55,25 @@ namespace DAL.DTOs.Reportes
     public class BocaDePagoInfo
     {
         public string Descripcion { get; set; } = "General"; // Valor por defecto
+    }
+
+    public class FiltroPagosViewModel
+    {
+        // Parámetros de entrada para el filtro
+        public string FechaDesde { get; set; }
+        public string FechaHasta { get; set; }
+        public int? EstadoId { get; set; }
+        public uint? PersonaId { get; set; } // Unificado para NroDocumento o Nombre/Apellido si ambos son ID
+        public string NombrePersona { get; set; } // Para búsqueda por texto
+        public string Monto { get; set; }
+
+        // Parámetros para paginación (ej. para DataTables)
+        public int Start { get; set; } = 0; // 'draw' en DataTables
+        public int Length { get; set; } = 15; // 'length' en DataTables
+
+        // Propiedades para devolver los resultados
+        public List<PagoTarjeta> Pagos { get; set; }
+        public int RecordsTotal { get; set; }
+        public int RecordsFiltered { get; set; }
     }
 }

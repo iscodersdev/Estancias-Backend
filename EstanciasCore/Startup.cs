@@ -3,6 +3,8 @@ using Commons.Identity.DummyData;
 using Commons.Identity.Services;
 using DAL.Data;
 using DAL.Models;
+using EstanciasCore.Interface;
+using EstanciasCore.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +13,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using EstanciasCore.Services;
 using Newtonsoft.Json.Serialization;
 
 namespace EstanciasCore
@@ -54,13 +55,28 @@ namespace EstanciasCore
 
             });
 
+            services.AddAuthentication() // O AddDefaultIdentity o AddIdentity
+            .AddCookie(options =>
+            {
+                options.LoginPath = "/Identity/Account/Login";
+                // options.LogoutPath = "/Identity/Account/Logout";
+                // options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+            });
+
             services.AddCommonsServices<Usuario, EstanciasContext>();
             services.AddDistributedMemoryCache();
             services.AddCommonsLibraryViews();
             services.AddHttpContextAccessor();
             services.AddTransient<NotificacionAPIService>();
+            services.AddTransient<IDatosTarjetaService, DatosTarjetaService>();
+            services.AddTransient<IResumenTarjetaService, ResumenTarjetaService>();
+            services.AddTransient<MercadoPagoServices>();
 
-			services.AddSession();
+            //Genera Resumen Mensual
+            //services.AddHostedService<ResumenMensualWorker>();
+            //services.AddHostedService<EnvioDeResumenWorker>();
+
+            services.AddSession();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddMvcOptions(options => {
                     options.MaxModelValidationErrors = 50;

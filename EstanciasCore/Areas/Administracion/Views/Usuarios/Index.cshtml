@@ -49,6 +49,7 @@
             rowId: 'Id',
             columns: [
                 { data: "NroDocumento", title: "Nro Documento", responsivePriority: 1 },
+                { data: "NroTarjeta", title: "Nro de Tarjeta", responsivePriority: 1 },
                 { data: "Usuario", title: "Usuario", responsivePriority: 2 },
                 { data: "Nombre", title: "Nombre", responsivePriority: 3 },
                 //{ data: "Empresa", title: "Empresa", responsivePriority: 4 },
@@ -62,12 +63,6 @@
                         action += `<a onclick="Roles('${row['Id']}')" title="Asignar Roles" class="btn btn-primary btn-xs"><i class="fa fa-plus"></i></a> &nbsp`;
                         action += `<a onclick="editUser('${row['Id']}')" title="Editar Usuario" class="btn btn-info btn-xs"><i class="fa fa-pencil"></i></a> &nbsp`;
                         action += `<a onclick="_ChangePassword('${row['Id']}')" title="Modificar Contraseña Usuario" class="btn bg-green btn-xs"><i class="fa fa-lock"></i></a> &nbsp`;
-
-                        // if (row.Administrador) {
-                        //     action += `<a href="/Administracion/Usuarios/_DisabledAdmin?id=${row['Id']}" title="Módulo QR" confirm-icon="Warning" confirm-no="Cancelar" confirm-yes="Deshabilitar" confirm="¿Está seguro de que quiere Deshabilitar esta Leyenda Tipo Movimiento?" class="btn btn-danger btn-xs"><i class="fa fa-qrcode"></i></a> &nbsp`;
-                        // } else {
-                        //     action += `<a href="/Administracion/Usuarios/_EnabledAdmin?id=${row['Id']}"  title="Módulo QR" confirm-icon="Warning" confirm-no="Cancelar" confirm-yes="Habilitar" confirm="¿Está seguro de que quiere borrar esta Leyenda Tipo Movimiento?" class="btn btn-success btn-xs"><i class="fa fa-qrcode"></i></a> &nbsp`;
-                        // }
                         return action;
                     }
                 }

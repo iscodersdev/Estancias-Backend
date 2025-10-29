@@ -23,9 +23,9 @@
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label class="control-label">Password</label>
-                        <input asp-for="Password" type="password" class="form-control" />
-                        <span asp-validation-for="Password" class="text-danger"></span>
+                        <label class="control-label">Nro Tarjeta</label>
+                        <input asp-for="TarjetaEstancia" type="text" class="form-control" />
+                        <span asp-validation-for="TarjetaEstancia" class="text-danger"></span>
                     </div>
                 </div>
             </div>
@@ -59,7 +59,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" hidden>
                 <div class="col-md-6">
                     <br /><label asp-for="Administrador" class="control-label"></label>
                     <input type="checkbox" asp-for="Administrador" class="form-control" />

@@ -542,6 +542,31 @@ namespace DAL.Migrations
                     b.ToTable("ComprasProductos");
                 });
 
+            modelBuilder.Entity("DAL.Models.Core.ConciliacionDePago", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Descripcion");
+
+                    b.Property<int>("Estado");
+
+                    b.Property<DateTime>("Fecha");
+
+                    b.Property<string>("MercadoPagoId");
+
+                    b.Property<decimal>("Monto");
+
+                    b.Property<string>("UsuarioId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("ConciliacionDePago");
+                });
+
             modelBuilder.Entity("DAL.Models.Core.Configuracion", b =>
                 {
                     b.Property<int>("Id")
@@ -727,6 +752,54 @@ namespace DAL.Migrations
                     b.ToTable("ListaDistribucion");
                 });
 
+            modelBuilder.Entity("DAL.Models.Core.LogProcedimientos", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Codigo");
+
+                    b.Property<DateTime>("Fecha");
+
+                    b.Property<string>("Mesaje");
+
+                    b.Property<string>("Nombre");
+
+                    b.Property<int>("RegistrosConErrores");
+
+                    b.Property<int>("RegistrosCreados");
+
+                    b.Property<string>("StatusCode");
+
+                    b.Property<long>("Tiempo");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LogProcedimientos");
+                });
+
+            modelBuilder.Entity("DAL.Models.Core.LogResumenesTarjetas", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("Fecha");
+
+                    b.Property<int>("LogProcedimientosId");
+
+                    b.Property<string>("Mensaje");
+
+                    b.Property<string>("UsuarioId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LogProcedimientosId");
+
+                    b.ToTable("LogResumenesTarjetas");
+                });
+
             modelBuilder.Entity("DAL.Models.Core.MovimientoBilletera", b =>
                 {
                     b.Property<int>("Id")
@@ -795,13 +868,19 @@ namespace DAL.Migrations
 
                     b.Property<DateTime?>("FechaComprobante");
 
+                    b.Property<DateTime?>("FechaDePago");
+
                     b.Property<DateTime?>("FechaPagoProximaCuota");
 
                     b.Property<DateTime?>("FechaVencimiento");
 
                     b.Property<decimal>("MontoAdeudado");
 
+                    b.Property<decimal>("MontoInformado");
+
                     b.Property<string>("NroTarjeta");
+
+                    b.Property<string>("Observacion");
 
                     b.Property<int?>("PersonaId");
 
@@ -810,6 +889,27 @@ namespace DAL.Migrations
                     b.HasIndex("PersonaId");
 
                     b.ToTable("PagoTarjeta");
+                });
+
+            modelBuilder.Entity("DAL.Models.Core.Procedimientos", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<bool>("Activo");
+
+                    b.Property<string>("Codigo");
+
+                    b.Property<string>("Descripcion");
+
+                    b.Property<int>("DiaEjecucion");
+
+                    b.Property<string>("Nombre");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Procedimientos");
                 });
 
             modelBuilder.Entity("DAL.Models.Core.Producto", b =>
@@ -1219,6 +1319,35 @@ namespace DAL.Migrations
                     b.ToTable("DatosEstructura");
                 });
 
+            modelBuilder.Entity("DAL.Models.DistribucionResumen", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("CanalesDistribucion");
+
+                    b.Property<string>("Estado");
+
+                    b.Property<DateTime>("Fecha");
+
+                    b.Property<int?>("PeriodoId");
+
+                    b.Property<int?>("ResumenTarjetaId");
+
+                    b.Property<string>("UsuarioId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PeriodoId");
+
+                    b.HasIndex("ResumenTarjetaId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("DistribucionResumen");
+                });
+
             modelBuilder.Entity("DAL.Models.Empresas", b =>
                 {
                     b.Property<int>("Id")
@@ -1552,6 +1681,41 @@ namespace DAL.Migrations
                     b.ToTable("Monedas");
                 });
 
+            modelBuilder.Entity("DAL.Models.MovimientoTarjeta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("CantidadCuotas");
+
+                    b.Property<DateTime>("Fecha");
+
+                    b.Property<DateTime>("FechaPago");
+
+                    b.Property<decimal>("Monto");
+
+                    b.Property<string>("NombreComercio");
+
+                    b.Property<string>("NroCuota");
+
+                    b.Property<string>("NroSolicitud");
+
+                    b.Property<bool>("Pagado");
+
+                    b.Property<int?>("PeriodoId");
+
+                    b.Property<string>("UsuarioId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PeriodoId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("MovimientoTarjeta");
+                });
+
             modelBuilder.Entity("DAL.Models.NotificacionesPersonas", b =>
                 {
                     b.Property<int>("Id")
@@ -1621,6 +1785,27 @@ namespace DAL.Migrations
                     b.ToTable("Paises");
                 });
 
+            modelBuilder.Entity("DAL.Models.Periodo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<bool>("Activo");
+
+                    b.Property<string>("Descripcion");
+
+                    b.Property<DateTime>("FechaDesde");
+
+                    b.Property<DateTime>("FechaHasta");
+
+                    b.Property<DateTime>("FechaVencimiento");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Periodo");
+                });
+
             modelBuilder.Entity("DAL.Models.Persona", b =>
                 {
                     b.Property<int>("Id")
@@ -1643,6 +1828,8 @@ namespace DAL.Migrations
                     b.Property<string>("FechaVencimiento");
 
                     b.Property<byte[]>("Foto");
+
+                    b.Property<int?>("LoanId");
 
                     b.Property<string>("Nombres")
                         .IsRequired();
@@ -1932,6 +2119,37 @@ namespace DAL.Migrations
                     b.ToTable("Reservas");
                 });
 
+            modelBuilder.Entity("DAL.Models.ResumenTarjeta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<byte[]>("Adjunto");
+
+                    b.Property<DateTime>("Fecha");
+
+                    b.Property<DateTime>("FechaVencimiento");
+
+                    b.Property<decimal>("Monto");
+
+                    b.Property<decimal>("MontoAdeudado");
+
+                    b.Property<string>("NroComprobante");
+
+                    b.Property<int>("PeriodoId");
+
+                    b.Property<string>("UsuarioId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PeriodoId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("ResumenTarjeta");
+                });
+
             modelBuilder.Entity("DAL.Models.Servicios", b =>
                 {
                     b.Property<int>("Id")
@@ -2156,6 +2374,8 @@ namespace DAL.Migrations
                         .HasMaxLength(256);
 
                     b.Property<int?>("VendedoresId");
+
+                    b.Property<bool>("activo");
 
                     b.HasKey("Id");
 
@@ -2414,6 +2634,13 @@ namespace DAL.Migrations
                         .HasForeignKey("ProductoId");
                 });
 
+            modelBuilder.Entity("DAL.Models.Core.ConciliacionDePago", b =>
+                {
+                    b.HasOne("DAL.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
+                });
+
             modelBuilder.Entity("DAL.Models.Core.ContactosBilletera", b =>
                 {
                     b.HasOne("DAL.Models.Core.Billetera")
@@ -2463,6 +2690,14 @@ namespace DAL.Migrations
                     b.HasOne("DAL.Models.Core.Producto", "Producto")
                         .WithMany("FinanciacionProducto")
                         .HasForeignKey("ProductoId");
+                });
+
+            modelBuilder.Entity("DAL.Models.Core.LogResumenesTarjetas", b =>
+                {
+                    b.HasOne("DAL.Models.Core.LogProcedimientos")
+                        .WithMany("DetalleErrores")
+                        .HasForeignKey("LogProcedimientosId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("DAL.Models.Core.MovimientoBilletera", b =>
@@ -2612,6 +2847,21 @@ namespace DAL.Migrations
                         .HasForeignKey("ConceptoId");
                 });
 
+            modelBuilder.Entity("DAL.Models.DistribucionResumen", b =>
+                {
+                    b.HasOne("DAL.Models.Periodo", "Periodo")
+                        .WithMany()
+                        .HasForeignKey("PeriodoId");
+
+                    b.HasOne("DAL.Models.ResumenTarjeta", "ResumenTarjeta")
+                        .WithMany()
+                        .HasForeignKey("ResumenTarjetaId");
+
+                    b.HasOne("DAL.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
+                });
+
             modelBuilder.Entity("DAL.Models.Empresas", b =>
                 {
                     b.HasOne("DAL.Models.Grupos", "Grupo")
@@ -2656,6 +2906,17 @@ namespace DAL.Migrations
                     b.HasOne("DAL.Models.Clientes", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId");
+                });
+
+            modelBuilder.Entity("DAL.Models.MovimientoTarjeta", b =>
+                {
+                    b.HasOne("DAL.Models.Periodo", "Periodo")
+                        .WithMany()
+                        .HasForeignKey("PeriodoId");
+
+                    b.HasOne("DAL.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
                 });
 
             modelBuilder.Entity("DAL.Models.NotificacionesPersonas", b =>
@@ -2754,6 +3015,18 @@ namespace DAL.Migrations
                     b.HasOne("DAL.Models.Horarios", "Horario")
                         .WithMany()
                         .HasForeignKey("HorarioId");
+                });
+
+            modelBuilder.Entity("DAL.Models.ResumenTarjeta", b =>
+                {
+                    b.HasOne("DAL.Models.Periodo", "Periodo")
+                        .WithMany()
+                        .HasForeignKey("PeriodoId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("DAL.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
                 });
 
             modelBuilder.Entity("DAL.Models.Servicios", b =>

@@ -25,6 +25,7 @@ namespace DAL.Models
         public bool ValidandoTarjeta { get; set; }
         public string NroTarjeta { get; set; }
         public string FechaVencimiento { get; set; }
+        public int? LoanId { get; set; } = null;
         public int GetEdad()
         {
             try

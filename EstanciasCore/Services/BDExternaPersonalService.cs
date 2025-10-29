@@ -16,7 +16,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Security.Policy;
 using DAL.DTOs.Servicios;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 using SixLabors.ImageSharp;
 using DAL.Models;
 //using static TheArtOfDev.HtmlRenderer.Adapters.RGraphicsPath;

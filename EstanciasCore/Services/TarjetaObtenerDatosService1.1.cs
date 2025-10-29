@@ -70,8 +70,8 @@ namespace EstanciasCore.Services
         {
             // Instancia el cliente SOAP para obtener los datos de la tarjeta
             var cliente = new TarjetaObtenerDatosClient();
-            
-            
+
+
 
             // Realiza la llamada al servicio SOAP para obtener los datos de la tarjeta
             string soapResponse = cliente.ObtenerDatos(usuario, clave,Convert.ToInt32(documento), numeroTarjeta, cantidadMovimientos);
@@ -160,9 +160,11 @@ namespace EstanciasCore.Services
 			var cliente = new TarjetaObtenerDatosClient();
 
 
+            //documento = "30463400";
+            //numeroTarjeta = 10012018003;
 
-			// Realiza la llamada al servicio SOAP para obtener los datos de la tarjeta
-			string soapResponse = cliente.ObtenerDatos(usuario, clave, Convert.ToInt32(documento), numeroTarjeta, cantidadMovimientos);
+            // Realiza la llamada al servicio SOAP para obtener los datos de la tarjeta
+            string soapResponse = cliente.ObtenerDatos(usuario, clave, Convert.ToInt32(documento), numeroTarjeta, cantidadMovimientos);
 
 			// Procesa la respuesta XML
 			XmlDocument xmlDoc = new XmlDocument();
@@ -177,7 +179,26 @@ namespace EstanciasCore.Services
 			XNamespace ns = "http://tempuri.org/";
 
 
-			Detail detalles = new Detail();
+            //------------------------------------//
+            // --- Para guardar el archivo de forma segura ---
+
+            // 1. Obtiene la ruta a la carpeta del Escritorio del usuario actual.
+            string rutaEscritorio = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+            // 2. Define el nombre del archivo.
+            //string nombreArchivo = "respuesta_tarjeta.xml";
+
+            // 3. Combina la ruta del escritorio y el nombre del archivo. 
+            //    Path.Combine se asegura de que la ruta sea correcta.
+            //string rutaCompleta = Path.Combine(rutaEscritorio, nombreArchivo);
+
+            // 4. Escribe el contenido en el archivo en el Escritorio.
+           // File.WriteAllText(rutaCompleta, soapResponse);
+            //------------------------------------//
+
+
+
+            Detail detalles = new Detail();
 	        var resultadosConsulta = doc.Descendants(ns + "resultadoServicioWeb")
 							    .Select(m => new Detail()
 							    {

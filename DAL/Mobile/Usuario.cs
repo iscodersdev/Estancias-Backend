@@ -174,8 +174,6 @@ namespace DAL.Models
         public DateTime? FechaNacimiento { get; set; }
         public string Password1 { get; set; }
         public string Password2 { get; set; }
-        public string Nombre { get; set; }
-        public string Apellido { get; set; }
 
     }
     public class MActualizaDatosLocalidadDTO

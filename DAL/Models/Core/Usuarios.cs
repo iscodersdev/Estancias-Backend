@@ -17,6 +17,7 @@ namespace DAL.Models
         public string UserIdNotification { get; set; }
         public bool Administradores { get; set; }
         public int Token { get; set; }
+        public bool activo { get; set; }
         public override string GetFirstName()
         {
             return "";
