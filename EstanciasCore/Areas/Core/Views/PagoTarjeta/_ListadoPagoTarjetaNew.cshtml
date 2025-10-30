@@ -89,7 +89,7 @@
                 { data: "Persona", title: "Cliente" },
                 { data: "NroDocumento", title: "NroDocumento" },
                 { data: "FechaDePago", title: "Fecha Informada" },
-                { data: "FechaComprobante", title: "Fecha de carga" },
+                { data: "FechaComprobante", title: "Fecha de Carga" },
                 { data: "MontoInformado", title: "Monto Informado" },
                 {
                     "title": "EstadoPago",
@@ -283,8 +283,8 @@
             }
             $('#listadoPagos').DataTable().columns().search('').draw();
             $('#listadoPagos').DataTable()
-                .column(10).search(estado) // Asumiendo que 'estado' es la columna 0
-                .column(6).search(fecha) // Asumiendo que 'fecha' es la columna 1
+                .column(9).search(estado) // Asumiendo que 'estado' es la columna 0
+                .column(5).search(fecha) // Asumiendo que 'fecha' es la columna 1
                 .draw(); 
         });        
         
@@ -403,30 +403,30 @@
     };
 
      // Agregar la lógica de filtrado
-    $.fn.dataTable.ext.search.push(
-      function(settings, data, dataIndex) {
-        var fechaRango = $('#fecha').val();
-        var estado = $('#estado').val();
-        var fecha = data[4]; // índice de la columna FechaVencimiento
-        var estadoPagoId = data[6]; // índice de la columna EstadoPago 
+    // $.fn.dataTable.ext.search.push(
+    //   function(settings, data, dataIndex) {
+    //     var fechaRango = $('#fecha').val();
+    //     var estado = $('#estado').val();
+    //     var fecha = data[4]; // índice de la columna FechaVencimiento
+    //     var estadoPagoId = data[6]; // índice de la columna EstadoPago 
 
-        if (fechaRango !== '') {
-          var fechas = fechaRango.split(' - ');
-          var fechaDesde = fechas[0];
-          var fechaHasta = fechas[1];
+    //     if (fechaRango !== '') {
+    //       var fechas = fechaRango.split(' - ');
+    //       var fechaDesde = fechas[0];
+    //       var fechaHasta = fechas[1];
 
-          if (fecha < fechaDesde || fecha > fechaHasta) {
-            return false;
-          }
-        }
+    //       if (fecha < fechaDesde || fecha > fechaHasta) {
+    //         return false;
+    //       }
+    //     }
 
-        if (estado !== '' && estadoPagoId != estado) {
-          return false;
-        }
+    //     if (estado !== '' && estadoPagoId != estado) {
+    //       return false;
+    //     }
 
-        return true;
-      }
-    );
+    //     return true;
+    //   }
+    // );
 
 
     function MostrarAlertaObservacion(observacion) {

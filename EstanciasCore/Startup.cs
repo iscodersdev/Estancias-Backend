@@ -92,9 +92,14 @@ namespace EstanciasCore
                 ).AddJsonOptions(options =>
                 {
                     options.SerializerSettings.ContractResolver = new DefaultContractResolver();
-                })
-                ;
+                });
 
+                services.ConfigureApplicationCookie(options =>
+                {
+                    options.LoginPath = $"/Identity/Account/Login";
+                    options.LogoutPath = $"/Identity/Account/Logout";
+                    options.AccessDeniedPath = $"/Identity/Account/AccessDenied";
+                });
             services.Configure<IdentityOptions>(options =>
             {
                 options.Password.RequireDigit = false;
