@@ -89,9 +89,8 @@
                 { data: "FechaOrden", title: "FechaOrden",  visible: false},
                 { data: "Persona", title: "Cliente" },
                 { data: "NroDocumento", title: "NroDocumento" },
-                { data: "FechaVencimiento", title: "Fecha Vencimiento" },
-                { data: "FechaComprobante", title: "Fecha Comprobante" },
-                { data: "MontoAdeudado", title: "Monto de Cuota" },
+                { data: "FechaDePago", title: "Fecha Informada" },
+                { data: "FechaComprobante", title: "Fecha de Carga" },
                 { data: "MontoInformado", title: "Monto Informado" },
                 {
                     "title": "EstadoPago",
@@ -285,8 +284,8 @@
             }
             $('#listadoPagos').DataTable().columns().search('').draw();
             $('#listadoPagos').DataTable()
-                .column(10).search(estado)
-                .column(6).search(fecha)
+                .column(9).search(estado) // Asumiendo que 'estado' es la columna 0
+                .column(5).search(fecha) // Asumiendo que 'fecha' es la columna 1
                 .draw(); 
         });        
         
