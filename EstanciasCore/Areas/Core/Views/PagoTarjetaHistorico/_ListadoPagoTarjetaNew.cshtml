@@ -58,7 +58,11 @@
      var tablaPagos;
     $(document).ready(function () {
 
-        tablaPagos = $('#listadoPagos').DataTable({
+        tablaPagos = $('#listadoPagos').DataTable({       
+            "lengthMenu": [
+                [10, 25, 50, 100, 1000],         // <--- Los valores (números de filas)
+                ['10', '25', '50', '100', '1000'] // <--- Las etiquetas que ve el usuario
+            ],
             serverSide: true,
             processing: true,
             "language": {

@@ -203,6 +203,9 @@ namespace EstanciasCore.API.Controllers.Billetera
             return new JsonResult(traePeriodosDTO);
         }
 
+                //Calcula Deuda total suma la cuota mas los punitorios.
+                DeudaTotal = MontoCuota + MontoPunitorios;
+                TotalRedondeo = Math.Round(DeudaTotal, 2);
 
 
 
@@ -239,6 +242,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 return StatusCode(500, new { error = "Ocurrió un error inesperado al procesar la solicitud." });
             }
         }
+                
 
         [HttpPost("EnvioDeResumen")]
         public async Task<IActionResult> EnvioDeResumen(EnvioDeResumen body)

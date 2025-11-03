@@ -80,7 +80,7 @@ namespace EstanciasCore.Controllers
             //DateTime fecha = DateTime.Now;
 
 
-            DateTime fechaMesActualCuotas = new DateTime(2025, 10, 01);
+            DateTime fechaMesActualCuotas = new DateTime(2025, 11, 01);
             int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
             //Fecha para Punitorios
@@ -103,7 +103,7 @@ namespace EstanciasCore.Controllers
 
             var datosResumenConPunitorios = _datosTarjeta.CalcularPunitoriosResumen(datosResumen).Result;
 
-            Periodo periodo = _context.Periodo.Where(x => x.FechaVencimiento.Date==new DateTime(2025, 10, 15).Date).FirstOrDefault();
+            Periodo periodo = _context.Periodo.Where(x => x.FechaVencimiento.Date==new DateTime(2025, 11, 15).Date).FirstOrDefault();
 
             UsuarioParaProcesarDTO usuarioDTO = new UsuarioParaProcesarDTO()
             {

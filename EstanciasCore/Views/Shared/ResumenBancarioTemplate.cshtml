@@ -1,6 +1,7 @@
 @using System.Globalization
 @using DAL.DTOs.Reportes
 @using DAL.DTOs.Servicios
+@using EstanciasCore.Services
 @model TempalteResumenDTO
 @{
     Layout = null;
@@ -230,8 +231,10 @@
             </tr>
             @foreach (var mov in (List<ResultadoCuotasDTO>)Model.ConsumosDelMes)
             {
+                var fechaConvertida = common.ConvertirFecha(mov.Fecha);
                 <tr>
-                    <td>@mov.Fecha</td>
+                    <td>@("10/"+fechaConvertida.Month+"/"+fechaConvertida.Year)</td>
+                   @*  <td>@common.ConvertirFecha(mov.Fecha).Date</td> *@
                     <td>@mov.Descripcion</td>
                     <td class="text-center">@mov.Codigo</td>
                     <td class="text-center">@mov.NumeroCuota/@mov.NumeroCuotaTotal</td>
@@ -262,8 +265,9 @@
                 </tr>
                 @foreach (var mov in (List<ResultadoCuotasDTO>)Model.ConsumosAnteriores)
                 {
+                    var fechaConvertida = common.ConvertirFecha(mov.Fecha);
                     <tr>
-                        <td>@mov.Fecha</td>
+                        <td>@("10/"+fechaConvertida.Month+"/"+fechaConvertida.Year)</td>
                         <td>@mov.Descripcion</td>
                         <td class="text-center">@mov.Codigo</td>
                         <td class="text-center">@mov.NumeroCuota/@mov.NumeroCuotaTotal</td>
