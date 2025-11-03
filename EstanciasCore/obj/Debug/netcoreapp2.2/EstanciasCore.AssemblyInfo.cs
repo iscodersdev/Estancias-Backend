@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EstanciasCore")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f1d710f23d550fb761ad7628d1ac3e7475f34b53")]
 [assembly: System.Reflection.AssemblyProductAttribute("EstanciasCore")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EstanciasCore")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
