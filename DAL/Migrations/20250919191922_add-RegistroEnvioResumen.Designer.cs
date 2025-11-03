@@ -4,14 +4,16 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(EstanciasContext))]
-    partial class EstanciasContextModelSnapshot : ModelSnapshot
+    [Migration("20250919191922_add-RegistroEnvioResumen")]
+    partial class addRegistroEnvioResumen
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2374,8 +2376,6 @@ namespace DAL.Migrations
                         .HasMaxLength(256);
 
                     b.Property<int?>("VendedoresId");
-
-                    b.Property<bool>("activo");
 
                     b.HasKey("Id");
 

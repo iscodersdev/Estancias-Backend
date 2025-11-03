@@ -4,14 +4,16 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(EstanciasContext))]
-    partial class EstanciasContextModelSnapshot : ModelSnapshot
+    [Migration("20250918162716_update-PagoTarjeta-Observacion")]
+    partial class updatePagoTarjetaObservacion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1319,35 +1321,6 @@ namespace DAL.Migrations
                     b.ToTable("DatosEstructura");
                 });
 
-            modelBuilder.Entity("DAL.Models.DistribucionResumen", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("CanalesDistribucion");
-
-                    b.Property<string>("Estado");
-
-                    b.Property<DateTime>("Fecha");
-
-                    b.Property<int?>("PeriodoId");
-
-                    b.Property<int?>("ResumenTarjetaId");
-
-                    b.Property<string>("UsuarioId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PeriodoId");
-
-                    b.HasIndex("ResumenTarjetaId");
-
-                    b.HasIndex("UsuarioId");
-
-                    b.ToTable("DistribucionResumen");
-                });
-
             modelBuilder.Entity("DAL.Models.Empresas", b =>
                 {
                     b.Property<int>("Id")
@@ -2129,8 +2102,6 @@ namespace DAL.Migrations
 
                     b.Property<DateTime>("Fecha");
 
-                    b.Property<DateTime>("FechaVencimiento");
-
                     b.Property<decimal>("Monto");
 
                     b.Property<decimal>("MontoAdeudado");
@@ -2374,8 +2345,6 @@ namespace DAL.Migrations
                         .HasMaxLength(256);
 
                     b.Property<int?>("VendedoresId");
-
-                    b.Property<bool>("activo");
 
                     b.HasKey("Id");
 
@@ -2845,21 +2814,6 @@ namespace DAL.Migrations
                     b.HasOne("DAL.Models.Conceptos", "Concepto")
                         .WithMany()
                         .HasForeignKey("ConceptoId");
-                });
-
-            modelBuilder.Entity("DAL.Models.DistribucionResumen", b =>
-                {
-                    b.HasOne("DAL.Models.Periodo", "Periodo")
-                        .WithMany()
-                        .HasForeignKey("PeriodoId");
-
-                    b.HasOne("DAL.Models.ResumenTarjeta", "ResumenTarjeta")
-                        .WithMany()
-                        .HasForeignKey("ResumenTarjetaId");
-
-                    b.HasOne("DAL.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("UsuarioId");
                 });
 
             modelBuilder.Entity("DAL.Models.Empresas", b =>

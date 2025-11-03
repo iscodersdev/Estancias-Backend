@@ -85,6 +85,7 @@ namespace DAL.Mobile
 		public string EstadoPagoDescripcion { get; set; }
 		public byte[] ComprobantePago { get; set; }
         public string FechaComprobante { get; set; }
+        public string Observacion { get; set; }
     }
 
 
@@ -263,6 +264,14 @@ namespace DAL.Mobile
         public string NroTarjeta { get; set; }
         public int Tipomovimiento { get; set; }
         public int CantMovimientos { get; set; }
+    }
+
+    public class EnvioDeResumen
+    {
+        public string UAT { get; set; }
+        public string NroDocumento { get; set; }
+        public string email { get; set; } = null;
+        public int PeriodoId { get; set; }
     }
 
 }

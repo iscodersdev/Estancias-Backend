@@ -99,6 +99,7 @@ namespace DAL.Data
         public DbSet<LogProcedimientos> LogProcedimientos { get; set; }
         public DbSet<LogResumenesTarjetas> LogResumenesTarjetas { get; set; }
         public DbSet<ResumenTarjeta> ResumenTarjeta { get; set; }
+        public DbSet<DistribucionResumen> DistribucionResumen { get; set; }
 
 
 

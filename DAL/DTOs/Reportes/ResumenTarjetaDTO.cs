@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DAL.DTOs.Servicios;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -32,6 +33,7 @@ namespace DAL.DTOs.Reportes
         public decimal SaldoAnterior { get; set; }
         public decimal Pagos { get; set; }
         public decimal SaldoActual { get; set; }
+        public decimal SaldoPendiente { get; set; }
         public decimal SaldoTotal { get; set; }
         public decimal Intereses { get; set; }
         public decimal Impuestos { get; set; }
@@ -45,6 +47,8 @@ namespace DAL.DTOs.Reportes
         public string PeriodoHasta { get; set; }
         public string Vencimiento { get; set; }
         public List<DetallesCuotasResumenDTO> DetallesCuotas { get; set; }
+        public List<ResultadoCuotasDTO> ConsumosAnteriores { get; set; }
+        public List<ResultadoCuotasDTO> ConsumosDelMes { get; set; }
     }
 
 }

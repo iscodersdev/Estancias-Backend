@@ -20,7 +20,7 @@ namespace EstanciasCore.Areas.Administracion.ViewModels
         public virtual Persona Persona { get; set; }
         public IEnumerable<SelectListItem> TipoDocumento { get; set; }
         public IEnumerable<SelectListItem> Pais { get; set; }
-        public int TarjetaEstancia { get; set; }
+        public string TarjetaEstancia { get; set; }
     }
 
     public class UsuarioEstanciasVM

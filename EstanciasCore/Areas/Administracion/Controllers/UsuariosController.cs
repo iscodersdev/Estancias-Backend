@@ -30,7 +30,7 @@ namespace EstanciasCore.Controllers
         {
             _context = context;
             _userService = userService;
-            this._UserManager = userManager;
+            _UserManager = userManager;
         }
 
         public async Task<IActionResult> Index()
@@ -484,7 +484,8 @@ namespace EstanciasCore.Controllers
                 Mail = updateUser.Email,
                 Password = updateUser.Password,
                 Administrador = updateUser.Administradores,
-                Persona=updateUser.Personas
+                Persona=updateUser.Personas,
+                TarjetaEstancia= updateUser.Personas!=null ? updateUser.Personas.NroTarjeta : ""
             };
             updateModel=CargarViewBag(updateModel);
             return PartialView(updateModel);
@@ -497,47 +498,103 @@ namespace EstanciasCore.Controllers
             {
                 ModelState.Remove("Persona.TipoDocumento.Descripcion");
                 ModelState.Remove("Persona.Genero.Descripcion");
+                ModelState.Remove("Persona.Id");
+                ModelState.Remove("Password");
                 if (ModelState.IsValid)
                 {
-                    Persona updatePersona = await _context.Personas.FindAsync(usuario.Persona.Id);
-                    updatePersona.NroDocumento = usuario.Persona.NroDocumento;
-                    updatePersona.Nombres = usuario.Persona.Nombres;
-                    updatePersona.Apellido = usuario.Persona.Apellido;
-                    updatePersona.Cuil = usuario.Persona.Cuil;
-                    updatePersona.FechaNacimiento = usuario.Persona.FechaNacimiento;
-                    updatePersona.TipoDocumento = await _context.TipoDocumento.FindAsync(usuario.Persona.TipoDocumento.Id);
-                    updatePersona.Pais = await _context.Paises.FindAsync(usuario.Persona.Pais.Id);
-                    _context.Personas.Update(updatePersona);
-                    await _context.SaveChangesAsync();
-
-                    var user = await _context.Users.FindAsync(usuario.UserId);
-                    user.Personas = updatePersona;
-                    user.UserName = usuario.Mail;
-                    user.NormalizedUserName = usuario.Mail.ToUpper();
-                    user.Email = usuario.Mail;
-                    user.NormalizedEmail = usuario.Mail.ToUpper();
-                    user.Mail = usuario.Mail;
-                    user.Password = usuario.Password;
-                    user.Administradores = usuario.Administrador;
-                    if (usuario.Administrador)
+                    Persona persona = _context.Personas.Where(x=>x.NroDocumento==usuario.Persona.NroDocumento).FirstOrDefault();
+                    if (persona!=null)
                     {
-                        user.Clientes = null;
+                        usuario.Persona.Id = persona.Id;
+                    }
+                    if (usuario.Persona.Id!=0)
+                    {
+                        Persona updatePersona = await _context.Personas.FindAsync(usuario.Persona.Id);
+                        updatePersona.NroDocumento = usuario.Persona.NroDocumento;
+                        updatePersona.NroTarjeta = usuario.TarjetaEstancia;
+                        updatePersona.Nombres = usuario.Persona.Nombres;
+                        updatePersona.Apellido = usuario.Persona.Apellido;
+                        updatePersona.Cuil = usuario.Persona.Cuil;
+                        updatePersona.FechaNacimiento = usuario.Persona.FechaNacimiento;
+                        updatePersona.TipoDocumento = await _context.TipoDocumento.FindAsync(usuario.Persona.TipoDocumento.Id);
+                        updatePersona.Pais = await _context.Paises.FindAsync(usuario.Persona.Pais.Id);
+                        _context.Personas.Update(updatePersona);
+                        await _context.SaveChangesAsync();
+
+                        var user = await _context.Users.FindAsync(usuario.UserId);
+                        user.Personas = updatePersona;
+                        user.UserName = usuario.Mail;
+                        user.NormalizedUserName = usuario.Mail.ToUpper();
+                        user.Email = usuario.Mail;
+                        user.NormalizedEmail = usuario.Mail.ToUpper();
+                        user.Mail = usuario.Mail;
+                        user.Administradores = usuario.Administrador;
+                        var result = await _UserManager.UpdateAsync(user);
+
+                        if (usuario.Administrador)
+                        {
+                            user.Clientes = null;
+                        }
+                        else
+                        {
+                            if (user.Clientes != null)
+                            {
+                                user.Clientes = new Clientes();
+                                user.Clientes.Empresa = _context.Empresas.Find(1);
+                                user.Clientes.Persona = updatePersona;
+                                await _context.Clientes.AddAsync(user.Clientes);
+                            }
+                        }
+                        _context.Update(user);
+                        await _context.SaveChangesAsync();
                     }
                     else
                     {
-                        if (user.Clientes != null)
+                        Persona newPersona = new Persona();
+                        newPersona.NroDocumento = usuario.Persona.NroDocumento;
+                        newPersona.NroTarjeta = usuario.TarjetaEstancia;
+                        newPersona.Nombres = usuario.Persona.Nombres;
+                        newPersona.Apellido = usuario.Persona.Apellido;
+                        newPersona.Cuil = usuario.Persona.Cuil;
+                        newPersona.FechaNacimiento = usuario.Persona.FechaNacimiento;
+                        newPersona.TipoDocumento = await _context.TipoDocumento.FindAsync(usuario.Persona.TipoDocumento.Id);
+                        newPersona.Pais = await _context.Paises.FindAsync(usuario.Persona.Pais.Id);
+                        _context.Personas.Add(newPersona);
+                        await _context.SaveChangesAsync();
+
+                        var user = await _context.Users.FindAsync(usuario.UserId);
+                        user.Personas = newPersona;
+                        user.UserName = usuario.Mail;
+                        user.NormalizedUserName = usuario.Mail.ToUpper();
+                        user.Email = usuario.Mail;
+                        user.NormalizedEmail = usuario.Mail.ToUpper();
+                        user.Mail = usuario.Mail;
+                        user.Administradores = usuario.Administrador;
+                        var result = await _UserManager.UpdateAsync(user);
+
+                        if (usuario.Administrador)
                         {
-                            user.Clientes = new Clientes();
-                            user.Clientes.Empresa = _context.Empresas.Find(1);
-                            user.Clientes.Persona = updatePersona;
-                            await _context.Clientes.AddAsync(user.Clientes);
+                            user.Clientes = null;
                         }
-
+                        else
+                        {
+                            if (user.Clientes == null)
+                            {
+                                user.Clientes = new Clientes();
+                                user.Clientes.Empresa = _context.Empresas.Find(1);
+                                user.Clientes.Persona = newPersona;
+                                await _context.Clientes.AddAsync(user.Clientes);
+                            }
+                            else
+                            {
+                                user.Clientes.Empresa = _context.Empresas.Find(1);
+                                user.Clientes.Persona = newPersona;
+                                await _context.Clientes.AddAsync(user.Clientes);
+                            }
+                        }
+                        _context.Update(user);
+                        await _context.SaveChangesAsync();
                     }
-                    user.PasswordHash = _UserManager.PasswordHasher.HashPassword(user, usuario.Password);
-                    _context.Update(user);
-                    await _context.SaveChangesAsync();
-
                     return RedirectToAction("Index");
                 }
                 else

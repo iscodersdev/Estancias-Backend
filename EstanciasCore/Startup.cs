@@ -55,6 +55,14 @@ namespace EstanciasCore
 
             });
 
+            services.AddAuthentication() // O AddDefaultIdentity o AddIdentity
+            .AddCookie(options =>
+            {
+                options.LoginPath = "/Identity/Account/Login";
+                // options.LogoutPath = "/Identity/Account/Logout";
+                // options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+            });
+
             services.AddCommonsServices<Usuario, EstanciasContext>();
             services.AddDistributedMemoryCache();
             services.AddCommonsLibraryViews();
@@ -65,7 +73,8 @@ namespace EstanciasCore
             services.AddTransient<MercadoPagoServices>();
 
             //Genera Resumen Mensual
-            services.AddHostedService<ResumenMensualWorker>();
+            //services.AddHostedService<ResumenMensualWorker>();
+            //services.AddHostedService<EnvioDeResumenWorker>();
 
             services.AddSession();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
@@ -83,9 +92,14 @@ namespace EstanciasCore
                 ).AddJsonOptions(options =>
                 {
                     options.SerializerSettings.ContractResolver = new DefaultContractResolver();
-                })
-                ;
+                });
 
+                services.ConfigureApplicationCookie(options =>
+                {
+                    options.LoginPath = $"/Identity/Account/Login";
+                    options.LogoutPath = $"/Identity/Account/Logout";
+                    options.AccessDeniedPath = $"/Identity/Account/AccessDenied";
+                });
             services.Configure<IdentityOptions>(options =>
             {
                 options.Password.RequireDigit = false;
