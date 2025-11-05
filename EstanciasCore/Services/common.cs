@@ -944,17 +944,15 @@ namespace EstanciasCore.Services
         /// <returns></returns>
         public static DateTime? ConvertirFechaCompleta(string fechaStr)
         {
-            // 1. Define el formato de tu string. Ejemplo: "2025-10-27 11:25:32"
-            string formato = "yyyy-MM-dd HH:mm";
+            string formato = "yyyy-MM-ddTHH:mm:ss.fffZ";
 
             DateTime fechaDT;
 
-            // 2. Intenta la conversión
             bool exito = DateTime.TryParseExact(
                 fechaStr,
                 formato,
-                CultureInfo.InvariantCulture, // Usar cultura invariable (sin depender de la región del sistema)
-                DateTimeStyles.None,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
                 out fechaDT
             );
 
@@ -968,7 +966,6 @@ namespace EstanciasCore.Services
                 return null;
             }
         }
-
     }
 
     public class BaseDataAccess

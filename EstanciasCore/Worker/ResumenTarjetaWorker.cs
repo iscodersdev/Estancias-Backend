@@ -50,7 +50,7 @@ public class ResumenMensualWorker : BackgroundService
                         .AsNoTracking()
                         .FirstOrDefaultAsync(p => p.Codigo == "GenerarResumen" && p.Activo == true, stoppingToken);
 
-                    if (procedimiento != null && procedimiento.Activo && DebeEjecutarHoy(procedimiento.DiaEjecucion))
+                    if (procedimiento != null && procedimiento.Activo && DebeEjecutarHoy(procedimiento.DiaEjecucion, procedimiento.FechaUltimaEjecucionExitosa))
                     {
                         await EjecutarProcesoConNotificaciones(scope);
                     }
@@ -129,21 +129,30 @@ public class ResumenMensualWorker : BackgroundService
         return Task.CompletedTask;
     }
 
-    private bool DebeEjecutarHoy(int diaDeEjecucionDesdeBD)
+    private bool DebeEjecutarHoy(int diaDeEjecucionDesdeBD, DateTime? fechaUltimaEjecucionBD)
     {
         var ahora = DateTime.Now;
 
+        // Lógica para reiniciar contadores locales si el día cambió (Útil si el servicio no se reinicia)
         if (ahora.Day != _ultimoDiaDeIntentos)
         {
             _intentosHoy = 0;
-            _ultimaEjecucionMarcada = null;
+            // No necesitamos _ultimaEjecucionMarcada si usamos la BD
             _ultimoDiaDeIntentos = ahora.Day;
         }
 
         bool esDiaDeEjecucion = ahora.Day == diaDeEjecucionDesdeBD;
-        bool yaSeEjecuto = _ultimaEjecucionMarcada.HasValue && _ultimaEjecucionMarcada.Value.Date == ahora.Date;
+
+        // Comprueba si ya se ejecutó con éxito hoy usando la fecha de la BD.
+        // **Esta es la verificación clave.**
+        bool yaSeEjecutoHoy = fechaUltimaEjecucionBD.HasValue && fechaUltimaEjecucionBD.Value.Date == ahora.Date;
+
         bool limiteDeIntentosSuperado = _intentosHoy >= 3;
 
-        return esDiaDeEjecucion && !yaSeEjecuto && !limiteDeIntentosSuperado;
+        // Solo ejecuta si:
+        // 1. Es el día de ejecución configurado (por ejemplo, el 4).
+        // 2. NO se ha completado exitosamente HOY según el registro de la BD.
+        // 3. NO ha superado el límite de reintentos desde el último inicio del worker.
+        return esDiaDeEjecucion && !yaSeEjecutoHoy && !limiteDeIntentosSuperado;
     }
 }

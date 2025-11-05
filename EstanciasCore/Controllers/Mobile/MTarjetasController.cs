@@ -529,6 +529,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                     TotalRedondeo = Math.Round(DeudaTotal, 2);
                     var fechaVencimiento = new DateTime(fechaActualCuotas.Year, fechaActualCuotas.Month, 15);
 
+                    var fechaPago = ConvertirFechaCompleta(pagotarjetaDTO.FechaComprobante);
+
                     var pagoTarjeta = new PagoTarjeta
                     {
                         NroTarjeta = pagotarjetaDTO.NroTarjeta,
@@ -539,7 +541,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                         FechaComprobante = DateTime.Now,
                         FechaPagoProximaCuota = fechaVencimiento,
                         ComprobantePago = pagotarjetaDTO.ComprobantePago,
-                        FechaDePago = ConvertirFechaCompleta(pagotarjetaDTO.FechaComprobante),
+                        FechaDePago = fechaPago!=null? fechaPago : DateTime.Now,
                         MontoInformado = Convert.ToDecimal(pagotarjetaDTO.MontoInformado)
 
                     };
