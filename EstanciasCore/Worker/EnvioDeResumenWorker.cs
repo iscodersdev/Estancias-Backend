@@ -118,7 +118,7 @@ public class EnvioDeResumenWorker : BackgroundService
             try
             {
                 string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
-                string asunto = $"Tu resumen del mes de {mesNombre} ya está disponible";
+                string asunto = $"Tu resumen de Tarjeta Estancias ya está disponible";
 
                 // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
                 byte[] pdfBytes = resu.Adjunto;
@@ -132,7 +132,7 @@ public class EnvioDeResumenWorker : BackgroundService
 
                 var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
                 {
-                    Fecha = fechaVencimiento.ToString("dd/MM/yyyy"),
+                    Fecha = fechaVencimiento.ToString("dd/MM"),
                     // Nota: Usando decimales correctos para la suma.
                     Monto = resu.Monto + resu.MontoAdeudado,
                 };
@@ -141,8 +141,8 @@ public class EnvioDeResumenWorker : BackgroundService
                 var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
 
                 // **3. Envía el email con el PDF adjunto**
-                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
-                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorge.cutulli@iscoders.com.ar", Titulo = asunto, Html = viewHtml }, pdfBytes);
+                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorge.cutulli@iscoders.com.ar", Titulo = asunto, Html = viewHtml }, pdfBytes);
                 // Si la línea de prueba está activa, también se envía:
                 // await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
 

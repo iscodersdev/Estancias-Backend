@@ -299,13 +299,20 @@ namespace EstanciasCore.Controllers
                     Cliente = $"{p.Persona?.Apellido}, {p.Persona?.Nombres}",
                     NroDocumento = p.Persona?.NroDocumento,
                     FechaVencimiento = p.FechaVencimiento?.ToString("dd/MM/yyyy") ?? "",
-                    FechaComprobante = p.FechaComprobante?.ToString("dd/MM/yyyy") ?? "",
-                    MontoAdeudado = p.MontoAdeudado,
+                    FechaComprobante = p.FechaDePago?.ToString("dd/MM/yyyy HH:mm") ?? "",
                     MontoInformado = p.MontoInformado,
                     Estado = p.EstadoPago.ToString()
                 }).ToList();
 
                 worksheet.Cells.LoadFromCollection(dataToExport, true);
+
+                worksheet.Cells["A1"].Value = "Cliente";
+                worksheet.Cells["B1"].Value = "NroDocumento.";
+                worksheet.Cells["C1"].Value = "Fecha Informada";
+                worksheet.Cells["D1"].Value = "Fecha de Carga";
+                worksheet.Cells["E1"].Value = "Monto Informado";
+                worksheet.Cells["F1"].Value = "Estado";
+
                 worksheet.Column(5).Style.Numberformat.Format = "$ #,##0.00";
                 worksheet.Column(6).Style.Numberformat.Format = "$ #,##0.00";
                 worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();

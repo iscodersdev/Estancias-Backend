@@ -173,13 +173,15 @@
             <tr class="section-title">
                 <td colspan="2">RESUMEN CONSOLIDADO</td>
             </tr>
+                
             @if (Model.ConsumosAnteriores.Count() > 0)
             {
                 <tr>
                     <td class="bold">SALDO DEUDA ANTERIOR</td>
                     <td class="text-right">$ @Model.SaldoPendiente.ToString("N2", culturaAR)</td>
                 </tr>
-            }
+            } 
+                
             <tr>
                 <td class="bold">SALDO MES EN CURSO</td>
                 <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
@@ -242,44 +244,14 @@
                 </tr>
             }
             <tr class="summary-total-row">
-                <td colspan="4">TOTAL DEL MES</td>
-                <td class="text-right">$ @Model.SaldoActual.ToString("N2", culturaAR)</td>
+                <td colspan="4"></td>
+                <td class="text-right"></td>
             </tr>
         </table>
 
-        @if (false)
-        {
-            <table class="data-table">
-                <tr class="section-title">
-                    <td colspan="5">CONSUMOS ANTERIORES (Estos consumos tienen aplicado punitorios)</td>
-                </tr>
-                <tr class="table-header">
-                    <td>Fecha</td>
-                    <td>Concepto</td>
-                    <td class="text-center">N° Solicitud</td>
-                    <td class="text-center">Cuota</td>
-                    <td class="text-right">Pesos</td>
-                </tr>
-                <tr class="table-header">
-                    <td colspan="5" style="background-color: #eee;">CUOTAS ANTERIORES</td>
-                </tr>
-                @foreach (var mov in (List<ResultadoCuotasDTO>)Model.ConsumosAnteriores)
-                {
-                    var fechaConvertida = common.ConvertirFecha(mov.Fecha);
-                    <tr>
-                        <td>@("10/"+fechaConvertida.Month+"/"+fechaConvertida.Year)</td>
-                        <td>@mov.Descripcion</td>
-                        <td class="text-center">@mov.Codigo</td>
-                        <td class="text-center">@mov.NumeroCuota/@mov.NumeroCuotaTotal</td>
-                        <td class="text-right">$ @(Convert.ToDecimal(mov.Monto.Replace(',', '.')).ToString("N2", culturaAR))</td>
-                    </tr>
-                }
-                <tr class="summary-total-row">
-                    <td colspan="4">TOTAL</td>
-                    <td class="text-right">$ @Model.SaldoPendiente.ToString("N2", culturaAR)</td>
-                </tr>
-            </table>
-        }        
-    </div>
+        El SALDO DEUDA ANTERIOR corresponde a las cuotas vencidas más los punitorios aplicados.
+        El pago debe realizarse antes del vencimiento para evitar la aplicación de nuevos intereses punitorios.
+        Es obligatorio informar el pago exclusivamente desde la App Estancias para su correcta acreditación.
+        Descargá la app desde App Store o Google Play o bien ingresá a https://app.estanciaschiripa.com.ar/login
 </body>
 </html>

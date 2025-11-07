@@ -50,6 +50,7 @@ namespace EstanciasCore.Controllers
             //_resumen.GenerarResumenTarjetas();
 
             //var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };
+            //var dnisConfig = new List<string>() { "37217944" };
 
             //foreach (var item in dnisConfig)
             //{
@@ -57,7 +58,7 @@ namespace EstanciasCore.Controllers
 
             //    CultureInfo culturaAR = new CultureInfo("es-AR");
             //    string mesNombre = culturaAR.DateTimeFormat.GetMonthName(11);
-            //    string asunto = $"Tu resumen del mes de {mesNombre} ya está disponible";
+            //    string asunto = $" Tu resumen de Tarjeta Estancias ya está disponible";
 
             //    // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
             //    byte[] pdfBytes = resumenesUsuario.Adjunto;
@@ -73,7 +74,7 @@ namespace EstanciasCore.Controllers
             //    // **2. Renderiza la vista del correo electrónico**
             //    var viewHtml = RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre).Result;
 
-            //    common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resumenesUsuario.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+            //    common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
 
             //}
 
@@ -166,6 +167,78 @@ namespace EstanciasCore.Controllers
             return View("ResumenBancarioTemplate", datosParaResumenDTO);
         }
 
+        public async Task<IActionResult> DescargarResumenpdf(string dni)
+        {
+            Usuario usuarioLocal = _context.Usuarios.Where(x => x.Personas.NroDocumento == dni).FirstOrDefault();
+            //DateTime fecha = DateTime.Now;
+
+
+            DateTime fechaMesActualCuotas = new DateTime(2025, 11, 01);
+            int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
+
+            //Fecha para Punitorios
+            if (fechaMesActualCuotas.Day > 15)
+            {
+                DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+            }
+            else
+            {
+                DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
+            }
+
+            DateTime fechaActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+            DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
+
+
+            var movimientos = _datosTarjeta.ConsultarMovimientos("APPESTANCIAS", "appcpe01", dni, Convert.ToInt64(usuarioLocal.Personas.NroTarjeta), 100, 1).Result;
+
+            var datosResumen = _datosTarjeta.CuotasDetallesResumen(movimientos, fechaActualCuotas).Result;
+
+            var datosResumenConPunitorios = _datosTarjeta.CalcularPunitoriosResumen(datosResumen).Result;
+
+            Periodo periodo = _context.Periodo.Where(x => x.FechaVencimiento.Date==new DateTime(2025, 11, 15).Date).FirstOrDefault();
+
+            UsuarioParaProcesarDTO usuarioDTO = new UsuarioParaProcesarDTO()
+            {
+                NroDocumento = usuarioLocal.Personas.NroDocumento,
+                NombreCompleto = usuarioLocal.Personas.GetNombreCompleto(),
+                Id = usuarioLocal.Id,
+                UserName = usuarioLocal.UserName,
+                NroTarjeta = usuarioLocal.Personas.NroTarjeta
+            };
+
+            var datosParaResumenDTO = _datosTarjeta.PrepararDatosResumen(movimientos, datosResumenConPunitorios, periodo, usuarioDTO).Result;
+
+            var html = await _datosTarjeta.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO); 
+            byte[] pdfBytesPDF;
+            using (var memoryStream = new MemoryStream())
+            {
+                // El método HtmlConverter.ConvertToPdf realiza la magia
+                HtmlConverter.ConvertToPdf(html, memoryStream);
+                pdfBytesPDF = memoryStream.ToArray();
+            }
+            string nombreArchivo = $"Resumen-{usuarioLocal.Personas.NroDocumento}-{DateTime.Now:yyyyMMdd}.pdf";
+
+            /*-----------------*/
+            DateTime fechaVencimiento = new DateTime(2025, 11, 10);
+
+            string Mes = fechaVencimiento.ToString("MMMM", new System.Globalization.CultureInfo("es-ES"));
+            var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
+            {
+                Fecha = fechaVencimiento.ToString("dd/MM"),
+                // Nota: Usando decimales correctos para la suma.
+                Monto = datosParaResumenDTO.SaldoActual + datosParaResumenDTO.SaldoAnterior,
+            };
+
+            // **2. Renderiza la vista del correo electrónico**
+            var viewHtml = RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, Mes).Result;
+
+            common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = "Tu resumen de Tarjeta Estancias ya está disponible", Html = viewHtml }, pdfBytesPDF);
+            /*-----------------*/
+
+            return File(pdfBytesPDF, "application/pdf", nombreArchivo);
+        }
+
         public IActionResult MailRegistro()
         {
             return View("MailRegistro");
@@ -216,7 +289,7 @@ namespace EstanciasCore.Controllers
 
                 string textoModificado = html.Replace("TextoFechaReemplazar", model.Fecha);
                 textoModificado = textoModificado.Replace("TextoMontoReemplazar", model.Monto.ToString("N2", culturaAR));
-                textoModificado = textoModificado.Replace("TextoMesEscritoReemplazar", mesNombre);
+                textoModificado = textoModificado.Replace("TextoMesEscritoReemplazar", mesNombre+"!");
 
                 return textoModificado;
             }
