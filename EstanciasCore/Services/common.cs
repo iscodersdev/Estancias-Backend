@@ -290,7 +290,8 @@ namespace EstanciasCore.Services
                 string usuario = "39ad53001@smtp-brevo.com";
                 string password = "K90kxAdQmTtjpJHv";
                 //var origen = new MailAddress("sender@servicemailing.com.ar", "Estancias ");
-                var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
+                //var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
+                var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
                 string host = "smtp-relay.brevo.com";
                 int puerto = 587;
                 bool ssl = true;
@@ -341,7 +342,7 @@ namespace EstanciasCore.Services
                 string usuario = "39ad53001@smtp-brevo.com";
                 string password = "K90kxAdQmTtjpJHv";
                 //var origen = new MailAddress("sender@servicemailing.com.ar", "Estancias ");
-                var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
+                var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
                 string host = "smtp-relay.brevo.com";
                 int puerto = 587;
                 bool ssl = true;

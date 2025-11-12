@@ -286,8 +286,8 @@ namespace EstanciasCore.Controllers
                 {
                     Cliente = $"{p.Persona?.Apellido}, {p.Persona?.Nombres}",
                     NroDocumento = p.Persona?.NroDocumento,
-                    FechaVencimiento = p.FechaVencimiento?.ToString("dd/MM/yyyy") ?? "",
-                    FechaComprobante = p.FechaDePago?.ToString("dd/MM/yyyy HH:mm") ?? "",
+                    FechaVencimiento = p.FechaDePago?.ToString("dd/MM/yyyy") ?? "",
+                    FechaComprobante = p.FechaComprobante?.ToString("dd/MM/yyyy HH:mm") ?? "",
                     MontoInformado = p.MontoInformado,
                     Estado = p.EstadoPago.ToString()
                 }).ToList();
