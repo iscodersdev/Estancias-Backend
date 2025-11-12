@@ -11,7 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-public class ResumenMensualWorker : BackgroundService
+public class WonderPushWorker : BackgroundService
 {
     private readonly ILogger<ResumenMensualWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
@@ -23,7 +23,7 @@ public class ResumenMensualWorker : BackgroundService
     private int _intentosHoy = 0;
     private int _ultimoDiaDeIntentos = 0;
 
-    public ResumenMensualWorker(ILogger<ResumenMensualWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
+    public WonderPushWorker(ILogger<ResumenMensualWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
@@ -35,7 +35,7 @@ public class ResumenMensualWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Worker de Resúmenes Mensuales iniciado.");
+        _logger.LogInformation("Worker de WonderPush iniciado.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -48,9 +48,9 @@ public class ResumenMensualWorker : BackgroundService
                     // Consulta corregida para ser más directa
                     var procedimiento = await context.Procedimientos
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(p => p.Codigo == "GenerarResumen" && p.Activo == true, stoppingToken);
+                        .FirstOrDefaultAsync(p => p.Codigo == "Cumple" && p.Activo == true, stoppingToken);
 
-                    if (procedimiento != null && procedimiento.Activo && DebeEjecutarHoy(procedimiento.DiaEjecucion, procedimiento.FechaUltimaEjecucionExitosa))
+                    if (procedimiento != null && procedimiento.Activo && DebeEjecutarHoy(procedimiento.DiaEjecucion))
                     {
                         await EjecutarProcesoConNotificaciones(scope);
                     }
@@ -60,7 +60,7 @@ public class ResumenMensualWorker : BackgroundService
             {
                 _logger.LogError(ex, "Ocurrió un error fatal en el ciclo del worker.");
                 // Opcional: Enviar un email de fallo crítico si el propio worker falla
-                await EnviarNotificacionAsync("Error Crítico en Worker", $"El worker de resúmenes ha fallado de forma inesperada. Error: {ex.Message}");
+                //await EnviarNotificacionAsync("Error Crítico en Worker", $"El worker de resúmenes ha fallado de forma inesperada. Error: {ex.Message}");
             }
 
             await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
@@ -75,10 +75,10 @@ public class ResumenMensualWorker : BackgroundService
         try
         {
             // 1. ENVIAR EMAIL DE INICIO
-            await EnviarNotificacionAsync(
-                "Inicio del Proceso de Resúmenes",
-                $"El proceso ha comenzado a las {DateTime.Now:G}. (Intento {_intentosHoy})"
-            );
+            //await EnviarNotificacionAsync(
+            //    "Inicio del Proceso de Resúmenes",
+            //    $"El proceso ha comenzado a las {DateTime.Now:G}. (Intento {_intentosHoy})"
+            //);
 
             // 2. EJECUTAR LÓGICA DE NEGOCIO
             var resumenService = scope.ServiceProvider.GetRequiredService<IResumenTarjetaService>();
@@ -93,10 +93,10 @@ public class ResumenMensualWorker : BackgroundService
         finally
         {
             // 3. ENVIAR EMAIL DE FINALIZACIÓN (SIEMPRE SE EJECUTA)
-            await EnviarNotificacionAsync(
-                $"Proceso de Resúmenes Finalizado con Estado: {resultadoFinal}",
-                $"La ejecución ha concluido a las {DateTime.Now:G}. El resultado fue: {resultadoFinal}."
-            );
+            //await EnviarNotificacionAsync(
+            //    $"Proceso de Resúmenes Finalizado con Estado: {resultadoFinal}",
+            //    $"La ejecución ha concluido a las {DateTime.Now:G}. El resultado fue: {resultadoFinal}."
+            //);
 
             // 4. MARCAR COMO EJECUTADO PARA NO REPETIR HOY
             _ultimaEjecucionMarcada = DateTime.Today;
@@ -104,55 +104,46 @@ public class ResumenMensualWorker : BackgroundService
     }
 
     // --- MÉTODO PRIVADO QUE USA TU LÓGICA DE EMAIL ---
-    private Task EnviarNotificacionAsync(string asunto, string cuerpoHTML)
-    {
-        if (_adminEmails.Length == 0)
-        {
-            _logger.LogWarning("No hay emails de administrador configurados. Se omite el envío de notificación.");
-            return Task.CompletedTask;
-        }
+    //private Task EnviarNotificacionAsync(string asunto, string cuerpoHTML)
+    //{
+    //    if (_adminEmails.Length == 0)
+    //    {
+    //        _logger.LogWarning("No hay emails de administrador configurados. Se omite el envío de notificación.");
+    //        return Task.CompletedTask;
+    //    }
 
-        _logger.LogInformation($"Preparando email: '{asunto}'");
-        foreach (var emailDestino in _adminEmails)
-        {
-            try
-            {
-                // --- TU LÍNEA DE CÓDIGO INTEGRADA AQUÍ ---
-                common.EnviarMail(emailDestino.Trim(), asunto, cuerpoHTML, "");
-                _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Fallo al enviar el email de notificación a: {emailDestino}");
-            }
-        }
-        return Task.CompletedTask;
-    }
+    //    _logger.LogInformation($"Preparando email: '{asunto}'");
+    //    foreach (var emailDestino in _adminEmails)
+    //    {
+    //        try
+    //        {
+    //            // --- TU LÍNEA DE CÓDIGO INTEGRADA AQUÍ ---
+    //            common.EnviarMail(emailDestino.Trim(), asunto, cuerpoHTML, "");
+    //            _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            _logger.LogError(ex, $"Fallo al enviar el email de notificación a: {emailDestino}");
+    //        }
+    //    }
+    //    return Task.CompletedTask;
+    //}
 
-    private bool DebeEjecutarHoy(int diaDeEjecucionDesdeBD, DateTime? fechaUltimaEjecucionBD)
+    private bool DebeEjecutarHoy(int diaDeEjecucionDesdeBD)
     {
         var ahora = DateTime.Now;
 
-        // Lógica para reiniciar contadores locales si el día cambió (Útil si el servicio no se reinicia)
         if (ahora.Day != _ultimoDiaDeIntentos)
         {
             _intentosHoy = 0;
-            // No necesitamos _ultimaEjecucionMarcada si usamos la BD
+            _ultimaEjecucionMarcada = null;
             _ultimoDiaDeIntentos = ahora.Day;
         }
 
         bool esDiaDeEjecucion = ahora.Day == diaDeEjecucionDesdeBD;
-
-        // Comprueba si ya se ejecutó con éxito hoy usando la fecha de la BD.
-        // **Esta es la verificación clave.**
-        bool yaSeEjecutoHoy = fechaUltimaEjecucionBD.HasValue && fechaUltimaEjecucionBD.Value.Date == ahora.Date;
-
+        bool yaSeEjecuto = _ultimaEjecucionMarcada.HasValue && _ultimaEjecucionMarcada.Value.Date == ahora.Date;
         bool limiteDeIntentosSuperado = _intentosHoy >= 3;
 
-        // Solo ejecuta si:
-        // 1. Es el día de ejecución configurado (por ejemplo, el 4).
-        // 2. NO se ha completado exitosamente HOY según el registro de la BD.
-        // 3. NO ha superado el límite de reintentos desde el último inicio del worker.
-        return esDiaDeEjecucion && !yaSeEjecutoHoy && !limiteDeIntentosSuperado;
+        return esDiaDeEjecucion && !yaSeEjecuto && !limiteDeIntentosSuperado;
     }
 }

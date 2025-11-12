@@ -59,34 +59,32 @@ public class ResumenTarjetaService : IResumenTarjetaService
 
             // --- 2. OBTENER O CREAR EL PERIODO ACTUAL ---
             Periodo periodo;
-            DateTime fechaActual = DateTime.Now.AddDays(-1);
+
+            DateTime fechaActualPerido = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15);
             using (var scope = _scopeFactory.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
 
                 datosEstructura = await context.DatosEstructura.FirstOrDefaultAsync();
-                // Buscamos si ya existe un período para la fecha actual.
-                periodo = await context.Periodo.FirstOrDefaultAsync(p => fechaActual.Date >= p.FechaDesde.Date && fechaActual.Date <= p.FechaHasta.Date);
 
-                periodo = await context.Periodo.FirstOrDefaultAsync(p => p.Id==89);
+                periodo = await context.Periodo.FirstOrDefaultAsync(p => fechaActualPerido.Date.Day >= p.FechaVencimiento.Date.Day && fechaActualPerido.Date.Month <= p.FechaVencimiento.Date.Month && fechaActualPerido.Date.Year <= p.FechaVencimiento.Date.Year);
 
                 if (periodo == null)
                 {
-                    // Si no existe, lo creamos para el mes actual.                    
-                    var FechaDesde = fechaActual.AddMonths(-1).AddDays(1);
-                    var FechaHasta = fechaActual;
-                    DateTime proximoMes = fechaActual.AddMonths(1);
-                    DateTime fechaDeVencimiento = new DateTime(proximoMes.Year, proximoMes.Month, 15);
+                    DateTime FechaDesde = new DateTime(fechaActualPerido.Year, fechaActualPerido.AddMonths(-2).Month, 26);
+                    DateTime FechaHasta = new DateTime(fechaActualPerido.Year, fechaActualPerido.AddMonths(-1).Month, 25);
+                    DateTime proximoMes = fechaActualPerido.AddMonths(1);
+                    DateTime fechaDeVencimiento = new DateTime(fechaActualPerido.Year, fechaActualPerido.Month, 15);
                     periodo = new Periodo
                     {
-                        Descripcion = fechaActual.ToString("MMMM yyyy", new CultureInfo("es-ES")), // ej. "agosto 2025"
+                        Descripcion = FechaHasta.ToString("MMMM yyyy", new CultureInfo("es-ES")),
                         FechaDesde = FechaDesde,
                         FechaHasta = FechaHasta,
                         Activo = true,
                         FechaVencimiento = fechaDeVencimiento
                     };
-                    context.Add(periodo);
-                    await context.SaveChangesAsync(); // Guardamos inmediatamente para que tenga un Id
+                    context.Add(periodo); 
+                    await context.SaveChangesAsync();
                 }
             }
 
@@ -200,11 +198,9 @@ public class ResumenTarjetaService : IResumenTarjetaService
 
             if (!long.TryParse(numeroTarjetaLimpio, out long numeroTarjetaConvertido))
             {
-                // El número de tarjeta no es un número válido.
-                // Lo registramos como fallido y salimos de la tarea para este usuario.
                 var errorMsg = $"El Nro. de Tarjeta '{numeroTarjetaLimpio}' no tiene un formato numérico válido.";
                 fallidos.Add((usuario.Id, errorMsg));
-                return; // Importante: Salir temprano para no continuar con este usuario.
+                return;
             }
 
             // 1. CREAMOS UN SCOPE NUEVO Y AISLADO PARA ESTA TAREA
@@ -217,9 +213,9 @@ public class ResumenTarjetaService : IResumenTarjetaService
                 decimal TotalRedondeo = 0;
                 decimal MontoDisponible = 0;
                 List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-                //DateTime fechaMesActualCuotas = new DateTime(2025, 10, 01); //Cambiar para modo Prueba
+
                 DateTime fechaMesActualCuotas = DateTime.Now;
-                fechaMesActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.AddMonths(1).Month, 01); //Cambiar para modo Prueba
+                fechaMesActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 01);
 
                 int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
@@ -233,7 +229,6 @@ public class ResumenTarjetaService : IResumenTarjetaService
                 }
 
                 DateTime fechaActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
-                DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
 
                 // 2. OBTENEMOS LOS SERVICIOS Y EL DBCONTEXT DE ESTE SCOPE
                 var scopedDatosServices = scope.ServiceProvider.GetRequiredService<IDatosTarjetaService>();

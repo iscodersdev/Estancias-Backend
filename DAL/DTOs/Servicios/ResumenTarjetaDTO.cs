@@ -23,4 +23,15 @@ namespace DAL.DTOs.Servicios
         public string NumeroCuotaTotal { get; set; } = "0";
         public string Monto { get; set; }
     }
+
+    public class UsuarioParaProcesarWonderPushDTO
+    {
+        public string Id { get; set; }
+        public string UserName { get; set; }
+        public string NombreCompleto { get; set; }
+        public string NroDocumento { get; set; }
+        public string NroTarjeta { get; set; }
+        public string DeviceId { get; set; }
+        public string Token { get; set; }
+    }
 }

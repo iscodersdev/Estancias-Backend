@@ -70,11 +70,13 @@ namespace EstanciasCore
             services.AddTransient<NotificacionAPIService>();
             services.AddTransient<IDatosTarjetaService, DatosTarjetaService>();
             services.AddTransient<IResumenTarjetaService, ResumenTarjetaService>();
+            services.AddTransient<IWondePushService, WondePushService>();
             services.AddTransient<MercadoPagoServices>();
 
             //Genera Resumen Mensual
-            //services.AddHostedService<ResumenMensualWorker>();
-            //services.AddHostedService<EnvioDeResumenWorker>();
+            services.AddHostedService<ResumenMensualWorker>();
+            services.AddHostedService<EnvioDeResumenWorker>();
+            services.AddHostedService<WonderPushWorker>();
 
             services.AddSession();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)

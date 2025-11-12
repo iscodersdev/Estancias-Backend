@@ -290,7 +290,8 @@ namespace EstanciasCore.Services
                 string usuario = "39ad53001@smtp-brevo.com";
                 string password = "K90kxAdQmTtjpJHv";
                 //var origen = new MailAddress("sender@servicemailing.com.ar", "Estancias ");
-                var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
+                //var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
+                var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
                 string host = "smtp-relay.brevo.com";
                 int puerto = 587;
                 bool ssl = true;
@@ -341,7 +342,7 @@ namespace EstanciasCore.Services
                 string usuario = "39ad53001@smtp-brevo.com";
                 string password = "K90kxAdQmTtjpJHv";
                 //var origen = new MailAddress("sender@servicemailing.com.ar", "Estancias ");
-                var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
+                var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
                 string host = "smtp-relay.brevo.com";
                 int puerto = 587;
                 bool ssl = true;
@@ -944,17 +945,15 @@ namespace EstanciasCore.Services
         /// <returns></returns>
         public static DateTime? ConvertirFechaCompleta(string fechaStr)
         {
-            // 1. Define el formato de tu string. Ejemplo: "2025-10-27 11:25:32"
-            string formato = "yyyy-MM-dd HH:mm";
+            string formato = "yyyy-MM-ddTHH:mm:ss.fffZ";
 
             DateTime fechaDT;
 
-            // 2. Intenta la conversión
             bool exito = DateTime.TryParseExact(
                 fechaStr,
                 formato,
-                CultureInfo.InvariantCulture, // Usar cultura invariable (sin depender de la región del sistema)
-                DateTimeStyles.None,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
                 out fechaDT
             );
 
@@ -968,7 +967,6 @@ namespace EstanciasCore.Services
                 return null;
             }
         }
-
     }
 
     public class BaseDataAccess
