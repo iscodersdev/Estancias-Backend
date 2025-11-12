@@ -11,6 +11,7 @@ namespace DAL.Models.Core
         public string Descripcion { get; set; }
         public string Codigo { get; set; }
         public int DiaEjecucion { get; set; }
+        public DateTime? FechaUltimaEjecucionExitosa { get; set; }
         public bool Activo { get; set; }
     }
 

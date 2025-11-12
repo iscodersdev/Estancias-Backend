@@ -517,24 +517,6 @@ namespace EstanciasCore.Controllers
             {
                 int token = common.NiumeroRandom(100000, 999999);
                 DAL.Models.Persona persona = new DAL.Models.Persona();
-                //try
-                //{
-                //    persona = _context.Personas.FirstOrDefault(x => x.NroDocumento == uat.NumeroDocumento.ToString());
-                //}
-                //catch
-                //{
-                //    uat.Status = 500;
-                //    uat.Mensaje = "Dni no regsitrado";
-                //    return uat;
-                //}
-                //if (persona == null)
-                //{
-                //    uat.Status = 500;
-                //    uat.Mensaje = "Persona Inexistente";
-                //    return uat;
-                //}
-                //var user = await _userService.FindByEmailAsync(cliente.Usuario.UserName.ToString());
-                //string pass = common.Encrypt(cliente.Persona.NroDocumento.ToString() + DateTime.Now.ToString(), "Estancias");
 
                 Usuario user = _context.Users.Where(x => x.UserName==uat.email).FirstOrDefault();
 

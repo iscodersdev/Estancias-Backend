@@ -1,18 +1,30 @@
-﻿using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
-using Commons.Identity.Services;
+﻿using Commons.Identity.Services;
 using DAL.Data;
-using DAL.Models;
-using System.Linq;
-using System;
-using System.Globalization;
-using EstanciasCore.Interface;
+using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
+using DAL.Models;
+using EstanciasCore.Interface;
+using EstanciasCore.Services;
 using iText.Html2pdf;
-using System.IO;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using OfficeOpenXml.FormulaParsing.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using static EstanciasCore.Services.common;
 
 namespace EstanciasCore.Controllers
 {
@@ -22,16 +34,156 @@ namespace EstanciasCore.Controllers
         private readonly UserService<Usuario> _userManager;
         private readonly IResumenTarjetaService _resumen;
         private readonly IDatosTarjetaService _datosTarjeta;
-        public HomeController(EstanciasContext context, UserService<Usuario> userManager, SignInManager<Usuario> signInManager, IResumenTarjetaService resumen, IDatosTarjetaService datosTarjeta) : base(context)
+        private readonly ICompositeViewEngine _viewEngine;
+        private readonly IServiceProvider _serviceProvider;
+        public HomeController(EstanciasContext context, UserService<Usuario> userManager, SignInManager<Usuario> signInManager, IResumenTarjetaService resumen, IDatosTarjetaService datosTarjeta, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider) : base(context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _resumen = resumen;
             _datosTarjeta=datosTarjeta;
+            _viewEngine=viewEngine;
+            _serviceProvider = serviceProvider;
         }
         public IActionResult Index()
         {
             //_resumen.GenerarResumenTarjetas();
+
+            //var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };
+            var dnisConfig = new List<string>() { "37217944" };
+
+
+
+            //var dnisConfig = new List<string>()
+            //{
+            //    "30924029",
+            //    "28169057",
+            //    "38321219",
+            //    "35757417",
+            //    "29168051",
+            //    "16792876",
+            //    "35171364",
+            //    "32554335",
+            //    "18273739",
+            //    "27454114",
+            //    "28113350",
+            //    "32478751",
+            //    "25701145",
+            //    "35989033",
+            //    "35989032",
+            //    "35430172",
+            //    "36569558",
+            //    "34019479",
+            //    "24927167",
+            //    "29129264",
+            //    "28023078",
+            //    "27187368",
+            //    "26127387",
+            //    "32286891",
+            //    "20842208",
+            //    "33719151",
+            //    "35201728",
+            //    "29195727",
+            //    "28523742",
+            //    "28437058",
+            //    "26618906",
+            //    "33909892",
+            //    "23268714",
+            //    "39910737",
+            //    "38277329",
+            //    "36577204",
+            //    "38267503",
+            //    "30829596",
+            //    "30181342",
+            //    "35727463",
+            //    "32182575",
+            //    "14863065",
+            //    "35427465",
+            //    "25047626",
+            //    "31240157",
+            //    "26018519",
+            //    "29643784",
+            //    "40643147",
+            //    "22695028",
+            //    "95485082",
+            //    "29930619",
+            //    "18153372",
+            //    "31176068",
+            //    "35958627", // DNI con puntos en fuente original
+            //    "42673010", // DNI con puntos en fuente original
+            //    "30463400", // DNI con puntos en fuente original
+            //    "22522125", // DNI con puntos en fuente original
+            //    "32717628", // DNI con puntos en fuente original
+            //    "38185189", // DNI con puntos en fuente original
+            //    "35387306", // DNI con puntos en fuente original
+            //    "38922110", // DNI con puntos en fuente original
+            //    "29146686", // DNI con puntos en fuente original
+            //    "36081727", // DNI con puntos en fuente original
+            //    "37993818", // DNI con puntos en fuente original
+            //    "24305610", // DNI con puntos en fuente original
+            //    "33556326", // DNI con puntos en fuente original
+            //    "24036404", // DNI con puntos en fuente original
+            //    "31256516", // DNI con puntos en fuente original
+            //    "23314245",
+            //    "31060131",
+            //    "93873881", // DNI con puntos en fuente original
+            //    "38681089", // DNI con puntos en fuente original
+            //    "32028780",
+            //    "28592571",
+            //    "45283916",
+            //    "38944663",
+            //    "44098727",
+            //    "38586490",
+            //    "93873882", // DNI con puntos en fuente original
+            //    "37783316",
+            //    "40545832",
+            //    "33790183",
+            //    "41292897",
+            //    "40761199",
+            //    "29313551",
+            //    "37702113",
+            //    "46959064",
+            //    "39293397",
+            //    "39644088",
+            //    "43243389",
+            //    "37120795",
+            //    "45519294",
+            //    "43399989",
+            //    "34269913",
+            //    "45462171",
+            //    "41671764",
+            //    "38047383",
+            //    "37217944" // DNI inicial
+            //};
+
+
+            //foreach (var item in dnisConfig)
+            //{
+            //    var resumenesUsuario = _context.ResumenTarjeta.Where(x => x.Usuario.Personas.NroDocumento == item && x.Periodo.Id==91).FirstOrDefault();
+
+            //    CultureInfo culturaAR = new CultureInfo("es-AR");
+            //    string mesNombre = culturaAR.DateTimeFormat.GetMonthName(11);
+            //    string asunto = $" Tu resumen de Tarjeta Estancias ya está disponible";
+
+            //    // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
+            //    byte[] pdfBytes = resumenesUsuario.Adjunto;
+            //    DateTime fechaVencimiento = new DateTime(2025, 11, 10);
+
+            //    var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
+            //    {
+            //        Fecha = fechaVencimiento.ToString("dd/MM"),
+            //        // Nota: Usando decimales correctos para la suma.
+            //        Monto = resumenesUsuario.Monto + resumenesUsuario.MontoAdeudado,
+            //    };
+
+            //    // **2. Renderiza la vista del correo electrónico**
+            //    var viewHtml = RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre).Result;
+
+            //    //common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resumenesUsuario.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+            //    common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+
+            //}
+
             AddPageAlerts(PageAlertType.Success, $"Bienvenido {User.Identity.Name}!");        
             var usuario = _context.Usuarios.FirstOrDefault(x => x.Email == User.Identity.Name);
             ViewBag.title1 = "Socios Con App";
@@ -121,6 +273,78 @@ namespace EstanciasCore.Controllers
             return View("ResumenBancarioTemplate", datosParaResumenDTO);
         }
 
+        public async Task<IActionResult> DescargarResumenpdf(string dni)
+        {
+            Usuario usuarioLocal = _context.Usuarios.Where(x => x.Personas.NroDocumento == dni).FirstOrDefault();
+            //DateTime fecha = DateTime.Now;
+
+
+            DateTime fechaMesActualCuotas = new DateTime(2025, 11, 01);
+            int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
+
+            //Fecha para Punitorios
+            if (fechaMesActualCuotas.Day > 15)
+            {
+                DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+            }
+            else
+            {
+                DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
+            }
+
+            DateTime fechaActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+            DateTime fechaActualCuotasProximo = fechaActualCuotas.AddMonths(1);
+
+
+            var movimientos = _datosTarjeta.ConsultarMovimientos("APPESTANCIAS", "appcpe01", dni, Convert.ToInt64(usuarioLocal.Personas.NroTarjeta), 100, 1).Result;
+
+            var datosResumen = _datosTarjeta.CuotasDetallesResumen(movimientos, fechaActualCuotas).Result;
+
+            var datosResumenConPunitorios = _datosTarjeta.CalcularPunitoriosResumen(datosResumen).Result;
+
+            Periodo periodo = _context.Periodo.Where(x => x.FechaVencimiento.Date==new DateTime(2025, 11, 15).Date).FirstOrDefault();
+
+            UsuarioParaProcesarDTO usuarioDTO = new UsuarioParaProcesarDTO()
+            {
+                NroDocumento = usuarioLocal.Personas.NroDocumento,
+                NombreCompleto = usuarioLocal.Personas.GetNombreCompleto(),
+                Id = usuarioLocal.Id,
+                UserName = usuarioLocal.UserName,
+                NroTarjeta = usuarioLocal.Personas.NroTarjeta
+            };
+
+            var datosParaResumenDTO = _datosTarjeta.PrepararDatosResumen(movimientos, datosResumenConPunitorios, periodo, usuarioDTO).Result;
+
+            var html = await _datosTarjeta.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO); 
+            byte[] pdfBytesPDF;
+            using (var memoryStream = new MemoryStream())
+            {
+                // El método HtmlConverter.ConvertToPdf realiza la magia
+                HtmlConverter.ConvertToPdf(html, memoryStream);
+                pdfBytesPDF = memoryStream.ToArray();
+            }
+            string nombreArchivo = $"Resumen-{usuarioLocal.Personas.NroDocumento}-{DateTime.Now:yyyyMMdd}.pdf";
+
+            /*-----------------*/
+            DateTime fechaVencimiento = new DateTime(2025, 11, 10);
+
+            string Mes = fechaVencimiento.ToString("MMMM", new System.Globalization.CultureInfo("es-ES"));
+            var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
+            {
+                Fecha = fechaVencimiento.ToString("dd/MM"),
+                // Nota: Usando decimales correctos para la suma.
+                Monto = datosParaResumenDTO.SaldoActual + datosParaResumenDTO.SaldoAnterior,
+            };
+
+            // **2. Renderiza la vista del correo electrónico**
+            var viewHtml = RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, Mes).Result;
+
+            common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = "Tu resumen de Tarjeta Estancias ya está disponible", Html = viewHtml }, pdfBytesPDF);
+            /*-----------------*/
+
+            return File(pdfBytesPDF, "application/pdf", nombreArchivo);
+        }
+
         public IActionResult MailRegistro()
         {
             return View("MailRegistro");
@@ -135,7 +359,47 @@ namespace EstanciasCore.Controllers
         {
             return View(new DAL.Models.ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
-        
+
+
+        private async Task<string> RenderViewToString(ICompositeViewEngine viewEngine, IServiceProvider serviceProvider, string viewName, DetallesCuotasResumenDTO model, string mesNombre)
+        {
+            var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
+            var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
+
+            using (var sw = new StringWriter())
+            {
+                var viewResult = viewEngine.FindView(actionContext, viewName, false);
+
+                if (viewResult.View == null)
+                {
+                    throw new ArgumentNullException($"No se pudo encontrar la vista '{viewName}'");
+                }
+
+                var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
+                {
+                    Model = model
+                };
+
+                var viewContext = new ViewContext(
+                    actionContext,
+                    viewResult.View,
+                    viewDictionary,
+                    new TempDataDictionary(actionContext.HttpContext, serviceProvider.GetRequiredService<ITempDataProvider>()),
+                    sw,
+                    new HtmlHelperOptions()
+                );
+
+                await viewResult.View.RenderAsync(viewContext);
+                string html = sw.ToString();
+                var culturaAR = new CultureInfo("es-AR");
+
+                string textoModificado = html.Replace("TextoFechaReemplazar", model.Fecha);
+                textoModificado = textoModificado.Replace("TextoMontoReemplazar", model.Monto.ToString("N2", culturaAR));
+                textoModificado = textoModificado.Replace("TextoMesEscritoReemplazar", mesNombre+"!");
+
+                return textoModificado;
+            }
+        }
 
     }
 }
