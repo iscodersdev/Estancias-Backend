@@ -93,71 +93,151 @@ public class EnvioDeResumenWorker : BackgroundService
 
     private async Task ProcesarYEnviarResumenes(CancellationToken stoppingToken, Periodo periodo, IServiceScope scope)
     {
-        _logger.LogInformation("Conectando a la base de datos para obtener la lista de usuarios.");
+        _logger.LogInformation("Conectando a la base de datos para obtener la lista de usuarios (MODO LIGERO).");
 
-        // NOTA: Se utiliza el 'scope' pasado como parámetro desde ExecuteAsync.
         var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
         var viewEngine = scope.ServiceProvider.GetRequiredService<ICompositeViewEngine>();
         var serviceProvider = scope.ServiceProvider;
 
-        // Obtener la lista de resúmenes para enviar
-        var resumenes = await context.ResumenTarjeta
-                                     .Include(x => x.Periodo)
-                                     .Include(x => x.Usuario)
-                                         .ThenInclude(x => x.Personas)
-                                     .Where(x => x.PeriodoId == periodo.Id)
-                                     .ToListAsync(stoppingToken);
+        // 1. OPTIMIZACIÓN: Usar AsNoTracking y Select para NO traer el campo 'Adjunto' (BLOB) todavía.
+        // Esto hace que la consulta baje de segundos/minutos a milisegundos.
+        var resumenesLigeros = await context.ResumenTarjeta
+            .AsNoTracking() // Importante: No necesitamos rastrear cambios en esta lista
+            .Where(x => x.PeriodoId == periodo.Id)
+            .Select(x => new
+            {
+                x.Id,
+                x.Monto,
+                x.MontoAdeudado,
+                UsuarioUserName = x.Usuario.UserName,
+                // Agrega aquí otros campos de Usuario/Persona si los usas en el log o validaciones
+                // x.Usuario.Personas... 
+            })
+            .ToListAsync(stoppingToken);
 
-        _logger.LogInformation($"Se encontraron {resumenes.Count} usuarios para enviar resúmenes.");
+        _logger.LogInformation($"Se encontraron {resumenesLigeros.Count} usuarios para procesar.");
+
         DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
+        string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
+        string asunto = $"Tu resumen de Tarjeta Estancias ya está disponible";
 
-        foreach (var resu in resumenes)
+        foreach (var resuInfo in resumenesLigeros)
         {
             if (stoppingToken.IsCancellationRequested) return;
 
             try
             {
-                string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
-                string asunto = $"Tu resumen de Tarjeta Estancias ya está disponible";
+                // 2. OPTIMIZACIÓN: Obtener el PDF bajo demanda (Lazy Loading manual)
+                // Solo traemos el PDF de ESTE usuario específico.
+                var pdfBytes = await context.ResumenTarjeta
+                    .Where(x => x.Id == resuInfo.Id)
+                    .Select(x => x.Adjunto)
+                    .FirstOrDefaultAsync(stoppingToken);
 
-                // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
-                byte[] pdfBytes = resu.Adjunto;
-
-                // Verificación importante: si no hay adjunto, omitimos el envío
+                // Verificación importante
                 if (pdfBytes == null || pdfBytes.Length == 0)
                 {
-                    _logger.LogWarning($"El resumen para el usuario {resu.Usuario.UserName} no tiene un adjunto (PDF) generado. Se omite el envío.");
+                    _logger.LogWarning($"El resumen ID {resuInfo.Id} para el usuario {resuInfo.UsuarioUserName} no tiene PDF. Se omite.");
                     continue;
                 }
 
                 var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
                 {
                     Fecha = fechaVencimiento.ToString("dd/MM"),
-                    // Nota: Usando decimales correctos para la suma.
-                    Monto = resu.Monto + resu.MontoAdeudado,
+                    Monto = resuInfo.Monto + resuInfo.MontoAdeudado,
                 };
 
-                // **2. Renderiza la vista del correo electrónico**
+                // Renderiza la vista
                 var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
 
-                // **3. Envía el email con el PDF adjunto**
-                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
-                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorge.cutulli@iscoders.com.ar", Titulo = asunto, Html = viewHtml }, pdfBytes);
-                // Si la línea de prueba está activa, también se envía:
-                // await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+                // Envía el email
+                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
 
-                // **4. Guarda el registro de que el correo se envió**
-                await GuardarRegistroCorreo(context, resu);
-                _logger.LogInformation($"Resumen enviado exitosamente a: {resu.Usuario.UserName}");
+                // 3. Guarda el registro
+                // Nota: Como 'resuInfo' es un objeto anónimo, necesitamos instanciar la entidad o usar el ID para guardar el log.
+                // Asumo que tu método GuardarRegistroCorreo espera la entidad completa. 
+                // Si puedes cambiarlo para que acepte solo el ID sería mejor, si no, puedes hacer un "Fake" attach o buscarlo.
+
+                // Opción A: Modificar GuardarRegistroCorreo para recibir solo IDs.
+                // Opción B (Rápida aquí): Crear un objeto dummy solo con el ID si tu logica lo permite, 
+                // o si necesitas la entidad completa para el log, recupérala sin el adjunto.
+                var resumenParaLog = new ResumenTarjeta { Id = resuInfo.Id, Usuario = new Usuario { UserName = resuInfo.UsuarioUserName } };
+                await GuardarRegistroCorreo(context, resumenParaLog);
+
+                _logger.LogInformation($"Resumen enviado exitosamente a: {resuInfo.UsuarioUserName}");
             }
             catch (Exception ex)
             {
-                // Captura errores de envío individual, permitiendo que el bucle continúe para otros usuarios.
-                // Si hay un error aquí, el estado de persistencia en la BD no se ve afectado si otros envíos tienen éxito.
-                _logger.LogError(ex, $"Fallo al enviar el resumen al usuario {resu.Usuario.UserName}.");
+                _logger.LogError(ex, $"Fallo al enviar el resumen al usuario {resuInfo.UsuarioUserName}.");
             }
         }
     }
+    //private async Task ProcesarYEnviarResumenes(CancellationToken stoppingToken, Periodo periodo, IServiceScope scope)
+    //{
+    //    _logger.LogInformation("Conectando a la base de datos para obtener la lista de usuarios.");
+
+    //    // NOTA: Se utiliza el 'scope' pasado como parámetro desde ExecuteAsync.
+    //    var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+    //    var viewEngine = scope.ServiceProvider.GetRequiredService<ICompositeViewEngine>();
+    //    var serviceProvider = scope.ServiceProvider;
+
+    //    // Obtener la lista de resúmenes para enviar
+    //    var resumenes = await context.ResumenTarjeta
+    //                                 .Include(x => x.Periodo)
+    //                                 .Include(x => x.Usuario)
+    //                                 .Where(x => x.PeriodoId == periodo.Id)
+    //                                 .ToListAsync(stoppingToken);
+
+    //    _logger.LogInformation($"Se encontraron {resumenes.Count} usuarios para enviar resúmenes.");
+    //    DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
+
+    //    foreach (var resu in resumenes)
+    //    {
+    //        if (stoppingToken.IsCancellationRequested) return;
+
+    //        try
+    //        {
+    //            string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
+    //            string asunto = $"Tu resumen de Tarjeta Estancias ya está disponible";
+
+    //            // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
+    //            byte[] pdfBytes = resu.Adjunto;
+
+    //            // Verificación importante: si no hay adjunto, omitimos el envío
+    //            if (pdfBytes == null || pdfBytes.Length == 0)
+    //            {
+    //                _logger.LogWarning($"El resumen para el usuario {resu.Usuario.UserName} no tiene un adjunto (PDF) generado. Se omite el envío.");
+    //                continue;
+    //            }
+
+    //            var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
+    //            {
+    //                Fecha = fechaVencimiento.ToString("dd/MM"),
+    //                // Nota: Usando decimales correctos para la suma.
+    //                Monto = resu.Monto + resu.MontoAdeudado,
+    //            };
+
+    //            // **2. Renderiza la vista del correo electrónico**
+    //            var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
+
+    //            // **3. Envía el email con el PDF adjunto**
+    //            //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+    //            //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorge.cutulli@iscoders.com.ar", Titulo = asunto, Html = viewHtml }, pdfBytes);
+    //            // Si la línea de prueba está activa, también se envía:
+    //            await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+
+    //            // **4. Guarda el registro de que el correo se envió**
+    //            await GuardarRegistroCorreo(context, resu);
+    //            _logger.LogInformation($"Resumen enviado exitosamente a: {resu.Usuario.UserName}");
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            // Captura errores de envío individual, permitiendo que el bucle continúe para otros usuarios.
+    //            // Si hay un error aquí, el estado de persistencia en la BD no se ve afectado si otros envíos tienen éxito.
+    //            _logger.LogError(ex, $"Fallo al enviar el resumen al usuario {resu.Usuario.UserName}.");
+    //        }
+    //    }
+    //}
 
     private static string ConvertirNumeroAMes(int numeroMes)
     {

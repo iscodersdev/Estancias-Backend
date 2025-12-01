@@ -1,4 +1,5 @@
 ﻿using DAL.Data;
+using DAL.Models.Core;
 using EstanciasCore.Interface;
 using EstanciasCore.Services;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
 public class ResumenMensualWorker : BackgroundService
 {
@@ -47,12 +49,11 @@ public class ResumenMensualWorker : BackgroundService
 
                     // Consulta corregida para ser más directa
                     var procedimiento = await context.Procedimientos
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(p => p.Codigo == "GenerarResumen" && p.Activo == true, stoppingToken);
+                    .FirstOrDefaultAsync(p => p.Codigo == "GenerarResumen" && p.Activo == true, stoppingToken);
 
                     if (procedimiento != null && procedimiento.Activo && DebeEjecutarHoy(procedimiento.DiaEjecucion, procedimiento.FechaUltimaEjecucionExitosa))
                     {
-                        await EjecutarProcesoConNotificaciones(scope);
+                        await EjecutarProcesoConNotificaciones(scope, context, procedimiento);
                     }
                 }
             }
@@ -67,11 +68,11 @@ public class ResumenMensualWorker : BackgroundService
         }
     }
 
-    private async Task EjecutarProcesoConNotificaciones(IServiceScope scope)
+    private async Task EjecutarProcesoConNotificaciones(IServiceScope scope, EstanciasContext context, dynamic procedimiento)    
     {
         string resultadoFinal = "FALLIDO"; // Estado por defecto
         _intentosHoy++;
-
+        bool exito = false;
         try
         {
             // 1. ENVIAR EMAIL DE INICIO
@@ -82,8 +83,18 @@ public class ResumenMensualWorker : BackgroundService
 
             // 2. EJECUTAR LÓGICA DE NEGOCIO
             var resumenService = scope.ServiceProvider.GetRequiredService<IResumenTarjetaService>();
-            bool exito = await resumenService.GenerarResumenTarjetas();
+            exito = await resumenService.GenerarResumenTarjetas();
             resultadoFinal = exito ? "ÉXITO" : "FINALIZADO CON ADVERTENCIAS";
+            if (exito)
+            {
+                // Actualizamos la fecha en el objeto
+                procedimiento.FechaUltimaEjecucionExitosa = DateTime.Now;
+
+                // Guardamos los cambios en SQL
+                await context.SaveChangesAsync();
+
+                _logger.LogInformation("Fecha de última ejecución actualizada en base de datos correctamente.");
+            }
         }
         catch (Exception ex)
         {
