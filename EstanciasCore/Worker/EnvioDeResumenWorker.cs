@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -29,12 +30,17 @@ public class EnvioDeResumenWorker : BackgroundService
 {
     private readonly ILogger<EnvioDeResumenWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IConfiguration _configuration;
+    private readonly string[] _adminEmails;
 
-    public EnvioDeResumenWorker(ILogger<EnvioDeResumenWorker> logger, IServiceScopeFactory scopeFactory)
+    public EnvioDeResumenWorker(ILogger<EnvioDeResumenWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
     {
         var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };    
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _configuration = configuration;
+        var emails = _configuration["NotificationSettings:AdminEmails"];
+        _adminEmails = emails?.Split(';', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -73,6 +79,17 @@ public class EnvioDeResumenWorker : BackgroundService
                             if (exito)
                             {
                                 _logger.LogInformation("Worker de envío de resúmenes: Tarea completada con éxito y estado persistido.");
+                                await EnviarNotificacionAsync(
+                                   "Proceso de Resúmenes Finalizado con Éxito",
+                                   $"La ejecución ha concluido correctamente a las {DateTime.Now:G}. Todos los correos procesados."
+                                );
+                            }
+                            else
+                            {
+                                await EnviarNotificacionAsync(
+                                    "ERROR CRÍTICO: El proceso de Resúmenes falló",
+                                    $"Se produjo un error que detuvo el proceso a las {DateTime.Now:G}.<br/><br/><strong>Detalle del error:</strong> <br/>"
+                                );
                             }
                         }
                         else
@@ -151,7 +168,9 @@ public class EnvioDeResumenWorker : BackgroundService
                 var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
 
                 // Envía el email
-                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+
+                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resuInfo.UsuarioUserName.Trim(), Titulo = asunto, Html = viewHtml }, pdfBytes);
+                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
 
                 // 3. Guarda el registro
                 // Nota: Como 'resuInfo' es un objeto anónimo, necesitamos instanciar la entidad o usar el ID para guardar el log.
@@ -312,6 +331,12 @@ public class EnvioDeResumenWorker : BackgroundService
     {
         try
         {
+            // 1. NOTIFICACIÓN DE INICIO
+            await EnviarNotificacionAsync(
+                "Inicio del Proceso de Envío de Resumen",
+                $"El proceso ha comenzado a las {DateTime.Now:G}."
+            );
+
             // 1. Ejecutar la lógica principal de envío
             await ProcesarYEnviarResumenes(stoppingToken, periodo, scope); // Se pasa el scope para reutilizarlo en la actualización
 
@@ -327,8 +352,37 @@ public class EnvioDeResumenWorker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error en ProcesarYActualizarEstado. El estado de ejecución NO se actualizará.");
-            // Opcional: Podrías querer guardar el error en otro campo de la BD (Ej: FechaUltimaEjecucionFallida)
+
+            await EnviarNotificacionAsync(
+                "ERROR CRÍTICO: El proceso de Resúmenes falló",
+                $"Se produjo un error que detuvo el proceso a las {DateTime.Now:G}.<br/><br/><strong>Detalle del error:</strong> {ex.Message} <br/> {ex.StackTrace}"
+            );
             return false;
         }
+    }
+
+    private Task EnviarNotificacionAsync(string asunto, string cuerpoHTML)
+    {
+        if (_adminEmails.Length == 0)
+        {
+            _logger.LogWarning("No hay emails de administrador configurados. Se omite el envío de notificación.");
+            return Task.CompletedTask;
+        }
+
+        _logger.LogInformation($"Preparando email: '{asunto}'");
+        foreach (var emailDestino in _adminEmails)
+        {
+            try
+            {
+                // --- TU LÍNEA DE CÓDIGO INTEGRADA AQUÍ ---
+                common.EnviarMail(emailDestino.Trim(), asunto, cuerpoHTML, "");
+                _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Fallo al enviar el email de notificación a: {emailDestino}");
+            }
+        }
+        return Task.CompletedTask;
     }
 }
