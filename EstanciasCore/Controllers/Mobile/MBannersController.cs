@@ -57,7 +57,7 @@ namespace EstanciasCore.Controllers
             //    .Select(x => new MBanners { BannerFijo= x.BannerFijo, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Foto : null), EsVideo=x.EsVideo }).ToList();
 
             var banner = _context.Banners.Where(x => x.FechaDesde<=DateTime.Now && (x.FechaHasta>=DateTime.Now || x.Vencimiento==false)).Where(x => x.Foto!=null || x.Video!=null).OrderBy(x => x.Orden)
-                .Select(x => new MBanners { BannerFijo= x.BannerFijo, Orden=x.Orden, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Video : null), EsVideo=x.EsVideo }).Take(3).ToList();
+                .Select(x => new MBanners { BannerFijo= x.BannerFijo, Orden=x.Orden, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Video : null), EsVideo=x.EsVideo }).Take(10).ToList();
 
 
             if (banner.Count > 0)
