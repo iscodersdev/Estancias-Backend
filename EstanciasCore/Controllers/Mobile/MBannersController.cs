@@ -57,7 +57,7 @@ namespace EstanciasCore.Controllers
             //    .Select(x => new MBanners { BannerFijo= x.BannerFijo, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Foto : null), EsVideo=x.EsVideo }).ToList();
 
             var banner = _context.Banners.Where(x => x.FechaDesde<=DateTime.Now && (x.FechaHasta>=DateTime.Now || x.Vencimiento==false)).Where(x => x.Foto!=null || x.Video!=null).OrderBy(x => x.Orden)
-                .Select(x => new MBanners { BannerFijo= x.BannerFijo, Orden=x.Orden, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Video : null), EsVideo=x.EsVideo }).Take(10).ToList();
+                .Select(x => new MBanners { BannerFijo= x.BannerFijo, Orden=x.Orden, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Video : null), EsVideo=x.EsVideo, Plataforma = new MBannersPlataforma() { Web = AsignarYModificarLink(x.Link, x.LinkExterno, 1), Mobile = AsignarYModificarLink(x.Link, x.LinkExterno, 2) } }).Take(10).ToList();
 
 
             if (banner.Count > 0)
@@ -98,8 +98,40 @@ namespace EstanciasCore.Controllers
                 uat.Status = 500;
                 return uat;
             }
+        }
+
+        public string AsignarYModificarLink(string linkOriginal, bool linkExterno, int opcion)
+        {
+            var linkModificado = "";
+            if (string.IsNullOrEmpty(linkOriginal))
+            {
+                return "";
+            }
+
+            if (linkExterno)
+            {
+                linkModificado = linkOriginal.Trim();
+            }
+            else
+            {
+                if (opcion==1)
+                {
+                    //Web
+                    linkModificado = linkOriginal.Trim();
+                }
+                else
+                {
+                    //Mobile
+                    string urlTexto = "https://app.estanciaschiripa.com.ar/promociones/todos";
+                    Uri uri = new Uri(urlTexto);
+                    string ruta = uri.AbsolutePath;
+                    linkModificado = "estancias:/"+ruta;
+                }
+
+            }          
+            return linkModificado;
 
         }
-        
     }
+
 }

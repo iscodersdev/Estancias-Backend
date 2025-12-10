@@ -28,6 +28,13 @@ namespace DAL.Models
         public bool EsVideo { get; set; }
         public int Orden { get; set; }
         public byte[] Imagen { get; set; }
+        public MBannersPlataforma Plataforma { get; set; }
+    }
+
+    public class MBannersPlataforma
+    {
+        public string Web { get; set; }
+        public string Mobile { get; set; }
     }
     public class MTraeCabeceraBannersDTO
     {
