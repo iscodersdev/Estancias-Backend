@@ -115,6 +115,7 @@ namespace EstanciasCore.Controllers
             d.Publico = banner.Publico;
             d.Link = banner.Link;
             d.FechaDesde = banner.FechaDesde;
+            d.LinkExterno = banner.LinkExterno;
             if (BannerFijo==1)
             {
 

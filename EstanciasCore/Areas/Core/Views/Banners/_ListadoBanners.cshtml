@@ -21,10 +21,13 @@
                     Fecha Desde
                 </th>
                 <th>
-                    Fecha Desde
+                    Fecha Hasta
                 </th>
                 <th>
                     Orden
+                </th>
+                <th>
+                    Link Externo
                 </th>
             </tr>
         </thead>
@@ -50,6 +53,16 @@
                 </td>
                  <td>
                      @Html.DisplayFor(modelItem => item.Orden)
+                 </td>
+                 <td>
+                        @if (item.LinkExterno)
+                        {
+                            @Html.Raw("Si")
+                        }
+                        else
+                        {
+                            @Html.Raw("No")
+                        }
                  </td>
                  <td>
                      <a onclick="editBanner(@item.Id)" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>

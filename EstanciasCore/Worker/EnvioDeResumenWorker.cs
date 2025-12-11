@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -29,12 +30,17 @@ public class EnvioDeResumenWorker : BackgroundService
 {
     private readonly ILogger<EnvioDeResumenWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IConfiguration _configuration;
+    private readonly string[] _adminEmails;
 
-    public EnvioDeResumenWorker(ILogger<EnvioDeResumenWorker> logger, IServiceScopeFactory scopeFactory)
+    public EnvioDeResumenWorker(ILogger<EnvioDeResumenWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
     {
         var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };    
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _configuration = configuration;
+        var emails = _configuration["NotificationSettings:AdminEmails"];
+        _adminEmails = emails?.Split(';', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -73,6 +79,17 @@ public class EnvioDeResumenWorker : BackgroundService
                             if (exito)
                             {
                                 _logger.LogInformation("Worker de envío de resúmenes: Tarea completada con éxito y estado persistido.");
+                                await EnviarNotificacionAsync(
+                                   "Proceso de Resúmenes Finalizado con Éxito",
+                                   $"La ejecución ha concluido correctamente a las {DateTime.Now:G}. Todos los correos procesados."
+                                );
+                            }
+                            else
+                            {
+                                await EnviarNotificacionAsync(
+                                    "ERROR CRÍTICO: El proceso de Resúmenes falló",
+                                    $"Se produjo un error que detuvo el proceso a las {DateTime.Now:G}.<br/><br/><strong>Detalle del error:</strong> <br/>"
+                                );
                             }
                         }
                         else
@@ -93,71 +110,153 @@ public class EnvioDeResumenWorker : BackgroundService
 
     private async Task ProcesarYEnviarResumenes(CancellationToken stoppingToken, Periodo periodo, IServiceScope scope)
     {
-        _logger.LogInformation("Conectando a la base de datos para obtener la lista de usuarios.");
+        _logger.LogInformation("Conectando a la base de datos para obtener la lista de usuarios (MODO LIGERO).");
 
-        // NOTA: Se utiliza el 'scope' pasado como parámetro desde ExecuteAsync.
         var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
         var viewEngine = scope.ServiceProvider.GetRequiredService<ICompositeViewEngine>();
         var serviceProvider = scope.ServiceProvider;
 
-        // Obtener la lista de resúmenes para enviar
-        var resumenes = await context.ResumenTarjeta
-                                     .Include(x => x.Periodo)
-                                     .Include(x => x.Usuario)
-                                         .ThenInclude(x => x.Personas)
-                                     .Where(x => x.PeriodoId == periodo.Id)
-                                     .ToListAsync(stoppingToken);
+        // 1. OPTIMIZACIÓN: Usar AsNoTracking y Select para NO traer el campo 'Adjunto' (BLOB) todavía.
+        // Esto hace que la consulta baje de segundos/minutos a milisegundos.
+        var resumenesLigeros = await context.ResumenTarjeta
+            .AsNoTracking() // Importante: No necesitamos rastrear cambios en esta lista
+            .Where(x => x.PeriodoId == periodo.Id)
+            .Select(x => new
+            {
+                x.Id,
+                x.Monto,
+                x.MontoAdeudado,
+                UsuarioUserName = x.Usuario.UserName,
+                // Agrega aquí otros campos de Usuario/Persona si los usas en el log o validaciones
+                // x.Usuario.Personas... 
+            })
+            .ToListAsync(stoppingToken);
 
-        _logger.LogInformation($"Se encontraron {resumenes.Count} usuarios para enviar resúmenes.");
+        _logger.LogInformation($"Se encontraron {resumenesLigeros.Count} usuarios para procesar.");
+
         DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
+        string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
+        string asunto = $"Tu resumen de Tarjeta Estancias ya está disponible";
 
-        foreach (var resu in resumenes)
+        foreach (var resuInfo in resumenesLigeros)
         {
             if (stoppingToken.IsCancellationRequested) return;
 
             try
             {
-                string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
-                string asunto = $"Tu resumen de Tarjeta Estancias ya está disponible";
+                // 2. OPTIMIZACIÓN: Obtener el PDF bajo demanda (Lazy Loading manual)
+                // Solo traemos el PDF de ESTE usuario específico.
+                var pdfBytes = await context.ResumenTarjeta
+                    .Where(x => x.Id == resuInfo.Id)
+                    .Select(x => x.Adjunto)
+                    .FirstOrDefaultAsync(stoppingToken);
 
-                // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
-                byte[] pdfBytes = resu.Adjunto;
-
-                // Verificación importante: si no hay adjunto, omitimos el envío
+                // Verificación importante
                 if (pdfBytes == null || pdfBytes.Length == 0)
                 {
-                    _logger.LogWarning($"El resumen para el usuario {resu.Usuario.UserName} no tiene un adjunto (PDF) generado. Se omite el envío.");
+                    _logger.LogWarning($"El resumen ID {resuInfo.Id} para el usuario {resuInfo.UsuarioUserName} no tiene PDF. Se omite.");
                     continue;
                 }
 
                 var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
                 {
                     Fecha = fechaVencimiento.ToString("dd/MM"),
-                    // Nota: Usando decimales correctos para la suma.
-                    Monto = resu.Monto + resu.MontoAdeudado,
+                    Monto = resuInfo.Monto + resuInfo.MontoAdeudado,
                 };
 
-                // **2. Renderiza la vista del correo electrónico**
+                // Renderiza la vista
                 var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
 
-                // **3. Envía el email con el PDF adjunto**
-                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
-                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorge.cutulli@iscoders.com.ar", Titulo = asunto, Html = viewHtml }, pdfBytes);
-                // Si la línea de prueba está activa, también se envía:
-                // await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+                // Envía el email
 
-                // **4. Guarda el registro de que el correo se envió**
-                await GuardarRegistroCorreo(context, resu);
-                _logger.LogInformation($"Resumen enviado exitosamente a: {resu.Usuario.UserName}");
+                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resuInfo.UsuarioUserName.Trim(), Titulo = asunto, Html = viewHtml }, pdfBytes);
+                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+
+                // 3. Guarda el registro
+                // Nota: Como 'resuInfo' es un objeto anónimo, necesitamos instanciar la entidad o usar el ID para guardar el log.
+                // Asumo que tu método GuardarRegistroCorreo espera la entidad completa. 
+                // Si puedes cambiarlo para que acepte solo el ID sería mejor, si no, puedes hacer un "Fake" attach o buscarlo.
+
+                // Opción A: Modificar GuardarRegistroCorreo para recibir solo IDs.
+                // Opción B (Rápida aquí): Crear un objeto dummy solo con el ID si tu logica lo permite, 
+                // o si necesitas la entidad completa para el log, recupérala sin el adjunto.
+                var resumenParaLog = new ResumenTarjeta { Id = resuInfo.Id, Usuario = new Usuario { UserName = resuInfo.UsuarioUserName } };
+                await GuardarRegistroCorreo(context, resumenParaLog);
+
+                _logger.LogInformation($"Resumen enviado exitosamente a: {resuInfo.UsuarioUserName}");
             }
             catch (Exception ex)
             {
-                // Captura errores de envío individual, permitiendo que el bucle continúe para otros usuarios.
-                // Si hay un error aquí, el estado de persistencia en la BD no se ve afectado si otros envíos tienen éxito.
-                _logger.LogError(ex, $"Fallo al enviar el resumen al usuario {resu.Usuario.UserName}.");
+                _logger.LogError(ex, $"Fallo al enviar el resumen al usuario {resuInfo.UsuarioUserName}.");
             }
         }
     }
+    //private async Task ProcesarYEnviarResumenes(CancellationToken stoppingToken, Periodo periodo, IServiceScope scope)
+    //{
+    //    _logger.LogInformation("Conectando a la base de datos para obtener la lista de usuarios.");
+
+    //    // NOTA: Se utiliza el 'scope' pasado como parámetro desde ExecuteAsync.
+    //    var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+    //    var viewEngine = scope.ServiceProvider.GetRequiredService<ICompositeViewEngine>();
+    //    var serviceProvider = scope.ServiceProvider;
+
+    //    // Obtener la lista de resúmenes para enviar
+    //    var resumenes = await context.ResumenTarjeta
+    //                                 .Include(x => x.Periodo)
+    //                                 .Include(x => x.Usuario)
+    //                                 .Where(x => x.PeriodoId == periodo.Id)
+    //                                 .ToListAsync(stoppingToken);
+
+    //    _logger.LogInformation($"Se encontraron {resumenes.Count} usuarios para enviar resúmenes.");
+    //    DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
+
+    //    foreach (var resu in resumenes)
+    //    {
+    //        if (stoppingToken.IsCancellationRequested) return;
+
+    //        try
+    //        {
+    //            string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
+    //            string asunto = $"Tu resumen de Tarjeta Estancias ya está disponible";
+
+    //            // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
+    //            byte[] pdfBytes = resu.Adjunto;
+
+    //            // Verificación importante: si no hay adjunto, omitimos el envío
+    //            if (pdfBytes == null || pdfBytes.Length == 0)
+    //            {
+    //                _logger.LogWarning($"El resumen para el usuario {resu.Usuario.UserName} no tiene un adjunto (PDF) generado. Se omite el envío.");
+    //                continue;
+    //            }
+
+    //            var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
+    //            {
+    //                Fecha = fechaVencimiento.ToString("dd/MM"),
+    //                // Nota: Usando decimales correctos para la suma.
+    //                Monto = resu.Monto + resu.MontoAdeudado,
+    //            };
+
+    //            // **2. Renderiza la vista del correo electrónico**
+    //            var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
+
+    //            // **3. Envía el email con el PDF adjunto**
+    //            //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+    //            //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorge.cutulli@iscoders.com.ar", Titulo = asunto, Html = viewHtml }, pdfBytes);
+    //            // Si la línea de prueba está activa, también se envía:
+    //            await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+
+    //            // **4. Guarda el registro de que el correo se envió**
+    //            await GuardarRegistroCorreo(context, resu);
+    //            _logger.LogInformation($"Resumen enviado exitosamente a: {resu.Usuario.UserName}");
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            // Captura errores de envío individual, permitiendo que el bucle continúe para otros usuarios.
+    //            // Si hay un error aquí, el estado de persistencia en la BD no se ve afectado si otros envíos tienen éxito.
+    //            _logger.LogError(ex, $"Fallo al enviar el resumen al usuario {resu.Usuario.UserName}.");
+    //        }
+    //    }
+    //}
 
     private static string ConvertirNumeroAMes(int numeroMes)
     {
@@ -232,6 +331,12 @@ public class EnvioDeResumenWorker : BackgroundService
     {
         try
         {
+            // 1. NOTIFICACIÓN DE INICIO
+            await EnviarNotificacionAsync(
+                "Inicio del Proceso de Envío de Resumen",
+                $"El proceso ha comenzado a las {DateTime.Now:G}."
+            );
+
             // 1. Ejecutar la lógica principal de envío
             await ProcesarYEnviarResumenes(stoppingToken, periodo, scope); // Se pasa el scope para reutilizarlo en la actualización
 
@@ -247,8 +352,37 @@ public class EnvioDeResumenWorker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error en ProcesarYActualizarEstado. El estado de ejecución NO se actualizará.");
-            // Opcional: Podrías querer guardar el error en otro campo de la BD (Ej: FechaUltimaEjecucionFallida)
+
+            await EnviarNotificacionAsync(
+                "ERROR CRÍTICO: El proceso de Resúmenes falló",
+                $"Se produjo un error que detuvo el proceso a las {DateTime.Now:G}.<br/><br/><strong>Detalle del error:</strong> {ex.Message} <br/> {ex.StackTrace}"
+            );
             return false;
         }
+    }
+
+    private Task EnviarNotificacionAsync(string asunto, string cuerpoHTML)
+    {
+        if (_adminEmails.Length == 0)
+        {
+            _logger.LogWarning("No hay emails de administrador configurados. Se omite el envío de notificación.");
+            return Task.CompletedTask;
+        }
+
+        _logger.LogInformation($"Preparando email: '{asunto}'");
+        foreach (var emailDestino in _adminEmails)
+        {
+            try
+            {
+                // --- TU LÍNEA DE CÓDIGO INTEGRADA AQUÍ ---
+                common.EnviarMail(emailDestino.Trim(), asunto, cuerpoHTML, "");
+                _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Fallo al enviar el email de notificación a: {emailDestino}");
+            }
+        }
+        return Task.CompletedTask;
     }
 }

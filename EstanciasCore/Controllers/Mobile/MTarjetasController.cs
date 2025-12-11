@@ -100,8 +100,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                 decimal MontoDisponible = 0;
 
                 List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
-                //var fechaMesActualCuotas = DateTime.Now;
-                var fechaMesActualCuotas = new DateTime(2025,10,01);
+                var fechaMesActualCuotas = DateTime.Now;
+                //var fechaMesActualCuotas = new DateTime(2025,10,01);
 
                 int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
@@ -149,7 +149,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 DeudaTotal = MontoCuota + MontoPunitorios;
                 TotalRedondeo = Math.Round(DeudaTotal, 2);
 
-                var fechaVencimiento = new DateTime(fechaActualCuotasProximo.Year, fechaMesActualCuotas.Month, 10);
+                var fechaVencimiento = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 10);
 
                 return new JsonResult(
                     new ListaMovimientoTarjetaDTO
