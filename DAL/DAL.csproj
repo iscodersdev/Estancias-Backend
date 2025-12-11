@@ -18,6 +18,8 @@
     <Compile Remove="Migrations\20250803201334_add-colum-LoanId-null.Designer.cs" />
     <Compile Remove="Migrations\20250813142610_add-column-UsuarioId.cs" />
     <Compile Remove="Migrations\20250813142610_add-column-UsuarioId.Designer.cs" />
+    <Compile Remove="Migrations\20251209135828_AgregaPlataformaBanner.cs" />
+    <Compile Remove="Migrations\20251209135828_AgregaPlataformaBanner.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>

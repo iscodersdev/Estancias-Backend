@@ -50,7 +50,7 @@ namespace EstanciasCore.Controllers
             //_resumen.GenerarResumenTarjetas();
 
             //var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };
-            var dnisConfig = new List<string>() { "37217944" };
+            var dnisConfig = new List<string>() { "30463400" };
 
 
 
@@ -159,10 +159,10 @@ namespace EstanciasCore.Controllers
 
             //foreach (var item in dnisConfig)
             //{
-            //    var resumenesUsuario = _context.ResumenTarjeta.Where(x => x.Usuario.Personas.NroDocumento == item && x.Periodo.Id==91).FirstOrDefault();
+            //    var resumenesUsuario = _context.ResumenTarjeta.Where(x => x.Usuario.Personas.NroDocumento == item && x.Periodo.Id==94).FirstOrDefault();
 
             //    CultureInfo culturaAR = new CultureInfo("es-AR");
-            //    string mesNombre = culturaAR.DateTimeFormat.GetMonthName(11);
+            //    string mesNombre = culturaAR.DateTimeFormat.GetMonthName(12);
             //    string asunto = $" Tu resumen de Tarjeta Estancias ya está disponible";
 
             //    // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
@@ -229,10 +229,10 @@ namespace EstanciasCore.Controllers
         public async Task<IActionResult> DescargarResumenHtml(string dni)
         {
             Usuario usuarioLocal = _context.Usuarios.Where(x => x.Personas.NroDocumento == dni).FirstOrDefault();
-            //DateTime fecha = DateTime.Now;
+            DateTime fechaMesActualCuotas = DateTime.Now;
 
 
-            DateTime fechaMesActualCuotas = new DateTime(2025, 11, 01);
+            //DateTime fechaMesActualCuotas = new DateTime(2025, 11, 01);
             int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
             //Fecha para Punitorios
@@ -276,10 +276,10 @@ namespace EstanciasCore.Controllers
         public async Task<IActionResult> DescargarResumenpdf(string dni)
         {
             Usuario usuarioLocal = _context.Usuarios.Where(x => x.Personas.NroDocumento == dni).FirstOrDefault();
-            //DateTime fecha = DateTime.Now;
+            DateTime fechaMesActualCuotas = DateTime.Now;
 
 
-            DateTime fechaMesActualCuotas = new DateTime(2025, 11, 01);
+            //DateTime fechaMesActualCuotas = new DateTime(2025, 11, 01);
             int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
             //Fecha para Punitorios

@@ -51,6 +51,11 @@
                         <input asp-for="Link" class="form-control" />
                         <span asp-validation-for="Link" class="text-danger"></span>
                     </div>
+                    <div class="form-group form-check">
+                        <label class="form-check-label">
+                            <input class="form-check-input" asp-for="LinkExterno" /> @Html.DisplayNameFor(model => model.LinkExterno)
+                        </label>
+                    </div>
                     <div class="form-group">
                         <label asp-for="TextoBoton" class="control-label"></label>
                         <input asp-for="TextoBoton" class="form-control" />

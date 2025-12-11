@@ -30,6 +30,7 @@ namespace DAL.Models
         public virtual Empresas Empresa { get; set; }
         public virtual Colores Color { get; set; }
         public int Orden { get; set; }
+        public bool LinkExterno { get; set; }
     }
 
 }
