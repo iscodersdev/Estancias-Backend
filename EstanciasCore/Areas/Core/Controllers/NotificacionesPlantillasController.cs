@@ -162,19 +162,36 @@ namespace EstanciasCore.Controllers
                 var deviceIds = new List<string>();
                 var destinatarios = new List<Usuario>();
 
-                var distDestinatarios = _context.DistribucionDestinatarios
-                    .Include(x => x.Destinatario)
-                    .Where(x => x.ListaDistribucion.Id == testList.Id)
-                    .ToList();
 
-                foreach (var item in distDestinatarios)
+                if (testList.Id==1)
                 {
-                    if (item.Destinatario != null && !string.IsNullOrEmpty(item.Destinatario.DeviceId))
+                    var allUsers = _context.Usuarios.Where(x => x.DeviceId!=null).ToList();
+                    foreach (var user in allUsers)
                     {
-                        deviceIds.Add(item.Destinatario.DeviceId);
-                        destinatarios.Add(item.Destinatario);
+                        if (!string.IsNullOrEmpty(user.DeviceId))
+                        {
+                            deviceIds.Add(user.DeviceId);
+                            destinatarios.Add(user);
+                        }
                     }
                 }
+                else
+                {
+                    var distDestinatarios = _context.DistribucionDestinatarios
+                        .Include(x => x.Destinatario)
+                        .Where(x => x.ListaDistribucion.Id == testList.Id)
+                        .ToList();
+
+                    foreach (var item in distDestinatarios)
+                    {
+                        if (item.Destinatario != null && !string.IsNullOrEmpty(item.Destinatario.DeviceId))
+                        {
+                            deviceIds.Add(item.Destinatario.DeviceId);
+                            destinatarios.Add(item.Destinatario);
+                        }
+                    }
+                }
+                                  
 
                 if (!deviceIds.Any())
                     return Json(new { success = false, message = $"La lista '{testList.Nombre}' no tiene destinatarios con DeviceId." });
