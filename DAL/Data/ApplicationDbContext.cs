@@ -79,6 +79,11 @@ namespace DAL.Data
         public DbSet<EnvioNotificacionesDestinatarios> EnvioNotificacionesDestinatarios { get; set; }
         public DbSet<EnvioNotificaciones> EnvioNotificaciones { get; set; }
 
+        //NEW
+        public DbSet<Notificaciones> Notificaciones { get; set; }
+        public DbSet<TipoNotificacionesProcedimientos> TipoNotificacionesProcedimientos { get; set; }
+        public DbSet<NotificacionesPlantillas> NotificacionesPlantillas { get; set; }
+
         //PremiosCanje
         public DbSet<Categorias> Categorias { get; set; }
         public DbSet<Premios> Premios { get; set; }

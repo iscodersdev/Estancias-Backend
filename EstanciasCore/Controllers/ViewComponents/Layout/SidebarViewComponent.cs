@@ -30,6 +30,7 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
             var datos = MenuHelpers.AddTree("Datos", "fa fa-database");
             var generales = MenuHelpers.AddTree("Generales", "fa fa-circle-o text-green");
             var especificos = MenuHelpers.AddTree("Específicos", "fa fa-circle-o text-green");
+            var notificaciones = MenuHelpers.AddTree("Notificaciones", "fa fa-circle-o");
             var gestion = MenuHelpers.AddTree("Gestión", "fa fa-cubes");
             //var reportes = MenuHelpers.AddTree("Reportes", "fa fa-print text-white");
             var sesion = MenuHelpers.AddTree("Sesión", "fa fa-key");
@@ -42,19 +43,14 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                 generales.TreeChild = new List<SidebarMenu>()
                 {
                     MenuHelpers.AddModule("Tipos de Documento", "/Core/TiposDocumentos/"),
-                    //MenuHelpers.AddModule("Tipos de Personas", "/Core/TiposPersonas/"),
-                    //MenuHelpers.AddModule("Destinos Fondos", "/Core/DestinosFondos/"),
                     MenuHelpers.AddModule("Monedas", "/Core/Monedas/"),
                     MenuHelpers.AddModule("Sucursales", "/Core/Sucursales/"),
                     MenuHelpers.AddModule("Paises", "/Core/Paises/"),
                     MenuHelpers.AddModule("Provincias", "/Core/Provincias/"),
                     MenuHelpers.AddModule("Localidad", "/Core/Localidad/"),
-                    //MenuHelpers.AddModule("Sistemas de Financiación", "/Core/SistemasFinanciacion/"),
                     MenuHelpers.AddModule("Tipos de Clientes", "/Core/TiposClientes/"),
-                    //MenuHelpers.AddModule("Tipos de Movimientos", "/Core/TiposMovimientos/"),
                     MenuHelpers.AddModule("Grupos", "/Core/Grupos/"),
                     MenuHelpers.AddModule("Empresas", "/Core/Empresas/"),
-                    //MenuHelpers.AddModule("Formas de Pago", "/Core/FormasPago/"),
                     MenuHelpers.AddModule("Conceptos", "/Core/Conceptos/"),
                     MenuHelpers.AddModule("Cuentas Corrientes", "/Core/CuentasCorrientes/"),
                     MenuHelpers.AddModule("Tipos Movimientos Billetera", "/Core/TipoMovimientoBilletera/"),
@@ -66,32 +62,32 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                 datos.TreeChild.Add(generales);
                 especificos.TreeChild = new List<SidebarMenu>()
                 {
-                    //MenuHelpers.AddModule("Matriz - Probabilidades", "/Core/Probabilidades/"),
-                    //MenuHelpers.AddModule("Matriz - Consecuencias", "/Core/Consecuencias/"),
                     MenuHelpers.AddModule("Proveedor - Rubros", "/Core/Rubro/")                    
                 };
                 datos.TreeChild.Add(especificos);
+
+                notificaciones.TreeChild = new List<SidebarMenu>()
+                {
+                    MenuHelpers.AddModule("Notificación", "/Core/Notificaciones/"),
+                    MenuHelpers.AddModule("Plantillas", "/Core/NotificacionesPlantillas/"),
+                    MenuHelpers.AddModule("Lista de Distribución", "/Core/ListaDistribucion/")
+                };
 
                 gestion.TreeChild = new List<SidebarMenu>()
                 {
                     MenuHelpers.AddModule("Clientes", "/Core/Clientes"),
 					MenuHelpers.AddModule("Pagos Tarjeta", "/Core/PagoTarjeta"),
 					MenuHelpers.AddModule("Histórico de Pagos Tarjeta", "/Core/PagoTarjetaHistorico"),
-					MenuHelpers.AddModule("Notificaciones", "/Core/Notificaciones"),
-					MenuHelpers.AddModule("Lista de Distribución", "/Core/ListaDistribucion"),
-				    MenuHelpers.AddModule("Vendedores", "/Core/Vendedores/"),
-                    //MenuHelpers.AddModule("Matriz Riesgo", "/Core/MatrizRiesgo/"),
+                    notificaciones,
+                    MenuHelpers.AddModule("Vendedores", "/Core/Vendedores/"),
                     MenuHelpers.AddModule("Novedades", "/Core/Novedades"),
                     MenuHelpers.AddModule("Promociones", "/Core/Promociones"),
                     MenuHelpers.AddModule("Banners", "/Core/Banners"),
-                    //MenuHelpers.AddModule("Scoring", "/Core/Scoring"),
-                    //MenuHelpers.AddModule("Campañas", "/Core/Campanas"),
                     MenuHelpers.AddModule("Proveedor", "/Core/Proveedor"),
                     MenuHelpers.AddModule("Imagen de Intro", "/Core/ImagenIntro"),
                     MenuHelpers.AddModule("Categorias de Premios", "/Core/Categorias"),
                     MenuHelpers.AddModule("Premios", "/Core/Premios"),
                     MenuHelpers.AddModule("Catálogo", "/Core/Catalogo"),
-                //MenuHelpers.AddModule("Bandeja De Aprobación", "/Core/BandejaDeAprobacion/")
             };
                 //reportes.TreeChild = new List<SidebarMenu>()
                 //{
@@ -125,6 +121,13 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
             }
             else
             {
+                notificaciones.TreeChild = new List<SidebarMenu>()
+                {
+                    MenuHelpers.AddModule("Notificación", "/Core/Notificaciones/"),
+                    MenuHelpers.AddModule("Plantillas", "/Core/NotificacionesPlantillas/"),
+                    MenuHelpers.AddModule("Lista de Distribución", "/Core/ListaDistribucion/")
+                };
+
                 datos.TreeChild = new List<SidebarMenu>();
 
 
@@ -148,24 +151,15 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
 
                 if (HttpContext.UserHasRoute("/Localidad/Index"))
                     generales.TreeChild.Add(MenuHelpers.AddModule("Localidad", "/Core/Localidad/"));
-                
-                //if (HttpContext.UserHasRoute("/SistemasFinanciacion/Index"))
-                //    generales.TreeChild.Add(MenuHelpers.AddModule("Sistemas de Financiación", "/Core/SistemasFinanciacion/")); 28/12/23
 
                 if (HttpContext.UserHasRoute("/Core/TiposClientes/Index"))
                     generales.TreeChild.Add(MenuHelpers.AddModule("Tipos de Clientes", "/Core/TiposClientes/"));
-
-                //if (HttpContext.UserHasRoute("/Core/TiposMovimientos/Index"))
-                //    generales.TreeChild.Add(MenuHelpers.AddModule("Tipos de Movimientos", "/Core/TiposMovimientos/")); 28/12/23
 
                 if (HttpContext.UserHasRoute("/Core/Grupos/Index"))
                     generales.TreeChild.Add(MenuHelpers.AddModule("Grupos", "/Core/Grupos/"));
 
                 if (HttpContext.UserHasRoute("/Empresas/Index"))
                     generales.TreeChild.Add(MenuHelpers.AddModule("Empresas", "/Core/Empresas/"));
-
-                //if (HttpContext.UserHasRoute("/FormasPago/Index"))
-                //    generales.TreeChild.Add(MenuHelpers.AddModule("Formas de Pago", "/Core/FormasPago/")); 28/12/23
 
                 if (HttpContext.UserHasRoute("/LineasPrestamos/Index"))
                     generales.TreeChild.Add(MenuHelpers.AddModule("Lineas de Prestamos", "/Core/LineasPrestamos/"));
@@ -184,9 +178,6 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
 
                 if (HttpContext.UserHasRoute("/Billetera/Index"))
                     generales.TreeChild.Add(MenuHelpers.AddModule("Billetera", "/Core/Billetera/"));
-                
-                //if (HttpContext.UserHasRoute("/Core/Inversores/Index"))
-                //    generales.TreeChild.Add(MenuHelpers.AddModule("Inversores", "/Core/Inversores/")); 28/12/23
 
                 if (HttpContext.UserHasRoute("/Core/LeyendaTipoMovimiento/Index"))
                     generales.TreeChild.Add(MenuHelpers.AddModule("Leyendas", "/Core/LeyendaTipoMovimiento/"));
@@ -245,23 +236,17 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
 				if (HttpContext.UserHasRoute("/Vendedores/Index"))
                     gestion.TreeChild.Add(MenuHelpers.AddModule("Vendedores", "/Core/Vendedores/"));
 
-                //if (HttpContext.UserHasRoute("/Core/MatrizRiesgo/Index"))
-                //    gestion.TreeChild.Add(MenuHelpers.AddModule("Matriz Riesgo", "/Core/MatrizRiesgo/"));
-
                 if (HttpContext.UserHasRoute("/Novedades/Index"))
                     gestion.TreeChild.Add(MenuHelpers.AddModule("Novedades", "/Core/Novedades"));
+
+                if (HttpContext.UserHasRoute("/Notificaciones/Index")) { }
+                    gestion.TreeChild.Add(notificaciones);
 
                 if (HttpContext.UserHasRoute("/Promociones/Index"))
                     gestion.TreeChild.Add(MenuHelpers.AddModule("Promociones", "/Core/Promociones"));
 
 				if (HttpContext.UserHasRoute("/Banners/Index"))
 					gestion.TreeChild.Add(MenuHelpers.AddModule("Banners", "/Core/Banners"));
-
-				//if (HttpContext.UserHasRoute("/Scoring/Index"))
-				//    gestion.TreeChild.Add(MenuHelpers.AddModule("Scoring", "/Core/Scoring"));
-
-				//if (HttpContext.UserHasRoute("/Campanas/Index"))
-				//    gestion.TreeChild.Add(MenuHelpers.AddModule("Campañas", "/Core/Campanas"));
 
 				if (HttpContext.UserHasRoute("/Core/Proveedor/Index"))
                     gestion.TreeChild.Add(MenuHelpers.AddModule("Proveedor", "/Core/Proveedor"));

@@ -123,7 +123,7 @@ namespace EstanciasCore.Controllers
                 {
                     //Mobile
                     string urlTexto = "https://app.estanciaschiripa.com.ar/promociones/todos";
-                    Uri uri = new Uri(urlTexto);
+                    Uri uri = new Uri(linkOriginal);
                     string ruta = uri.AbsolutePath;
                     linkModificado = "estancias:/"+ruta;
                 }

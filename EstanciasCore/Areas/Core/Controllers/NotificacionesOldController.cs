@@ -16,9 +16,9 @@ using System.Threading.Tasks;
 namespace EstanciasCore.Controllers
 {
     [Area("Core")]
-    public class NotificacionesController : EstanciasCoreController
+    public class NotificacionesOldController : EstanciasCoreController
     {
-        public NotificacionesController(EstanciasContext context) : base(context)
+        public NotificacionesOldController(EstanciasContext context) : base(context)
         {
             breadcumb.Add(new Message() { DisplayName = "Datos" });
         }
@@ -27,31 +27,9 @@ namespace EstanciasCore.Controllers
         {
             breadcumb.Add(new Message() { DisplayName = "Notificaciones" });
             ViewBag.Breadcrumb = breadcumb;
+            ViewBag.ListaDistribucion = _context.ListaDistribucion.Select(g => new SelectListItem() { Text = g.Nombre, Value = g.Id.ToString() });
             return View();
         }
-
-        
-        public IActionResult ObtenerNotificaciones(Page<Notificaciones> page)
-        {    
-            page.SelectPage("/Notificaciones/ObtenerNotificaciones", _context.Notificaciones, x => (x.Nombre.Contains(page.SearchText) || x.Nombre.Contains(page.SearchText)));
-            return PartialView("_ListadoNotificaciones", page);
-        }
-
-
-
-        public ActionResult _Create()
-        {
-            ViewBag.TipoNotificacionesProcedimientos = _context.TipoNotificacionesProcedimientos.Select(x => new SelectListItem() { Text = x.Nombre, Value = x.Id.ToString() }).ToList();
-            ViewBag.ListaDistribucion = _context.ListaDistribucion.Select(x => new SelectListItem() { Text = x.Nombre, Value = x.Id.ToString() }).ToList();
-            ViewBag.Plantillas = _context.NotificacionesPlantillas.Select(x => new SelectListItem() { Text = x.Titulo, Value = x.Id.ToString() }).ToList();
-            return PartialView();
-        }
-
-
-
-
-
-
 
         public async Task<IActionResult> _HistorialNotificaciones(Page<EnvioNotificaciones> page)
         {

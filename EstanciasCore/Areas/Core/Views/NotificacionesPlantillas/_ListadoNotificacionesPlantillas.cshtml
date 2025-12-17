@@ -1,0 +1,82 @@
+﻿@using DAL.Models.Core
+@model Commons.Models.Page<NotificacionesPlantillas>
+
+<box-header title="Listado">
+    <box-search update-div="tablaBanners">
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a href="/Core/NotificacionesPlantillas/Create" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </box-search>
+</box-header>
+
+<box-body table="true">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    Nombre
+                </th>
+                <th>
+                    Titulo
+                </th>
+                <th>
+                    Mensaje
+                </th>
+                <th>
+                    Imagen
+                </th>
+                <th>
+                    Tipo de Imagen
+                </th>
+                <th>
+                    Link
+                </th>
+                <th>
+                    Acciones
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Nombre)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Titulo)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Mensaje)
+                    </td>
+                    <td>
+                        <img src="@item.ImagenUrl" alt="Miniatura" style="width: 60px; height: 60px; object-fit: cover;" />
+                    </td>
+                    <td>
+                        @if (item.PreferLargeImage)
+                        {
+                            @Html.Raw("Grande")
+                        }
+                        else
+                        {
+                            @Html.Raw("Pequeña")
+                        }
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.DeepLink)
+                    </td>
+                    <td>
+                     <a href="/Core/NotificacionesPlantillas/Update/@item.Id" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>                      
+                     <a onclick="enviarTest(@item.Id)" title="Enviar Test" class="btn btn-success btn-xs"><i class="fa fa-paper-plane"></i></a>
+                     <a onclick="borrarPlantilla(@item.Id)" title="Borrar Plantilla" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
+                 </td>
+             </tr>
+            }
+        </tbody>
+    </table>
+</box-body>
+
+
+<modal title="Nueva Notificación" function="nuevaNotificacion" load-url="/Core/Notificaciones/_Create/" size="Medium"></modal>

@@ -1,0 +1,154 @@
+﻿@using Commons.Extensions
+
+@{
+    ViewData["Title"] = "Notificaciones";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+
+<style>
+    .timeline-item {
+        border: 1px solid #000 !important;
+        background-color: #f4f4f466 !important;
+    }
+</style>
+
+<form asp-action="_EnvioDeNotificacion" method="post" enctype="multipart/form-data" id="EnvioNotificacion">
+    <div class="box box-primary">
+        <div class="box-header with-border">
+            <div class="row">
+                <div class="col-md-10"><h3 class="box-title">Envio de Notificación</h3></div>
+                <div class="col-md-2">
+                    <button type="button" id="buttonHistorialNotificaciones" class="btn bg-orange form-control"> <i class="fa fa-clock-o"></i> Historial de Notificaciones </button>
+                </div>
+            </div>
+        </div>
+        <div class="box-body">
+            <div class="row">
+                <div class="col-xs-1"></div>
+                <div class="col-xs-1">
+                    <div class="form-group">
+                        <label id="labelBusqueda">Tipo</label>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="tipoDeEnvio" id="tipoDeEnvio1" value="1" checked>
+                                Nro Documento
+                            </label>
+                        </div>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="tipoDeEnvio" id="tipoDeEnvio2" value="2">
+                                Lista de Distribución
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xs-2">
+                    <div class="form-group">
+                        <label id="labelBusqueda">Título</label>
+                        <input type="text" class="form-control" name="TituloNotificacion" id="TituloNotificacion">
+                    </div>
+                    <div class="form-group" id="divDistribucionNotificacion" style="display:none">
+                        <label id="labelBusqueda">Distribución</label>
+                        <select asp-items="@ViewBag.ListaDistribucion" type="text" class="form-control" name="DistribucionNotificacion" id="DistribucionNotificacion"></select>
+                    </div>
+                    <div class="form-group" id="divNroDocumentoNotificacion">
+                        <label id="labelBusqueda">Nro Documento</label>
+                        @*<input type="text" class="form-control" name="NroDocumentoNotificacion" id="NroDocumentoNotificacion">*@
+                        <select-ajax title="Ingrese Nro Documento"
+                            class="form-control"
+                            url="@Url.Action("DestinatariosComboJson", $"Notificaciones")"
+                            color="Default"
+                            width="100%"
+                            name="NroDocumentoNotificacion" id="NroDocumentoNotificacion"
+                            class-btn="btn-flat"
+                            text-no-results="<h4 class='text-center'>El Usuario no está en el sistema.<br></h3>"></select-ajax>
+                    </div>
+                </div>
+
+                <div class="col-xs-2">
+                    <div class="form-group">
+                        <label id="labelBusqueda">Texto</label>
+                        <textarea rows="5" type="text" class="form-control" name="TextoNotificacion" id="TextoNotificacion"></textarea>
+                    </div>
+                </div>
+                <div class="col-xs-2" style="text-align: -webkit-center;" hidden>
+                    <div class=" form-group">
+                        <label>&nbsp; </label>
+                        <input class="form-control" type="file" name="file" id="file" />
+                    </div>
+                    <p id="Texto" class="text-red" style="display:none">El archivo excede la resolución máxima de 1080 * 1080</p>
+                </div>
+                <div class="col-xs-1" style="text-align: -webkit-center;" hidden>
+                    <div id="imagePreview" style="max-width: 100px; max-height: 100px; overflow: hidden;">
+                        <label>&nbsp; </label>
+                        <img id="thumbnail" src="#" alt="Vista previa de la imagen" style="width: 100%; height: auto; display: none;" />
+                    </div>
+                </div>
+                <div class="col-xs-1">
+                    <div class="form-group">
+                        <label>&nbsp; </label>
+                        <button type="submit" id="buttonEnviarNotificacion" class="btn btn-primary form-control">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<div class="row">
+    <div class="col-md-12" id="historialNotificacionesDiv">
+    </div>
+</div>
+
+<div id="loadingHistorialNotificaciones" style="display:none;padding-top: 2%; text-align-last: center;">
+    <img src="~/images/loading.gif" style="width:6%">
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#file').on('change', function () {
+            var file = this.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function () {
+                        if (img.width > 1080 || img.height > 1080) {
+                            $('#Texto').show();
+                            $('#thumbnail').hide();
+                        } else {
+                            $('#Texto').hide();
+                            $('#thumbnail').attr('src', e.target.result).show();
+                        }
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        $('input[name="tipoDeEnvio"]').change(function () {
+            if (this.value == '1') {
+                $('#divNroDocumentoNotificacion').show();
+                $('#divDistribucionNotificacion').hide();
+            } else if (this.value == '2') {
+                $('#divNroDocumentoNotificacion').hide();
+                $('#divDistribucionNotificacion').show();
+            }
+        });
+
+        // Trigger change event on page load to set initial visibility
+        $('input[name="tipoDeEnvio"]:checked').trigger('change');
+    });
+
+
+    $('#buttonHistorialNotificaciones').on('click', function () {
+        $('#historialNotificacionesDiv').hide();
+        $('#loadingHistorialNotificaciones').show();
+
+        $('#historialNotificacionesDiv').load("/Core/Notificaciones/_HistorialNotificaciones", function () {
+            $('#loadingHistorialNotificaciones').hide();
+            $('#historialNotificacionesDiv').show();
+        });
+
+    });
+</script>

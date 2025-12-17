@@ -1,0 +1,75 @@
+﻿@model Commons.Models.Page<DAL.Models.Core.EnvioNotificaciones>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Notificaciones</span>
+    </div>
+    <div class="box-body">
+        <table id="listadoNotificaciones" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Titulo
+                    </th>
+                    <th>
+                        Texto
+                    </th>
+                    <th>
+                        Contiene Imagen
+                    </th>
+                    <th>
+                        Fecha
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Titulo)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Texto)
+                    </td>
+                    <td>
+                        @if (item.Foto!=null)
+                        {
+                            <small class="label bg-green">Si</small>
+                        }
+                        else
+                        {
+                            <small class="label bg-red">No</small>
+                        }
+                    </td>
+                    <td>
+                        @item.Fecha.ToString("dd/MM/yyyy")
+                    </td>
+                    <td>
+                        <a onclick="verDestinatarios(@item.Id)" title="Ver Destinatarios" class="btn btn-primary btn-xs"><i class="fa fa-users"></i></a>
+                        @if(item.Foto!=null){
+                            <a onclick="verImagen(@item.Id)" title="Ver Imagen" class="btn btn-warning btn-xs"><i class="fa fa-file-image-o"></i></a>
+                        }
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Ver Imagen" function="verImagen" load-url="/Core/Notificaciones/_Imagen/" size="Medium"></modal>
+<modal title="Destinatarios" function="verDestinatarios" load-url="/Core/Notificaciones/_HistorialDestinatariosNotificaciones/" size="Medium"></modal>
+<script>
+    $(document).ready(function () {
+        $('#listadoNotificaciones').DataTable({
+            "columnDefs": [{ "width": "30%", "targets": 0 }, { "width": "30%",  "searchable": false, "orderable": false, "targets": 1 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

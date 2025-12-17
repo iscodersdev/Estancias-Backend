@@ -1,0 +1,63 @@
+﻿@model IEnumerable<DAL.Models.Core.EnvioNotificaciones>
+@{
+    ViewData["Title"] = "Notificaciones";
+}
+
+<box color="Info">
+    <box-header title="Listado de Notificaciones">
+        <box-search update-div="tablaNotificaciones">
+             <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+                <a asp-action="PlantillaNotificacion" class="btn btn-info btn-sm">
+                    <i class="fa fa-plus"><span class="hidden-xs"> Nueva Notificación</span></i>
+                </a>
+            </div>
+        </box-search>
+    </box-header>
+    <box-body table="true">
+        <table class="table table-striped" id="tablaNotificaciones">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Título</th>
+                    <th>Texto</th>
+                    <th>Fecha</th>
+                    <th>Enviado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null)
+                {
+                    foreach (var item in Model.OrderByDescending(x => x.Fecha))
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.Titulo</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.Texto) && item.Texto.Length > 50)
+                                {
+                                    @item.Texto.Substring(0, 50) @Html.Raw("...")
+                                }
+                                else
+                                {
+                                    @item.Texto
+                                }
+                            </td>
+                            <td>@item.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (item.Envio)
+                                {
+                                    <span class="badge badge-success">Si</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-warning">No</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </box-body>
+    <box-footer></box-footer>
+</box>

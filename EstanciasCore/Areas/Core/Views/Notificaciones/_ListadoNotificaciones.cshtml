@@ -1,0 +1,98 @@
+﻿@using DAL.Models.Core
+@model Commons.Models.Page<Notificaciones>
+
+<box-header title="Listado">
+    <box-search update-div="tablaBanners">
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaNotificacion()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
+            </a>
+        </div>
+    </box-search>
+</box-header>
+
+<box-body table="true">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    Nombre
+                </th>
+                <th>
+                    Descripcion
+                </th>
+                <th>
+                    Codigo
+                </th>
+                <th>
+                    FechaEjecucion
+                </th>
+                <th>
+                    FechaUltimaEjecucion
+                </th>
+                <th>
+                    Plantilla
+                </th>
+                <th>
+                    Tipo
+                </th>
+                <th>
+                    Lista Distribución
+                </th>
+                <th>
+                    Estado
+                </th>
+                <th>
+                    Acciones
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Nombre)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Descripcion)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Codigo)
+                    </td>
+                    <td>
+                        @item.FechaEjecucion.ToString("dd/MM/yyyy")
+                    </td>
+                    <td>
+                        @item.FechaUltimaEjecucion.ToString("dd/MM/yyyy")
+                    </td>
+                    <td>
+                        @item.NotificacionesPlantillas!=null? item.NotificacionesPlantillas.Nombre : "Sin Plantilla"
+                    </td>
+                    <td>
+                        @item.ListaDistribucion!=null? item.ListaDistribucion.Nombre : "Sin Plantilla"
+                    </td>
+                    <td>
+                        @if (item.Activo)
+                        {
+                            @Html.Raw("Si")
+                        }
+                        else
+                        {
+                            @Html.Raw("No")
+                        }
+                    </td>              
+             
+                 <td>
+                     <a onclick="editBanner(@item.Id)" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                     <a onclick="cambiarOrdenPromocion(@item.Id)" title="Cambiar Orden" class="btn btn-primary btn-xs"><i class="fa fa-sort-numeric-asc"></i></a>                       
+                     <a onclick="borrarBanner(@item.Id)" title="Borrar Banner" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
+                 </td>
+             </tr>
+            }
+        </tbody>
+    </table>
+</box-body>
+
+
+<modal title="Nueva Notificación" function="nuevaNotificacion" load-url="/Core/Notificaciones/_Create/" size="Medium"></modal>

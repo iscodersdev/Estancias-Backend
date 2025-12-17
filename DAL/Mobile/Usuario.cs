@@ -22,7 +22,7 @@ namespace DAL.Models
         public string Nombres { get; set; }
         public string Categoria { get; set; }
         public string Unidad { get; set; }
-        public string DeviceId { get; set; }
+        public string InstallationId { get; set; }
         public string DeviceToken { get; set; }
         public string Mail { get; set; }
         public string MailOculto { get; set; }

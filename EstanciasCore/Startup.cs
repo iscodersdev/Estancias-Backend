@@ -70,7 +70,7 @@ namespace EstanciasCore
             services.AddTransient<NotificacionAPIService>();
             services.AddTransient<IDatosTarjetaService, DatosTarjetaService>();
             services.AddTransient<IResumenTarjetaService, ResumenTarjetaService>();
-            services.AddTransient<IWondePushService, WondePushService>();
+            services.AddTransient<IWonderPushService, WonderPushService>();
             services.AddTransient<MercadoPagoServices>();
 
             //Genera Resumen Mensual

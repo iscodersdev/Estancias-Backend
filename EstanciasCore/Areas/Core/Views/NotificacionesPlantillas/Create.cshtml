@@ -1,0 +1,387 @@
+﻿@using DAL.Models.Core
+@model NotificacionViewModelDTO
+
+@{
+    ViewData["Title"] = "Crear Notificación";
+}
+<box color="Info">
+    <box-header title="Listado"></box-header>
+    <box-body table="true">
+        <div class="container-fluid" style="margin-top: 20px; background-color: #fff; padding: 20px;">
+            
+            @if (TempData["MensajeExito"] != null)
+            {
+                <div class="alert alert-success">@TempData["MensajeExito"]</div>
+            }
+
+            <form asp-action="Create" method="post">
+                <div class="row">
+                    <!-- Left Column: Form -->
+                    <div class="col-lg-7 col-md-12">
+                        <div class="form-group input-wrapper">
+                            <label>Nombre</label>
+                            <input asp-for="Nombre" class="form-control" type="text" maxlength="35" placeholder="Ingrese Nombre para identificar la notificación" />
+                        </div>
+                        <hr />
+                        <!-- Section 1 -->
+                        <div class="section-header">
+                            <span class="step-circle"> 1</span> <span class="step-title">Tu mensaje</span>
+                        </div>
+                        <br />
+                        <div class="form-section">
+                            <div class="form-group input-wrapper">
+                                <label>Título</label>
+                                <input asp-for="Titulo" class="form-control" id="inputTitulo" type="text" maxlength="35" placeholder="Ingrese Título" />
+                                <span class="char-counter"><span id="titleCount">0</span>/35 <i class="fa fa-smile-o"></i></span>
+                            </div>
+
+                            <div class="form-group input-wrapper">
+                                <label>Texto <span>*</span></label>
+                                <textarea asp-for="Mensaje" class="form-control" id="inputMensaje" rows="3" maxlength="120" placeholder="Ingrese texto"></textarea>
+                                <span class="char-counter-text"><span id="msgCount">0</span>/120 <i class="fa fa-smile-o"></i></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Imagen <i class="fa fa-question-circle-o text-muted"></i></label>
+                                <input asp-for="ImagenUrl" class="form-control" id="inputImagen" placeholder="https://..." />
+                            </div>
+                            <div class="form-group mt-2">
+                                <div class="checkbox">
+                                    <label>
+                                        <input type="checkbox" asp-for="PreferLargeImage" name="PreferLargeImage" id="PreferLargeImage" /> Imagen Grande
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <br />
+                        <!-- Section: When Notification Clicked -->
+                        <div class="section-box mt-4">
+                            <label class="box-label">CUANDO SE HACE CLIC EN LA NOTIFICACIÓN</label>
+                            <div class="form-group">
+                                <label>Abrir URL o deeplink <i class="fa fa-question-circle-o text-muted"></i></label>
+                                <input asp-for="DeepLink" class="form-control" placeholder="Deja vacía para abrir tu aplicación o sitio web." />
+                            </div>
+                        </div>
+
+                        <br />
+                        <div class="col-12">
+                            <a class="btn btn-default" asp-action="Index">Cancelar</a>
+                            <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                        </div>
+                    
+
+                    </div>
+
+                    <!-- Right Column: Preview -->
+                    <div class="col-lg-5 col-md-12 d-flex flex-column align-items-center" style="place-items: center;">
+                        <div class="phone-mockup">
+                            <div class="phone-sensors">
+                                <span class="sensor"></span>
+                                <span class="speaker"></span>
+                                <span class="camera"></span>
+                            </div>
+                            <div class="phone-screen">
+
+                                <div class="status-bar d-flex justify-content-end p-2 text-muted" style="font-size: 10px;">
+                                    <span><i class="fa fa-bluetooth"></i> <i class="fa fa-wifi"></i> <i class="fa fa-battery-3"></i></span>
+                                </div>
+
+                                <div class="lock-screen-content text-center mt-5">
+                                    <h1 class="font-weight-light" style="font-size: 4rem; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;">08:21</h1>
+                                    <p class="text-uppercase small" style="color: #e0e0e0; letter-spacing: 1px;">Viernes, Diciembre 16</p>
+                                </div>
+
+                                <!-- Notification Card -->
+                                <div class="notification-card mx-3 mt-4">
+                                    <div class="notif-header d-flex align-items-center mb-1">
+                                        <i class="fa fa-bell text-secondary mr-2" style="font-size: 10px;"></i>
+                                        <span class="text-secondary small" style="font-size: 11px;">Estancias</span>
+                                    </div>
+
+                                    <div class="notif-body" id="previewBody">
+                                        <h6 class="mb-1 font-weight-bold text-dark" style="font-size: 14px;" id="previewTitulo">Probando Notificacion</h6>
+                                        <p class="mb-0 text-muted small" style="font-size: 13px;" id="previewMensaje">Probando Notificaciones de la App.</p>
+                                    </div>
+
+                                    <div id="previewImageContainer" style="display:none;" class="mt-2 text-center">
+                                        <img id="previewImagen" src="" class="img-fluid rounded" style="max-height: 150px; width: 100%; object-fit: cover;" />
+                                    </div>
+
+                                    <div class="notif-footer text-center mt-3 pt-2">
+                                        @* <span style="font-size: 10px; letter-spacing: 2px; color: #333;">ESTANCIAS</span> *@
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                        <br />
+                        <div class="col-12">
+                            <input type="button" value="Envio Test" class="btn btn-success pull-right" />
+                        </div>
+                    </div>
+                </div>
+                
+            </form>
+        </div>
+    </box-body>
+
+</box>
+
+
+<style>
+    /* General Form Styles */
+    .step-circle {
+        background: #000;
+        color: #fff;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: inline-block;
+        text-align: center;
+        line-height: 24px;
+        font-size: 14px;
+        font-weight: bold;
+        margin-right: 8px;
+    }
+
+    .step-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .char-counter {
+        position: absolute;
+        right: 12px;
+        top: 38px;
+        font-size: 0.8rem;
+        color: #aaa;
+    }
+
+    .char-counter-text {
+        position: absolute;
+        right: 12px;
+        bottom: 10px;
+        font-size: 0.8rem;
+        color: #aaa;
+    }
+
+    .image-upload-placeholder {
+        border: 2px dashed #ddd;
+        border-radius: 6px;
+        padding: 10px;
+        text-align: center;
+        background: #fafafa;
+        color: #666;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .section-box {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #eee;
+    }
+
+    .box-label {
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #666;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .collapse-header {
+        font-weight: bold;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+
+    /* Phone Mockup - Modern Dark Bezel Style */
+    .phone-mockup {
+        width: 300px; /* Slightly narrower for better proportion */
+        height: 600px;
+        border: 12px solid #333; /* Dark bezel */
+        border-radius: 40px;
+        background: #333;
+        position: relative;
+        box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+        padding: 0; /* Flush screen */
+        overflow: hidden; /* rounded corners clip content */
+    }
+
+    /* Top sensors area - Notch style */
+    .phone-sensors {
+        height: 24px;
+        background: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50%;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        z-index: 20;
+    }
+
+    .sensor {
+        display: none; /* Simplify */
+    }
+
+    .speaker {
+        width: 40px;
+        height: 4px;
+        background: #555;
+        border-radius: 2px;
+    }
+
+    .camera {
+        display: none; /* Simplify */
+    }
+
+    .phone-screen {
+        background: #fafafa;
+        height: 100%;
+        width: 100%;
+        border-radius: 28px; /* Inner radius matching bezel approx */
+        overflow: hidden;
+        position: relative;
+        padding-top: 30px; /* Space for status bar */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .status-bar {
+        position: absolute;
+        top: 6px;
+        right: 15px;
+        width: auto;
+        z-index: 10;
+        color: #333;
+    }
+
+    .notification-card {
+        background: #fff;
+        border-radius: 8px; /* Modern cleaner radius */
+        padding: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08); /* More subtle shadow */
+        position: relative;
+        z-index: 10;
+        border-left: 0;
+        margin: 0 12px; /* Side margins */
+    }
+
+    .notif-header i {
+        color: #5f6368;
+    }
+
+    .notif-header span {
+        font-size: 12px;
+        color: #5f6368;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const inTitulo = document.getElementById('inputTitulo');
+        const inMensaje = document.getElementById('inputMensaje');
+        const inImagen = document.getElementById('inputImagen');
+        const chkLargeImage = document.getElementById('PreferLargeImage');
+
+        const preTitulo = document.getElementById('previewTitulo');
+        const preMensaje = document.getElementById('previewMensaje');
+        const preImgContainer = document.getElementById('previewImageContainer');
+        const preImg = document.getElementById('previewImagen');
+
+        const titleCount = document.getElementById('titleCount');
+        const msgCount = document.getElementById('msgCount');
+        const previewBody = document.getElementById('previewBody');
+
+        // Add error handler for image
+        preImg.onerror = function() {
+            preImgContainer.style.display = 'none';
+            if(previewBody) previewBody.style.paddingRight = '0';
+        };
+
+        function updatePreview() {
+            preTitulo.textContent = inTitulo.value || "Probando Notificacion";
+            preMensaje.textContent = inMensaje.value || "Probando Notificaciones de la App.";
+
+            if(inTitulo.value.length > 0) titleCount.textContent = inTitulo.value.length;
+            if(inMensaje.value.length > 0) msgCount.textContent = inMensaje.value.length;
+
+            const url = inImagen.value;
+            const hasImage = url && url.trim().length > 0;
+            const isLarge = chkLargeImage && chkLargeImage.checked;
+
+            if (hasImage) {
+                // Enable checkbox
+                if(chkLargeImage) chkLargeImage.disabled = false;
+
+                preImg.src = url;
+                preImg.style.display = 'block';
+                preImgContainer.style.display = 'block';
+
+                if (isLarge) {
+                    // Large Image Mode (Bottom)
+                    preImgContainer.style.position = 'static';
+                    preImgContainer.style.marginTop = '8px';
+                    preImgContainer.style.textAlign = 'center';
+
+                    preImg.style.width = '100%';
+                    preImg.style.height = 'auto';
+                    preImg.style.maxHeight = 'None';
+                    preImg.style.objectFit = 'contain';
+                    preImg.style.borderRadius = '4px';
+
+                    previewBody.style.paddingRight = '0';
+                } else {
+                    // Thumbnail Mode (Right)
+                    preImgContainer.style.position = 'absolute';
+                    preImgContainer.style.right = '16px';
+                    preImgContainer.style.top = '16px';
+                    preImgContainer.style.marginTop = '0';
+                    preImgContainer.style.textAlign = 'right';
+
+                    preImg.style.width = '48px';
+                    preImg.style.height = '48px';
+                    preImg.style.maxHeight = 'none'; // reset
+                    preImg.style.objectFit = 'cover';
+                    preImg.style.borderRadius = '4px';
+
+                    previewBody.style.paddingRight = '60px'; // Prevent text overlap
+                }
+            } else {
+                // No image
+                if(chkLargeImage) chkLargeImage.disabled = true;
+
+                preImgContainer.style.display = 'none';
+                previewBody.style.paddingRight = '0';
+            }
+        }
+
+        inTitulo.addEventListener('input', updatePreview);
+        inMensaje.addEventListener('input', updatePreview);
+        inImagen.addEventListener('input', updatePreview);
+        if(chkLargeImage) chkLargeImage.addEventListener('change', updatePreview);
+
+        // Init
+        updatePreview();
+    });
+</script>

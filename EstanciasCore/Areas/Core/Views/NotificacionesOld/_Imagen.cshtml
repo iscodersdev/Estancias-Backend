@@ -1,0 +1,12 @@
+﻿@{
+    string img = Convert.ToBase64String(ViewBag.Foto);
+}
+<div>
+    <h3 class="profile-username text-center">@ViewBag.Titulo</h3>
+    <div style="text-align: center;">
+        @if (ViewBag.Foto!=null)
+        {
+            <img style="width:30em" src="data:image/png;base64,@img" alt="Imagen en Base64">
+        }
+    </div>    
+</div>

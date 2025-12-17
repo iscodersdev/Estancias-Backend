@@ -125,11 +125,11 @@ namespace EstanciasCore.Controllers
                     Login.NumeroCliente = cliente.NumeroCliente;
                 }
                 Login.PrimerIngreso = false;
-                if (cliente.Usuario.DeviceId != Login.DeviceId)
+                if (cliente.Usuario.DeviceId != Login.InstallationId)
                 {
                     Login.PrimerIngreso = true;
                 }
-                cliente.Usuario.DeviceId = Login.DeviceId;
+                cliente.Usuario.DeviceId = Login.InstallationId;
                 //cliente.RecordarPassword = Login.Recordarme;
                 _context.Clientes.Update(cliente);
                 UAT uat = new UAT();
@@ -218,13 +218,13 @@ namespace EstanciasCore.Controllers
                     Login.NumeroCliente = cliente.NumeroCliente;
                 }
                 Login.PrimerIngreso = false;
-                if (cliente.Usuario.DeviceId != Login.DeviceId)
+                if (cliente.Usuario.DeviceId != Login.InstallationId)
                 {
                     Login.PrimerIngreso = true;
                 }
 
                 cliente.Usuario.RecordarPassword = Login.Recordarme;
-                cliente.Usuario.DeviceId = Login.DeviceId;
+                cliente.Usuario.DeviceId = Login.InstallationId;
 
                 if (Login.DeviceToken!=null)
                 {

@@ -50,7 +50,7 @@ public class WonderPushWorker : BackgroundService
                         .AsNoTracking()
                         .FirstOrDefaultAsync(p => p.Codigo == "Cumple" && p.Activo == true, stoppingToken);
 
-                    if (procedimiento != null && procedimiento.Activo && DebeEjecutarHoy(procedimiento.DiaEjecucion))
+                    if (procedimiento != null && procedimiento.Activo)
                     {
                         await EjecutarProcesoConNotificaciones(scope);
                     }
@@ -59,8 +59,6 @@ public class WonderPushWorker : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ocurrió un error fatal en el ciclo del worker.");
-                // Opcional: Enviar un email de fallo crítico si el propio worker falla
-                //await EnviarNotificacionAsync("Error Crítico en Worker", $"El worker de resúmenes ha fallado de forma inesperada. Error: {ex.Message}");
             }
 
             await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
@@ -74,16 +72,7 @@ public class WonderPushWorker : BackgroundService
 
         try
         {
-            // 1. ENVIAR EMAIL DE INICIO
-            //await EnviarNotificacionAsync(
-            //    "Inicio del Proceso de Resúmenes",
-            //    $"El proceso ha comenzado a las {DateTime.Now:G}. (Intento {_intentosHoy})"
-            //);
 
-            // 2. EJECUTAR LÓGICA DE NEGOCIO
-            var resumenService = scope.ServiceProvider.GetRequiredService<IResumenTarjetaService>();
-            bool exito = await resumenService.GenerarResumenTarjetas();
-            resultadoFinal = exito ? "ÉXITO" : "FINALIZADO CON ADVERTENCIAS";
         }
         catch (Exception ex)
         {
@@ -92,58 +81,8 @@ public class WonderPushWorker : BackgroundService
         }
         finally
         {
-            // 3. ENVIAR EMAIL DE FINALIZACIÓN (SIEMPRE SE EJECUTA)
-            //await EnviarNotificacionAsync(
-            //    $"Proceso de Resúmenes Finalizado con Estado: {resultadoFinal}",
-            //    $"La ejecución ha concluido a las {DateTime.Now:G}. El resultado fue: {resultadoFinal}."
-            //);
-
-            // 4. MARCAR COMO EJECUTADO PARA NO REPETIR HOY
+            
             _ultimaEjecucionMarcada = DateTime.Today;
         }
-    }
-
-    // --- MÉTODO PRIVADO QUE USA TU LÓGICA DE EMAIL ---
-    //private Task EnviarNotificacionAsync(string asunto, string cuerpoHTML)
-    //{
-    //    if (_adminEmails.Length == 0)
-    //    {
-    //        _logger.LogWarning("No hay emails de administrador configurados. Se omite el envío de notificación.");
-    //        return Task.CompletedTask;
-    //    }
-
-    //    _logger.LogInformation($"Preparando email: '{asunto}'");
-    //    foreach (var emailDestino in _adminEmails)
-    //    {
-    //        try
-    //        {
-    //            // --- TU LÍNEA DE CÓDIGO INTEGRADA AQUÍ ---
-    //            common.EnviarMail(emailDestino.Trim(), asunto, cuerpoHTML, "");
-    //            _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
-    //        }
-    //        catch (Exception ex)
-    //        {
-    //            _logger.LogError(ex, $"Fallo al enviar el email de notificación a: {emailDestino}");
-    //        }
-    //    }
-    //    return Task.CompletedTask;
-    //}
-
-    private bool DebeEjecutarHoy(int diaDeEjecucionDesdeBD)
-    {
-        var ahora = DateTime.Now;
-
-        if (ahora.Day != _ultimoDiaDeIntentos)
-        {
-            _intentosHoy = 0;
-            _ultimaEjecucionMarcada = null;
-            _ultimoDiaDeIntentos = ahora.Day;
-        }
-
-        bool esDiaDeEjecucion = ahora.Day == diaDeEjecucionDesdeBD;
-        bool yaSeEjecuto = _ultimaEjecucionMarcada.HasValue && _ultimaEjecucionMarcada.Value.Date == ahora.Date;
-        bool limiteDeIntentosSuperado = _intentosHoy >= 3;
-
-        return esDiaDeEjecucion && !yaSeEjecuto && !limiteDeIntentosSuperado;
     }
 }

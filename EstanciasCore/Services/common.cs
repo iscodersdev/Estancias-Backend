@@ -741,49 +741,33 @@ namespace EstanciasCore.Services
                 using (HttpClient _httpClient = new HttpClient())
                 {
                     string iconPath = "https://cdn.by.wonderpush.com/upload/01hvf7n5tnuj29id/bfd983f284b4b409a187529e60a1f38da1750d97/v1/small";
+                    string finalIconUrl = "https://cdn.by.wonderpush.com/upload/01hvf7n5tnuj29id/bfd983f284b4b409a187529e60a1f38da1750d97/v1/small";
                     if (imgPath!=null)
                     {
                         string base64Image = Convert.ToBase64String(imgPath);
                         iconPath = $"data:image/png;base64,{base64Image}";
                         
                     }
-                    var accessToken = "ZDdmZTQ3YzQxZDI5YmNhYTUyMGEwOGVhZjI4YmQwMWMxZjg4ZDc1Mjk5NjVmOGVkMzE5YjIwYzcwNzBhZTE1NQ";
+                    var accessToken = "NjQ3MDQwODVmYTRjZjNjMjRiZTQ4OGE0N2MwYjFkY2E2ZTZmOTAyNDVjYWE4MmExMjE5YTNjZTM3MGY0YzJmNQ";
                     var url = $"https://management-api.wonderpush.com/v1/deliveries?accessToken={accessToken}";
 
-                    var notification = new
+                    var payload = new
                     {
-                        targetDeviceIds = deviceId,
+                        // 1. CORRECCIÓN: La clave correcta es 'targetInstallationIds'
+                        // Asegúrate de que la variable contenga el ID de instalación de WonderPush
+                        targetInstallationIds =  deviceId ,
+
                         notification = new
                         {
                             alert = new
                             {
                                 title = title,
                                 text = message,
-                                icon = iconPath, // URL del icono
-                                ios = new
-                                {
-                                    attachments = new[]
-                                    {
-                                new
-                                {
-                                    url = iconPath
-                                }
-                            }
-                                },
-                                android = new
-                                {
-                                    smallIcon = iconPath,
-                                    largeIcon = iconPath
-                                },
-                                web = new
-                                {
-                                    icon = iconPath,
-                                }
                             }
                         }
                     };
-
-                    var notificationJson = JsonConvert.SerializeObject(notification);
+                    string jsonResultado = JsonConvert.SerializeObject(payload);
+                    var notificationJson = JsonConvert.SerializeObject(payload);
                     var content = new StringContent(notificationJson, Encoding.UTF8, "application/json");
 
                     var response = _httpClient.PostAsync(url, content).Result;

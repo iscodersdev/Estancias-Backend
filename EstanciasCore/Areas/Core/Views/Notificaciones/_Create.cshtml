@@ -1,30 +1,46 @@
-﻿@model DAL.Models.Provincia
+﻿@using DAL.Models.Core
+@model Notificaciones
 @{
-    ViewData["Title"] = "Nueva Provincia";
+    ViewData["Title"] = "Nueva Notificación";
 }
-<form method="post" asp-action="_Create" asp-controller="Provincias" asp-area="Core" asp-antiforgery="true">
+<form method="post" asp-action="_Create" asp-controller="Notificaciones" asp-area="Core" asp-antiforgery="true">
     @Html.AntiForgeryToken()
     <div class="box-body">
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="form-group">
+            <label asp-for="Nombre" class="control-label"></label>
+            <input asp-for="Nombre" class="form-control" />
+            <span asp-validation-for="Nombre" class="text-danger"></span>
+        </div>
         <div class="form-group">
             <label asp-for="Descripcion" class="control-label"></label>
             <input asp-for="Descripcion" class="form-control" />
             <span asp-validation-for="Descripcion" class="text-danger"></span>
         </div>
         <div class="form-group">
-            <label asp-for="DescripcionCompleta" class="control-label"></label>
-            <input asp-for="DescripcionCompleta" class="form-control" />
-            <span asp-validation-for="DescripcionCompleta" class="text-danger"></span>
+            <label asp-for="Codigo" class="control-label"></label>
+            <input asp-for="Codigo" class="form-control" />
+            <span asp-validation-for="Codigo" class="text-danger"></span>
         </div>
         <div class="form-group">
-            <label asp-for="Latitud" class="control-label"></label>
-            <input asp-for="Latitud" class="form-control" />
-            <span asp-validation-for="Latitud" class="text-danger"></span>
+            <label asp-for="Descripcion" class="control-label"></label>
+            <input asp-for="Descripcion" class="form-control" />
+            <span asp-validation-for="Descripcion" class="text-danger"></span>
         </div>
         <div class="form-group">
-            <label asp-for="Longitud" class="control-label"></label>
-            <input asp-for="Longitud" class="form-control" />
-            <span asp-validation-for="Longitud" class="text-danger"></span>
+            <label class="control-label">Tipo</label>
+            <select asp-for="TipoNotificacionesProcedimientos.Id" asp-items="ViewBag.Tipos" class="form-control"></select>
+            <span asp-validation-for="TipoNotificacionesProcedimientos" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Lista de Distribución</label>
+            <select asp-for="ListaDistribucion.Id" asp-items="ViewBag.ListaDistribucion" class="form-control"></select>
+            <span asp-validation-for="ListaDistribucion" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Plantilla de Notificación</label>
+            <select asp-for="NotificacionesPlantillas.Id" asp-items="ViewBag.Plantillas" class="form-control"></select>
+            <span asp-validation-for="NotificacionesPlantillas" class="text-danger"></span>
         </div>
     </div>
     <div class="box-footer">

@@ -1,0 +1,51 @@
+﻿@model Commons.Models.Page<DAL.Models.Usuario>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Destinatarios</span>
+    </div>
+    <div class="box-body">
+        <table id="listadoDestinatariosNotificaciones" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Nombre y Apellido
+                    </th>
+                    <th>
+                        Usuario
+                    </th>
+                    <th>
+                        Nro Documento
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                <tr>
+                    <td>
+                        @item.Personas.Apellido @item.Personas.Nombres
+                    </td>
+                    <td>
+                        @item.UserName
+                    </td>
+                    <td>
+                        @item.Personas.NroDocumento
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoDestinatariosNotificaciones').DataTable({
+            "columnDefs": [{ "width": "30%", "targets": 0 }, { "width": "30%", "searchable": false, "orderable": false, "targets": 1 }],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

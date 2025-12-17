@@ -1,0 +1,106 @@
+﻿@{
+    ViewData["Title"] = "Plantillas de Notificaciones";
+}
+
+<box color="Info">
+    <load id="loadNotificacionesPlantillas" load-url="/Core/NotificacionesPlantillas/ObtenerNotificacionesPlantillas">
+        <box-header title="Listado de Plantillas"></box-header>
+    </load>
+</box>
+
+<script>
+    function borrarPlantilla(id) {
+        Swal.fire({
+            title: "¿Desea Borrar la Plantilla?",
+            text: "Esta acción no se puede deshacer",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Borrar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/Core/NotificacionesPlantillas/Delete/' + id,
+                    type: 'POST',
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire(
+                                'Borrado!',
+                                response.message,
+                                'success'
+                            ).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire(
+                                'No se puede borrar',
+                                response.message,
+                                'error'
+                            );
+                        }
+                    },
+                    error: function () {
+                        Swal.fire(
+                            'Error',
+                            'Hubo un problema al procesar la solicitud.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        });
+    }
+
+
+    function enviarTest(id) {
+        // 1. Obtener las listas de distribución
+        $.get('/Core/NotificacionesPlantillas/GetListasDistribucion', function(listas) {
+
+            var options = {};
+            listas.forEach(function(lista) {
+                options[lista.Id] = lista.Nombre;
+            });
+
+            // 2. Mostrar Modal con Select
+            Swal.fire({
+                title: 'Seleccione Lista de Distribución',
+                input: 'select',
+                inputOptions: options,
+                inputPlaceholder: 'Seleccione una lista',
+                showCancelButton: true,
+                confirmButtonText: 'Enviar',
+                cancelButtonText: 'Cancelar',
+                showLoaderOnConfirm: true,
+                preConfirm: (listaId) => {
+                    if (!listaId) {
+                        Swal.showValidationMessage('Debe seleccionar una lista');
+                    }
+                    return listaId;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var listaId = result.value;
+                    
+                    // 3. Enviar al Backend
+                    $.post('/Core/NotificacionesPlantillas/EnviarTest', { id: id, listaDistribucionId: listaId })
+                        .done(function(response) {
+                            if (response.success) {
+                                Swal.fire('Enviado!', response.message, 'success');
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        })
+                        .fail(function() {
+                            Swal.fire('Error', 'Hubo un problema al enviar.', 'error');
+                        });
+                }
+            });
+
+        }).fail(function() {
+            Swal.fire('Error', 'No se pudieron cargar las listas de distribución.', 'error');
+        });
+    }
+
+    </script>
