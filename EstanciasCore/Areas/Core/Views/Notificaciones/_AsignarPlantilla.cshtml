@@ -1,0 +1,50 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    var plantillas = ViewBag.Plantillas as List<SelectListItem>;
+    var notificacionId = ViewBag.NotificacionId;
+}
+
+<form id="formAsignarPlantilla">
+    <input type="hidden" name="notificacionId" value="@notificacionId" />
+    <div class="form-group">
+        <label for="plantillaId">Seleccione una Plantilla</label>
+        <select class="form-control" id="plantillaId" name="plantillaId" required>
+            <option value="0">-- Ninguna --</option>
+            @if (plantillas != null)
+            {
+                foreach (var item in plantillas)
+                {
+                    <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" date-dismiss="modal" onclick="$('#asignarPlantilla').modal('hide');">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarAsignacionPlantilla()">Guardar</button>
+    </div>
+</form>
+
+<script>
+    function guardarAsignacionPlantilla() {
+        var formData = $('#formAsignarPlantilla').serialize();
+        $.post('/Core/Notificaciones/AsignarPlantilla', formData, function(response) {
+            if (response.success) {
+                $('#asignarPlantilla').modal('hide');
+                // Refresh the table or show success message
+                // Assuming 'loadNotificaciones' is the id of the load element in Index
+                 if (typeof reload_loadNotificaciones === "function") {
+                    reload_loadNotificaciones();
+                 } else {
+                     // Fallback reload if specific function not found, though specific is better to avoid full page reload
+                     location.reload(); 
+                 }
+                
+            } else {
+                alert(response.message);
+            }
+        }).fail(function() {
+            alert('Error al procesar la solicitud.');
+        });
+    }
+</script>

@@ -25,19 +25,10 @@
                     Codigo
                 </th>
                 <th>
-                    FechaEjecucion
-                </th>
-                <th>
-                    FechaUltimaEjecucion
-                </th>
-                <th>
                     Plantilla
                 </th>
                 <th>
                     Tipo
-                </th>
-                <th>
-                    Lista Distribución
                 </th>
                 <th>
                     Estado
@@ -61,33 +52,34 @@
                         @Html.DisplayFor(modelItem => item.Codigo)
                     </td>
                     <td>
-                        @item.FechaEjecucion.ToString("dd/MM/yyyy")
+                        @(item.NotificacionesPlantillas!=null? item.NotificacionesPlantillas.Nombre : "Sin Datos")
                     </td>
                     <td>
-                        @item.FechaUltimaEjecucion.ToString("dd/MM/yyyy")
-                    </td>
-                    <td>
-                        @item.NotificacionesPlantillas!=null? item.NotificacionesPlantillas.Nombre : "Sin Plantilla"
-                    </td>
-                    <td>
-                        @item.ListaDistribucion!=null? item.ListaDistribucion.Nombre : "Sin Plantilla"
+                        @(item.TipoNotificacionesProcedimientos!=null ? item.TipoNotificacionesProcedimientos.Nombre : "Sin Datos")
                     </td>
                     <td>
                         @if (item.Activo)
                         {
-                            @Html.Raw("Si")
+                            @Html.Raw("<small class='label pull-center bg-green'>Activo</small>")
                         }
                         else
                         {
-                            @Html.Raw("No")
+                            @Html.Raw("<small class='label pull-center bg-red'>Desactivado</small>")
                         }
                     </td>              
              
                  <td>
-                     <a onclick="editBanner(@item.Id)" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
-                     <a onclick="cambiarOrdenPromocion(@item.Id)" title="Cambiar Orden" class="btn btn-primary btn-xs"><i class="fa fa-sort-numeric-asc"></i></a>                       
-                     <a onclick="borrarBanner(@item.Id)" title="Borrar Banner" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
-                 </td>
+                    <a onclick="asignarPlantilla(@item.Id)" title="Asignar Plantilla" class="btn btn-primary btn-xs"><i class="fa fa-sticky-note"></i></a>
+                    @* <a onclick="cambiarOrdenPromocion(@item.Id)" title="Asignar Lista de Distribución" class="btn btn-info btn-xs"><i class="fa fa-users"></i></a> *@
+                    @if (item.Activo)
+                    {
+                        <a onclick="borrarBanner(@item.Id)" title="Deshabilitar" class="btn btn-danger btn-xs"><i class="fa fa-close"></i></a>
+                    }
+                    else
+                    {
+                        <a onclick="borrarBanner(@item.Id)" title="Habilitar" class="btn btn-success btn-xs"><i class="fa fa-check"></i></a>
+                    }
+                </td>
              </tr>
             }
         </tbody>

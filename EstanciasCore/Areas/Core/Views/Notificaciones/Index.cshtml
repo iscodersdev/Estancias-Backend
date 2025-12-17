@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Notificaciones";
+    ViewData["Title"] = "Notificaciones (Automáticas)";
 }
 
 <box color="Info">
@@ -7,3 +7,38 @@
         <box-header title="Listado de Notificaciones"></box-header>
     </load>
 </box>
+
+<modal title="Asignar Plantilla" function="asignarPlantilla" load-url="/Core/Notificaciones/_AsignarPlantilla/" size="Medium"></modal>
+
+<script>
+    function borrarBanner(id) {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Se cambiará el estado de la notificación.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, continuar!'
+        }).then((result) => {
+            if (result.value) {
+                $.post("/Core/Notificaciones/ToggleEstado", { id: id }, function (data) {
+                     if (data.success) {
+                        // Reload the table
+                        if (typeof reload_loadNotificaciones === "function") {
+                            reload_loadNotificaciones();
+                        } else {
+                            location.reload(); 
+                        }
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            data.message,
+                            'error'
+                        )
+                    }
+                });
+            }
+        })
+    }
+</script>

@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace EstanciasCore.Controllers
 {
@@ -158,6 +159,89 @@ namespace EstanciasCore.Controllers
             page.SelectPage("/Notificaciones/_HistorialDestinatariosNotificaciones",
                 _context.EnvioNotificacionesDestinatarios.Where(x => x.Id == Id).Select(x => x.Destinatario), c);
             return PartialView("_HistorialDestinatariosNotificaciones", page);
+        }
+
+        [HttpGet]
+        public IActionResult _AsignarPlantilla(int id)
+        {
+            var notificacion = _context.Notificaciones.FirstOrDefault(x => x.Id == id);
+            if (notificacion == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.NotificacionId = id;
+            var plantillas = _context.NotificacionesPlantillas
+                .Where(x => x.Activo)
+                .Select(x => new SelectListItem 
+                { 
+                    Text = x.Nombre, 
+                    Value = x.Id.ToString(),
+                    Selected = notificacion.NotificacionesPlantillas != null && notificacion.NotificacionesPlantillas.Id == x.Id
+                })
+                .ToList();
+
+            ViewBag.Plantillas = plantillas;
+
+            return PartialView("_AsignarPlantilla");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AsignarPlantilla(int notificacionId, int plantillaId)
+        {
+            try
+            {
+                var notificacion = await _context.Notificaciones.Include(x => x.NotificacionesPlantillas).FirstOrDefaultAsync(x => x.Id == notificacionId);
+                
+                if (notificacion == null)
+                     return Json(new { success = false, message = "Notificación no encontrada." });
+
+                if (plantillaId <= 0)
+                {
+                    // Desasignar plantilla
+                    notificacion.NotificacionesPlantillas = null;
+                    _context.Notificaciones.Update(notificacion);
+                    await _context.SaveChangesAsync();
+                     return Json(new { success = true, message = "Plantilla desasignada correctamente." });
+                }
+
+                var plantilla = await _context.NotificacionesPlantillas.FirstOrDefaultAsync(x => x.Id == plantillaId);
+
+                if (plantilla != null)
+                {
+                    notificacion.NotificacionesPlantillas = plantilla;
+                    _context.Notificaciones.Update(notificacion);
+                    await _context.SaveChangesAsync();
+                    return Json(new { success = true, message = "Plantilla asignada correctamente." });
+                }
+
+                return Json(new { success = false, message = "Error al asignar la plantilla. Verifique los datos." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> ToggleEstado(int id)
+        {
+            try
+            {
+                var notificacion = await _context.Notificaciones.FirstOrDefaultAsync(x => x.Id == id);
+                if (notificacion != null)
+                {
+                    notificacion.Activo = !notificacion.Activo;
+                    _context.Notificaciones.Update(notificacion);
+                    await _context.SaveChangesAsync();
+                    return Json(new { success = true, message = "Estado actualizado correctamente." });
+                }
+                return Json(new { success = false, message = "Notificación no encontrada." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
         }
 
 
