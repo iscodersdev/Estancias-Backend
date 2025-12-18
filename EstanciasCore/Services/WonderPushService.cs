@@ -18,6 +18,7 @@ namespace EstanciasCore.Services
         // In a real scenario, move these to appsettings.json
         private const string ACCESS_TOKEN = "NjQ3MDQwODVmYTRjZjNjMjRiZTQ4OGE0N2MwYjFkY2E2ZTZmOTAyNDVjYWE4MmExMjE5YTNjZTM3MGY0YzJmNQ";
         private const string API_URL = "https://management-api.wonderpush.com/v1/deliveries";
+        private readonly IWonderPushService _wonderpushService;
 
         public WonderPushService(IServiceScopeFactory scopeFactory, IConfiguration configuration)
         {

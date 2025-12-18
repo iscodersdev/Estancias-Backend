@@ -1,9 +1,11 @@
 ﻿using Commons.Models;
 using DAL.Data;
 using DAL.DTOs;
+using DAL.DTOs.Reportes;
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
+using EstanciasCore.Interface;
 using EstanciasCore.Services;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml;
@@ -21,11 +23,12 @@ namespace EstanciasCore.Controllers
 
 	public class PagoTarjetaController : EstanciasCoreController
     {
-
-        public PagoTarjetaController(EstanciasContext context) : base(context)
+        private readonly IWonderPushService _wonderPushService;
+        public PagoTarjetaController(EstanciasContext context, IWonderPushService wonderPushService) : base(context)
         {
             breadcumb.Add(new Commons.Models.Message() { DisplayName = "Datos" });
-		}
+            _wonderPushService = wonderPushService;
+        }
 
         public IActionResult Index()
         {
@@ -99,16 +102,13 @@ namespace EstanciasCore.Controllers
 
 
         public async Task<bool> AprobarComprobante(int id)
-        {
-
-            //common.EnviaNotificationWonderPushId("Pago Aprobado", "Se aprobó su comprobante de Pago", new string[] { "abc10ba8-89fc-465c-a41f-9b5b9b2d466f" });
-            //return true;
+            {
+                
             try
             {
                 PagoTarjeta pagoTarjeta = _context.PagoTarjeta.Where(s => s.Id == id).First();
                 pagoTarjeta.EstadoPago = EstadoPago.Aprobado;
                 _context.PagoTarjeta.Update(pagoTarjeta);
-                _context.SaveChanges();
                 Clientes cliente = _context.Clientes.Where(x => x.Persona.Id == pagoTarjeta.Persona.Id).FirstOrDefault();
 
                 NotificacionesPersonas notificacion = new NotificacionesPersonas()
@@ -121,7 +121,16 @@ namespace EstanciasCore.Controllers
                 };
                 _context.NotificacionesPersonas.Add(notificacion);
                 _context.SaveChanges();
-                common.EnviaNotificationWonderPushId("Pago Aprobado", "Se aprobó su comprobante de Pago", new string[] { cliente.Usuario.DeviceId });
+                Notificaciones notificaciones = _context.Notificaciones.Where(n => n.Codigo == "PA").FirstOrDefault();
+                NotificacionViewModelDTO notificacionesDTO = new NotificacionViewModelDTO()
+                {
+                    Titulo = notificaciones.NotificacionesPlantillas.Titulo,
+                    Mensaje = notificaciones.NotificacionesPlantillas.Mensaje,
+                    ImagenUrl = notificaciones.NotificacionesPlantillas.ImagenUrl,
+                    DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
+                };
+                List<string> instalationId = new List<string>() { cliente.Usuario.DeviceId } ; 
+                await _wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
                 return true;
             }
             catch (System.Exception e)
@@ -153,7 +162,16 @@ namespace EstanciasCore.Controllers
                 };
                 _context.NotificacionesPersonas.Add(notificacion);
                 _context.SaveChanges();
-                //common.EnviaNotificationWonderPushId("Pago Rechazado", "Se rechazo su comprobante de Pago", new string[] { cliente.Usuario.DeviceId });
+                Notificaciones notificaciones = _context.Notificaciones.Where(n => n.Codigo == "PR").FirstOrDefault();
+                NotificacionViewModelDTO notificacionesDTO = new NotificacionViewModelDTO()
+                {
+                    Titulo = notificaciones.NotificacionesPlantillas.Titulo,
+                    Mensaje = notificaciones.NotificacionesPlantillas.Mensaje,
+                    ImagenUrl = notificaciones.NotificacionesPlantillas.ImagenUrl,
+                    DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
+                };
+                List<string> instalationId = new List<string>() { cliente.Usuario.DeviceId };
+                _wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
                 return true;
             }
             catch (System.Exception)
@@ -174,7 +192,7 @@ namespace EstanciasCore.Controllers
                     _context.PagoTarjeta.Update(pagoTarjeta);
                 }
                 _context.SaveChanges();
-
+                List<string> instalationId = new List<string>();
                 foreach (var pagoTarjeta in pagosAprobar)
                 {
                     Clientes cliente = _context.Clientes.Where(x => x.Persona.Id == pagoTarjeta.Persona.Id).FirstOrDefault();
@@ -189,12 +207,23 @@ namespace EstanciasCore.Controllers
                             TomaConocimiento = null
                         };
                         _context.NotificacionesPersonas.Add(notificacion);
-                        // Si tienes WonderPush, puedes enviarla aquí
-                        // common.EnviaNotificationWonderPushId("Pago Aprobado", "Se aprobó su comprobante de Pago", new string[] { cliente.Usuario.DeviceId });
+                        
                     }
+                    if (cliente.Usuario.DeviceId != null) { instalationId.Add(cliente.Usuario.DeviceId); }
+                    
                 }
                 _context.SaveChanges();
-
+                Notificaciones notificaciones = _context.Notificaciones.Where(n => n.Codigo == "PA").FirstOrDefault();
+                NotificacionViewModelDTO notificacionesDTO = new NotificacionViewModelDTO()
+                {
+                    Titulo = notificaciones.NotificacionesPlantillas.Titulo,
+                    Mensaje = notificaciones.NotificacionesPlantillas.Mensaje,
+                    ImagenUrl = notificaciones.NotificacionesPlantillas.ImagenUrl,
+                    DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
+                };
+                if (instalationId.Count() != 0) { _wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId); }
+                 
+                
                 return Json(new { success = true, message = "Los pagos fueron aprobados." });
             }
             catch (Exception e)
@@ -217,6 +246,7 @@ namespace EstanciasCore.Controllers
                 }
                 _context.SaveChanges();
 
+                List<string> instalationId = new List<string>();
                 foreach (var pagoTarjeta in pagosRechazar)
                 {
                     Clientes cliente = _context.Clientes.Where(x => x.Persona.Id == pagoTarjeta.Persona.Id).FirstOrDefault();
@@ -233,8 +263,18 @@ namespace EstanciasCore.Controllers
                         _context.NotificacionesPersonas.Add(notificacion);
                         // common.EnviaNotificationWonderPushId("Pago Rechazado", "Se rechazó su comprobante de Pago. Motivo: " + dto.Observacion, new string[] { cliente.Usuario.DeviceId });
                     }
+                    if (cliente.Usuario.DeviceId != null) { instalationId.Add(cliente.Usuario.DeviceId); }
                 }
                 _context.SaveChanges();
+                Notificaciones notificaciones = _context.Notificaciones.Where(n => n.Codigo == "PR").FirstOrDefault();
+                NotificacionViewModelDTO notificacionesDTO = new NotificacionViewModelDTO()
+                {
+                    Titulo = notificaciones.NotificacionesPlantillas.Titulo,
+                    Mensaje = notificaciones.NotificacionesPlantillas.Mensaje,
+                    ImagenUrl = notificaciones.NotificacionesPlantillas.ImagenUrl,
+                    DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
+                };
+                if (instalationId.Count() != 0) { _wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId); }
                 return Json(new { success = true, message = "Los pagos han sido rechazados." });
             }
             catch (Exception e)
