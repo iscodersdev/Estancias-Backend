@@ -113,18 +113,13 @@ namespace EstanciasCore.Services
                             {
                                 title = notificacion.Titulo,
                                 text = notificacion.Mensaje,
-                                // icon field is often for small icon resource. converting to null or resource if needed.
-                                // For remote images, largeIcon (Android) and attachments (iOS) are preferred.
-
+                                
                                 android = new
                                 {
-                                    // Opcional pero recomendado: thumbnail mientras está colapsada
-                                    largeIcon = notificacion.PreferLargeImage == false ? notificacion.Icon : null,
-
+                                    
+                                    largeIcon = notificacion.PreferLargeImage == false ? notificacion.ImagenUrl : null,
                                     type = notificacion.PreferLargeImage == true ? "bigPicture" : null,
                                     bigPicture = notificacion.ImagenUrl,
-
-                                    // Opcional: texto en expandida
                                     summaryText = notificacion.Mensaje
                                 },
 

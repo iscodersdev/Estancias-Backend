@@ -55,7 +55,6 @@ namespace EstanciasCore.Controllers
                 Nombre = model.Nombre,
                 Titulo = model.Titulo,
                 Mensaje = model.Mensaje,
-                Icon = model.Icon,
                 ImagenUrl = model.ImagenUrl,
                 PreferLargeImage = model.PreferLargeImage,
                 DeepLink = model.DeepLink,
@@ -81,7 +80,6 @@ namespace EstanciasCore.Controllers
                 Nombre = plantilla.Nombre,
                 Titulo = plantilla.Titulo,
                 Mensaje = plantilla.Mensaje,
-                Icon = plantilla.Icon,
                 ImagenUrl = plantilla.ImagenUrl,
                 DeepLink = plantilla.DeepLink,
                 PreferLargeImage = plantilla.PreferLargeImage
@@ -99,7 +97,6 @@ namespace EstanciasCore.Controllers
                 plantilla.Nombre = model.Nombre;
                 plantilla.Titulo = model.Titulo;
                 plantilla.Mensaje = model.Mensaje;
-                plantilla.Icon = model.Icon;
                 plantilla.ImagenUrl = model.ImagenUrl;
                 plantilla.PreferLargeImage = model.PreferLargeImage;
                 plantilla.DeepLink = model.DeepLink;
@@ -204,7 +201,6 @@ namespace EstanciasCore.Controllers
                     Titulo = plantilla.Titulo,
                     Mensaje = plantilla.Mensaje,
                     ImagenUrl = plantilla.ImagenUrl,
-                    Icon  = plantilla.Icon,
                     PreferLargeImage = plantilla.PreferLargeImage,
                     DeepLink = plantilla.DeepLink
                 };
