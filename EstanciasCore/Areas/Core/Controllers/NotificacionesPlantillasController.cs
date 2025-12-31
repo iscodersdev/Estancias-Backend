@@ -99,6 +99,7 @@ namespace EstanciasCore.Controllers
                 plantilla.Nombre = model.Nombre;
                 plantilla.Titulo = model.Titulo;
                 plantilla.Mensaje = model.Mensaje;
+                plantilla.Icon = model.Icon;
                 plantilla.ImagenUrl = model.ImagenUrl;
                 plantilla.PreferLargeImage = model.PreferLargeImage;
                 plantilla.DeepLink = model.DeepLink;
@@ -203,6 +204,7 @@ namespace EstanciasCore.Controllers
                     Titulo = plantilla.Titulo,
                     Mensaje = plantilla.Mensaje,
                     ImagenUrl = plantilla.ImagenUrl,
+                    Icon  = plantilla.Icon,
                     PreferLargeImage = plantilla.PreferLargeImage,
                     DeepLink = plantilla.DeepLink
                 };
