@@ -90,6 +90,7 @@ namespace EstanciasCore.Controllers
             notificacionesUpdate.Nombre = notificaciones.Nombre;
             notificacionesUpdate.Descripcion = notificaciones.Descripcion;
             notificacionesUpdate.FechaEjecucion = notificaciones.FechaEjecucion;
+            notificacionesUpdate.FechaUltimaEjecucion = DateTime.MinValue;
             _context.Notificaciones.Update(notificacionesUpdate);
             _context.SaveChanges();
             return RedirectToAction("Index");
