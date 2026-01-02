@@ -33,9 +33,21 @@ namespace EstanciasCore.Controllers
 
         
         public IActionResult ObtenerNotificaciones(Page<Notificaciones> page)
-        {    
-            page.SelectPage("/Notificaciones/ObtenerNotificaciones", _context.Notificaciones, x => (x.Nombre.Contains(page.SearchText) || x.Nombre.Contains(page.SearchText)));
+        {
+            ViewBag.BotonNuevo = true;
+            ViewBag.BotonBorrar = true;
+            ViewBag.Titulo = "Listado Notificaciones Manuales";
+            page.SelectPage("/NotificacionesPlantillas/ObtenerNotificaciones", _context.Notificaciones.Where(x => x.TipoNotificacionesProcedimientos.Codigo=="MA" && (string.IsNullOrEmpty(page.SearchText) || x.Nombre.Contains(page.SearchText))));
             return PartialView("_ListadoNotificaciones", page);
+        }
+        
+        public IActionResult ObtenerNotificacionesAutomaticas(Page<Notificaciones> page)
+        {
+            ViewBag.BotonNuevo = false;
+            ViewBag.BotonBorrar = true;
+            ViewBag.Titulo = "Listado Notificaciones Automáticas";
+            page.SelectPage("/NotificacionesPlantillas/ObtenerNotificacionesAutomaticas", _context.Notificaciones.Where(x => x.TipoNotificacionesProcedimientos.Codigo=="AU" && (string.IsNullOrEmpty(page.SearchText) || x.Nombre.Contains(page.SearchText))));
+            return PartialView("_ListadoNotificacionesAutomaticas", page);
         }
 
 
@@ -46,6 +58,18 @@ namespace EstanciasCore.Controllers
             ViewBag.ListaDistribucion = _context.ListaDistribucion.Select(x => new SelectListItem() { Text = x.Nombre, Value = x.Id.ToString() }).ToList();
             ViewBag.Plantillas = _context.NotificacionesPlantillas.Select(x => new SelectListItem() { Text = x.Titulo, Value = x.Id.ToString() }).ToList();
             return PartialView();
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> _Create(Notificaciones notificaciones)
+        {
+            var tipoNotificacion = _context.TipoNotificacionesProcedimientos.Where(x => x.Codigo=="MA").FirstOrDefault();
+            notificaciones.TipoNotificacionesProcedimientos = tipoNotificacion;
+            notificaciones.Activo = true;
+
+            await _context.Notificaciones.AddAsync(notificaciones);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Index");
         }
 
 
@@ -172,7 +196,32 @@ namespace EstanciasCore.Controllers
 
             ViewBag.NotificacionId = id;
             var plantillas = _context.NotificacionesPlantillas
-                .Where(x => x.Activo)
+                .Where(x => x.Activo && !x.NotificacionAutomatica)
+                .Select(x => new SelectListItem 
+                { 
+                    Text = x.Nombre, 
+                    Value = x.Id.ToString(),
+                    Selected = notificacion.NotificacionesPlantillas != null && notificacion.NotificacionesPlantillas.Id == x.Id
+                })
+                .ToList();
+
+            ViewBag.Plantillas = plantillas;
+
+            return PartialView("_AsignarPlantilla");
+        }
+
+        [HttpGet]
+        public IActionResult _AsignarPlantillaAutomaticas(int id)
+        {
+            var notificacion = _context.Notificaciones.FirstOrDefault(x => x.Id == id);
+            if (notificacion == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.NotificacionId = id;
+            var plantillas = _context.NotificacionesPlantillas
+                .Where(x => x.Activo && x.NotificacionAutomatica)
                 .Select(x => new SelectListItem 
                 { 
                     Text = x.Nombre, 
@@ -216,6 +265,68 @@ namespace EstanciasCore.Controllers
                 }
 
                 return Json(new { success = false, message = "Error al asignar la plantilla. Verifique los datos." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult _AsignarListaDistribucion(int id)
+        {
+            var notificacion = _context.Notificaciones.FirstOrDefault(x => x.Id == id);
+            if (notificacion == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.NotificacionId = id;
+            var listas = _context.ListaDistribucion
+                .Where(x => x.Activo)
+                .Select(x => new SelectListItem 
+                { 
+                    Text = x.Nombre, 
+                    Value = x.Id.ToString(),
+                    Selected = notificacion.ListaDistribucion != null && notificacion.ListaDistribucion.Id == x.Id
+                })
+                .ToList();
+
+            ViewBag.Listas = listas;
+
+            return PartialView("_AsignarListaDistribucion");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AsignarListaDistribucion(int notificacionId, int listaDistribucionId)
+        {
+            try
+            {
+                var notificacion = await _context.Notificaciones.Include(x => x.ListaDistribucion).FirstOrDefaultAsync(x => x.Id == notificacionId);
+                
+                if (notificacion == null)
+                     return Json(new { success = false, message = "Notificación no encontrada." });
+
+                if (listaDistribucionId <= 0)
+                {
+                    // Desasignar lista
+                    notificacion.ListaDistribucion = null;
+                    _context.Notificaciones.Update(notificacion);
+                    await _context.SaveChangesAsync();
+                     return Json(new { success = true, message = "Lista desasignada correctamente." });
+                }
+
+                var lista = await _context.ListaDistribucion.FirstOrDefaultAsync(x => x.Id == listaDistribucionId);
+
+                if (lista != null)
+                {
+                    notificacion.ListaDistribucion = lista;
+                    _context.Notificaciones.Update(notificacion);
+                    await _context.SaveChangesAsync();
+                    return Json(new { success = true, message = "Lista asignada correctamente." });
+                }
+
+                return Json(new { success = false, message = "Error al asignar la lista. Verifique los datos." });
             }
             catch (Exception ex)
             {

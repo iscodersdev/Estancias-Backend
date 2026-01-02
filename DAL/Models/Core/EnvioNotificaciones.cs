@@ -55,6 +55,7 @@ namespace DAL.Models.Core
         public string Titulo { get; set; }
         public string Mensaje { get; set; }
         public string ImagenUrl { get; set; }
+        public string ImagenIcon { get; set; }
         public string DeepLink { get; set; }
         public bool PreferLargeImage { get; set; }
         public bool AttachDataPayload { get; set; }
@@ -97,9 +98,11 @@ namespace DAL.Models.Core
         public string Titulo { get; set; }
         public string Mensaje { get; set; }
         public string ImagenUrl { get; set; }
+        public string Icon { get; set; }
         public string DeepLink { get; set; }
         public bool PreferLargeImage { get; set; }
         public bool Activo { get; set; } = true;
+        public bool NotificacionAutomatica { get; set; } = false;
     }
 
 

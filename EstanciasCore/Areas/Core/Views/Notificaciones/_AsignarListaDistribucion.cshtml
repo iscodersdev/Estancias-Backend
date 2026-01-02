@@ -1,0 +1,47 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    var listas = ViewBag.Listas as List<SelectListItem>;
+    var notificacionId = ViewBag.NotificacionId;
+}
+
+<form id="formAsignarListaDistribucion">
+    <input type="hidden" name="notificacionId" value="@notificacionId" />
+    <div class="form-group">
+        <label for="listaDistribucionId">Seleccione una Lista de Distribución</label>
+        <select class="form-control" id="listaDistribucionId" name="listaDistribucionId" required>
+            <option value="0">-- Ninguna --</option>
+            @if (listas != null)
+            {
+                foreach (var item in listas)
+                {
+                    <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" date-dismiss="modal" onclick="$('#asignarListaDistribucion').modal('hide');">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarAsignacionListaDistribucion()">Guardar</button>
+    </div>
+</form>
+
+<script>
+    function guardarAsignacionListaDistribucion() {
+        var formData = $('#formAsignarListaDistribucion').serialize();
+        $.post('/Core/Notificaciones/AsignarListaDistribucion', formData, function(response) {
+            if (response.success) {
+                $('#asignarListaDistribucion').modal('hide');
+                 if (typeof reload_loadNotificaciones === "function") {
+                    reload_loadNotificaciones();
+                 } else {
+                     location.reload(); 
+                 }
+                
+            } else {
+                alert(response.message);
+            }
+        }).fail(function() {
+            alert('Error al procesar la solicitud.');
+        });
+    }
+</script>

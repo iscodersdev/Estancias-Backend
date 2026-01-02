@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -104,6 +105,7 @@ namespace EstanciasCore.Services
                 {
                     var url = $"{API_URL}?accessToken={ACCESS_TOKEN}";
 
+
                     var payload = new
                     {
                         targetInstallationIds = deviceIds,
@@ -113,24 +115,38 @@ namespace EstanciasCore.Services
                             {
                                 title = notificacion.Titulo,
                                 text = notificacion.Mensaje,
-                                
-                                android = new
-                                {
-                                    
-                                    largeIcon = notificacion.PreferLargeImage == false ? notificacion.ImagenUrl : null,
-                                    type = notificacion.PreferLargeImage == true ? "bigPicture" : null,
-                                    bigPicture = notificacion.ImagenUrl,
-                                    summaryText = notificacion.Mensaje
-                                },
 
-                    ios = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new
-                                {
-                                    attachments = new[] {
-                                        new { url = notificacion.ImagenUrl }
+                                web = !string.IsNullOrEmpty(notificacion.ImagenUrl)
+                                    ? new
+                                    {
+                                        image = notificacion.ImagenUrl
                                     }
-                                } : null,
+                                    : null,
 
-                                targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink) ? notificacion.DeepLink : null
+                                android = (!string.IsNullOrEmpty(notificacion.ImagenUrl) || !string.IsNullOrEmpty(notificacion.ImagenIcon))
+                                    ? new
+                                    {
+                                        type = "bigPicture",
+                                        bigPicture = notificacion.ImagenUrl,
+                                        largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon.Replace("w=1920", "w=200").Replace("q=85", "q=60") : null
+                                        //bigPicture = "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png",
+                                        //largeIcon = "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png"
+                                    }
+                                    : null,
+
+                                ios = !string.IsNullOrEmpty(notificacion.ImagenUrl)
+                                    ? new
+                                    {
+                                        attachments = new[]
+                                        {
+                                            new { url = notificacion.ImagenUrl }
+                                        }
+                                    }
+                                    : null,
+
+                                //targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink)
+                                //    ? notificacion.DeepLink
+                                //    : null
                             }
                         }
                     };

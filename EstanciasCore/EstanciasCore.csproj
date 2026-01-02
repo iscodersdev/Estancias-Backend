@@ -6,6 +6,12 @@
     <SccAuxPath>SAK</SccAuxPath>
     <SccLocalPath>SAK</SccLocalPath>
   </PropertyGroup>
+	
+	<PropertyGroup>
+		<UseRazorBuildServer>false</UseRazorBuildServer>
+		<RazorCompileOnBuild>false</RazorCompileOnBuild>
+		<MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
+	</PropertyGroup>
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>

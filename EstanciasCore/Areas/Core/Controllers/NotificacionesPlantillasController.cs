@@ -37,8 +37,20 @@ namespace EstanciasCore.Controllers
 
         
         public IActionResult ObtenerNotificacionesPlantillas(Page<NotificacionesPlantillas> page)
-        {    
-            page.SelectPage("/NotificacionesPlantillas/ObtenerNotificacionesPlantillas", _context.NotificacionesPlantillas, x => (x.Nombre.Contains(page.SearchText) || x.Nombre.Contains(page.SearchText)));
+        {
+            ViewBag.BotonNuevo = true;
+            ViewBag.BotonBorrar = true;
+            ViewBag.Titulo = "Listado Plantillas Manuales";
+            page.SelectPage("/NotificacionesPlantillas/ObtenerNotificacionesPlantillas", _context.NotificacionesPlantillas.Where(x => !x.NotificacionAutomatica && x.Activo && (string.IsNullOrEmpty(page.SearchText) || x.Nombre.Contains(page.SearchText))));
+            return PartialView("_ListadoNotificacionesPlantillas", page);
+        }
+        
+        public IActionResult ObtenerNotificacionesPlantillasAutomaticas(Page<NotificacionesPlantillas> page)
+        {
+            ViewBag.BotonNuevo = false;
+            ViewBag.BotonBorrar = false;
+            ViewBag.Titulo = "Listado Plantillas Automáticas";
+            page.SelectPage("/NotificacionesPlantillas/ObtenerNotificacionesPlantillas", _context.NotificacionesPlantillas.Where(x => x.NotificacionAutomatica && x.Activo && (string.IsNullOrEmpty(page.SearchText) || x.Nombre.Contains(page.SearchText))));
             return PartialView("_ListadoNotificacionesPlantillas", page);
         }
 
@@ -58,7 +70,8 @@ namespace EstanciasCore.Controllers
                 ImagenUrl = model.ImagenUrl,
                 PreferLargeImage = model.PreferLargeImage,
                 DeepLink = model.DeepLink,
-                Activo = true
+                Activo = true,
+                Icon = model.ImagenIcon
             };
             await _context.NotificacionesPlantillas.AddAsync(plantillas);
             await _context.SaveChangesAsync();
@@ -82,7 +95,8 @@ namespace EstanciasCore.Controllers
                 Mensaje = plantilla.Mensaje,
                 ImagenUrl = plantilla.ImagenUrl,
                 DeepLink = plantilla.DeepLink,
-                PreferLargeImage = plantilla.PreferLargeImage
+                PreferLargeImage = plantilla.PreferLargeImage,
+                ImagenIcon = plantilla.Icon,
             };
 
             return View(model);
@@ -98,6 +112,7 @@ namespace EstanciasCore.Controllers
                 plantilla.Titulo = model.Titulo;
                 plantilla.Mensaje = model.Mensaje;
                 plantilla.ImagenUrl = model.ImagenUrl;
+                plantilla.Icon = model.ImagenIcon;
                 plantilla.PreferLargeImage = model.PreferLargeImage;
                 plantilla.DeepLink = model.DeepLink;
                 
@@ -118,10 +133,21 @@ namespace EstanciasCore.Controllers
                     return Json(new { success = false, message = "La plantilla está asignada a una notificación y no se puede borrar." });
                 }
 
+
+                var seUso = _context.EnvioNotificaciones.Any(x => x.NotificacionesPlantillas.Id == id);
+
                 var plantilla = _context.NotificacionesPlantillas.FirstOrDefault(x => x.Id == id);
                 if (plantilla != null)
                 {
-                    _context.NotificacionesPlantillas.Remove(plantilla);
+                    if (seUso)
+                    {
+                        plantilla.Activo = false;
+                        _context.NotificacionesPlantillas.Update(plantilla);
+                    }
+                    else
+                    {
+                        _context.NotificacionesPlantillas.Remove(plantilla);
+                    }
                     await _context.SaveChangesAsync();
                 }
 
@@ -201,6 +227,7 @@ namespace EstanciasCore.Controllers
                     Titulo = plantilla.Titulo,
                     Mensaje = plantilla.Mensaje,
                     ImagenUrl = plantilla.ImagenUrl,
+                    ImagenIcon = plantilla.Icon,
                     PreferLargeImage = plantilla.PreferLargeImage,
                     DeepLink = plantilla.DeepLink
                 };

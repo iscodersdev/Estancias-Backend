@@ -68,7 +68,7 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
 
                 notificaciones.TreeChild = new List<SidebarMenu>()
                 {
-                    MenuHelpers.AddModule("Notificacion Automatica", "/Core/Notificaciones/"),
+                    MenuHelpers.AddModule("Notificación", "/Core/Notificaciones/"),
                     MenuHelpers.AddModule("Plantillas", "/Core/NotificacionesPlantillas/"),
                     MenuHelpers.AddModule("Lista de Distribución", "/Core/ListaDistribucion/")
                 };

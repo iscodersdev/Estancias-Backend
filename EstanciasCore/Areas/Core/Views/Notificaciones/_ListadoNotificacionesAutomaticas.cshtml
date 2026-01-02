@@ -1,13 +1,29 @@
 ﻿@using DAL.Models.Core
 @model Commons.Models.Page<Notificaciones>
 
+<style>
+    /* Centrar contenido horizontal y verticalmente */
+    .table td, .table th {
+        vertical-align: middle !important; /* Alineación vertical */
+        text-align: center; /* Alineación horizontal */
+    }
+
+    /* Si tienes imágenes como en tu captura, esto asegura que no rompan el layout */
+    .table img {
+        display: block;
+        margin: 0 auto;
+    }
+
+    /* Cambia el color de fondo de la fila al pasar el mouse */
+    .table tbody tr:hover {
+        background-color: #f5f5f5 !important; /* Un gris muy claro */
+        transition: background-color 0.2s ease; /* Hace que el cambio sea suave */
+        cursor: pointer; /* Cambia el cursor a una mano */
+    }
+</style>
+
 <box-header title="@ViewBag.Titulo">
     <box-search update-div="tablaBanners">
-        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
-            <a onclick="nuevaNotificacion()" class="btn btn-info btn-sm">
-                <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
-            </a>
-        </div>
     </box-search>
 </box-header>
 
@@ -20,9 +36,6 @@
                 </th>
                 <th>
                     Descripcion
-                </th>
-                <th>
-                    Fecha
                 </th>
                 <th>
                     Plantilla
@@ -46,9 +59,6 @@
                         @Html.DisplayFor(modelItem => item.Descripcion)
                     </td>
                     <td>
-                        @Convert.ToDateTime(item.FechaEjecucion).ToString("dd/MM/yyyy HH:mm")
-                    </td>
-                    <td>
                         @if (item.NotificacionesPlantillas!=null)
                         {
                             @Html.Raw($"<small class='label pull-center bg-primary'>{item.NotificacionesPlantillas.Nombre}</small>")
@@ -70,8 +80,7 @@
                     </td>              
              
                  <td>
-                    <a onclick="asignarPlantilla(@item.Id)" title="Asignar Plantilla" class="btn btn-primary btn-xs"><i class="fa fa-sticky-note"></i></a>
-                    <a onclick="asignarListaDistribucion(@item.Id)" title="Asignar Lista de Distribución" class="btn btn-info btn-xs"><i class="fa fa-users"></i></a>
+                    <a onclick="asignarPlantillaAutomaticas(@item.Id)" title="Asignar Plantilla" class="btn btn-primary btn-xs"><i class="fa fa-sticky-note"></i></a>
                     @if (item.Activo)
                     {
                         <a onclick="borrarBanner(@item.Id)" title="Deshabilitar" class="btn btn-danger btn-xs"><i class="fa fa-close"></i></a>
@@ -87,5 +96,3 @@
     </table>
 </box-body>
 
-
-<modal title="Nueva Notificación" function="nuevaNotificacion" load-url="/Core/Notificaciones/_Create/" size="Medium"></modal>
