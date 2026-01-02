@@ -371,11 +371,20 @@ public class WonderPushWorker : BackgroundService
         try
         {
             var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+            List<Usuario> personasEnvio = new List<Usuario>();
+            if (notificaciones.ListaDistribucion.Nombre=="Todos")
+            {
+                personasEnvio = context.Usuarios
+                    .Where(x =>x.DeviceId != null)
+                    .ToList();
+            }
+            else
+            {
+                personasEnvio = context.DistribucionDestinatarios
+                    .Where(x => x.ListaDistribucion.Id == notificaciones.ListaDistribucion.Id && x.Destinatario.DeviceId != null).Select(d => d.Destinatario)
+                    .ToList();
 
-            var personasEnvio = context.DistribucionDestinatarios
-                .Where(x => x.ListaDistribucion.Id == notificaciones.ListaDistribucion.Id &&
-                            x.Destinatario.DeviceId != null).Select(d=>d.Destinatario)
-                .ToList();
+            }
 
             var instalationId = personasEnvio
                 .Select(u => u.DeviceId)
