@@ -27,8 +27,6 @@ public class WonderPushWorker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IConfiguration _configuration;
     private readonly string[] _adminEmails;
-    private readonly IWonderPushService _wonderPushService;
-    private readonly IDatosTarjetaService _datosTarjetaService;
 
     // Worker state
     private DateTime? _ultimaEjecucionMarcada = null;
@@ -36,7 +34,7 @@ public class WonderPushWorker : BackgroundService
     private int _ultimoDiaDeIntentos = 0;
 
     // Constructor
-    public WonderPushWorker(ILogger<ResumenMensualWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration, IWonderPushService wonderPushService, IDatosTarjetaService datosTarjetaService)
+    public WonderPushWorker(ILogger<ResumenMensualWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
@@ -44,14 +42,13 @@ public class WonderPushWorker : BackgroundService
 
         var emails = _configuration["NotificationSettings:AdminEmails"];
         _adminEmails = emails?.Split(';', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
-        _wonderPushService = wonderPushService;
     }
 
     // Main execution loop
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Worker de WonderPush iniciado.");
-
+        DateTime? ultimaRevisionAU = null;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -59,16 +56,56 @@ public class WonderPushWorker : BackgroundService
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+                    var ahora = DateTime.Now;
+                    var fechaHoy = ahora.Date;
 
-                    // Fetch active notifications to process
-                    var procedimiento = await context.Notificaciones.Include("NotificacionesPlantillas")
-                        .Where(p => p.Activo == true && p.FechaUltimaEjecucion.Date != DateTime.Now.Date).AsNoTracking()
-                        .ToListAsync(stoppingToken);
-
-                    // Process each notification
-                    foreach (var proc in procedimiento)
+                    // --- 1. PROCESO DE AUTOMÁTICAS (Cada 1 hora aproximadamente) ---
+                    // Solo entra si es la primera vez del día o si pasó más de una hora desde la última revisión
+                    if (ultimaRevisionAU == null || (ahora - ultimaRevisionAU.Value).TotalHours >= 1)
                     {
-                        await EjecutarProcesoConNotificaciones(scope, proc);
+                        var procedimientoAutomaticos = await context.Notificaciones
+                            .Include("NotificacionesPlantillas")
+                            .Include("TipoNotificacionesProcedimientos")
+                            .Where(p => p.TipoNotificacionesProcedimientos.Codigo == "AU")
+                            .Where(p => p.Activo && p.FechaUltimaEjecucion.Date != fechaHoy)
+                            .ToListAsync(stoppingToken);
+
+                        foreach (var proc in procedimientoAutomaticos)
+                        {
+                            await EjecutarProcesoConNotificacionesAutomaticas(scope, proc);
+                        }
+
+                        ultimaRevisionAU = ahora; // Marcamos que ya revisamos AU
+                    }
+
+                    // --- 2. PROCESO DE MANUALES (MA) ---
+                    // Solo entramos si ya llegó la hora (FechaEjecucion <= ahora) y no se corrió hoy
+                    bool hayManualesAhora = await context.Notificaciones
+                        .AnyAsync(p => p.Activo
+                                  && p.TipoNotificacionesProcedimientos.Codigo == "MA"
+                                  && p.FechaEjecucion <= ahora
+                                  && p.FechaEjecucion.Date == fechaHoy
+                                  && p.FechaUltimaEjecucion.Date != fechaHoy, stoppingToken);
+
+                    if (hayManualesAhora)
+                    {
+                        var procedimiento = await context.Notificaciones
+                            .Include("NotificacionesPlantillas")
+                            .Include("TipoNotificacionesProcedimientos")
+                            .Include("ListaDistribucion")
+                            .Where(p => p.TipoNotificacionesProcedimientos.Codigo == "MA")
+                            .Where(p => p.Activo == true
+                                     && p.FechaEjecucion <= ahora
+                                     && p.FechaEjecucion.Date == fechaHoy
+                                     && p.FechaUltimaEjecucion.Date != fechaHoy)
+                            .Where(p => p.NotificacionesPlantillas != null && p.ListaDistribucion != null)
+                            .AsNoTracking()
+                            .ToListAsync(stoppingToken);
+
+                        foreach (var proc in procedimiento)
+                        {
+                            await EjecutarProcesoConNotificaciones(scope, proc);
+                        }
                     }
                 }
             }
@@ -77,13 +114,13 @@ public class WonderPushWorker : BackgroundService
                 _logger.LogError(ex, "Ocurrió un error fatal en el ciclo del worker.");
             }
 
-            // Wait before next execution cycle
-            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+            // Se ejecuta cada 1 min
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 
     // Process notifications based on their type
-    private async Task EjecutarProcesoConNotificaciones(IServiceScope scope, Notificaciones notificaciones)
+    private async Task EjecutarProcesoConNotificacionesAutomaticas(IServiceScope scope, Notificaciones notificaciones)
     {
         string resultadoFinal = "FALLIDO"; // Default state
         _intentosHoy++;
@@ -122,6 +159,29 @@ public class WonderPushWorker : BackgroundService
         }
     }
 
+
+    private async Task EjecutarProcesoConNotificaciones(IServiceScope scope, Notificaciones notificaciones)
+    {
+        string resultadoFinal = "FALLIDO"; // Default state
+        _intentosHoy++;
+
+        try
+        {
+            await EjecutarNotificacionAsync(scope, notificaciones);
+            resultadoFinal = "OK";
+            
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error crítico durante la ejecución del servicio en el intento {_intentosHoy}.");
+            resultadoFinal = $"FALLIDO CRÍTICAMENTE: {ex.Message}";
+        }
+        finally
+        {
+            _ultimaEjecucionMarcada = DateTime.Today;
+        }
+    }
+
     // Process balance notifications
     private async Task EjecutarAvisosSaldos(IServiceScope scope, Notificaciones notificaciones)
     {
@@ -133,14 +193,12 @@ public class WonderPushWorker : BackgroundService
             var limiteConcurrencia = _configuration.GetValue<int>("ProcesoResumen:LimiteConcurrencia", 10);
             int totalUsuarios;
 
-            using (var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>())
-            {
-                totalUsuarios = await context.Usuarios
-                    .Include(u => u.Personas)
-                    .CountAsync(u => u.Personas != null &&
-                                     !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
-                                     !string.IsNullOrEmpty(u.Personas.NroDocumento));
-            }
+            var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+            totalUsuarios = await context.Usuarios
+                .Include(u => u.Personas)
+                .CountAsync(u => u.Personas != null &&
+                                    !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
+                                    !string.IsNullOrEmpty(u.Personas.NroDocumento));
 
             var totalLotes = (int)Math.Ceiling((double)totalUsuarios / tamanoLote);
             var empresa = new DatosEstructura();
@@ -151,27 +209,25 @@ public class WonderPushWorker : BackgroundService
                 {
                     // Fetch users in batches
                     List<UsuarioParaProcesarDTO> usuariosDelLote;
-                    using (var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>())
-                    {
-                        empresa = context.DatosEstructura.FirstOrDefault();
-                        usuariosDelLote = await context.Usuarios
-                            .Include(u => u.Personas)
-                            .Where(u => u.Personas != null &&
-                                        !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
-                                        !string.IsNullOrEmpty(u.Personas.NroDocumento))
-                            .OrderBy(u => u.Id)
-                            .Skip(i * tamanoLote)
-                            .Take(tamanoLote)
-                            .Select(u => new UsuarioParaProcesarDTO
-                            {
-                                Id = u.Id,
-                                NombreCompleto = u.Personas.GetNombreCompleto(),
-                                NroDocumento = u.Personas.NroDocumento,
-                                NroTarjeta = u.Personas.NroTarjeta,
-                                UserName = u.UserName
-                            })
-                            .ToListAsync();
-                    }
+                    var contextBatch = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+                    empresa = contextBatch.DatosEstructura.FirstOrDefault();
+                    usuariosDelLote = await contextBatch.Usuarios
+                        .Include(u => u.Personas)
+                        .Where(u => u.Personas != null &&
+                                    !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
+                                    !string.IsNullOrEmpty(u.Personas.NroDocumento))
+                        .OrderBy(u => u.Id)
+                        .Skip(i * tamanoLote)
+                        .Take(tamanoLote)
+                        .Select(u => new UsuarioParaProcesarDTO
+                        {
+                            Id = u.Id,
+                            NombreCompleto = u.Personas.GetNombreCompleto(),
+                            NroDocumento = u.Personas.NroDocumento,
+                            NroTarjeta = u.Personas.NroTarjeta,
+                            UserName = u.UserName
+                        })
+                        .ToListAsync();
 
                     // Process each user in the batch
                     var tasks = usuariosDelLote.Select(usuario => EjecutarEnvioConSaldos(usuario, semaphore, empresa, notificaciones));
@@ -179,12 +235,10 @@ public class WonderPushWorker : BackgroundService
                 }
             }
 
-            using (var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>())
-            {
-                notificaciones.FechaUltimaEjecucion = DateTime.Now;
-                context.Update(notificaciones);
-                context.SaveChanges();
-            }
+            var contextUpdate = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+            notificaciones.FechaUltimaEjecucion = DateTime.Now;
+            contextUpdate.Update(notificaciones);
+            contextUpdate.SaveChanges();
         }
         catch (Exception ex)
         {
@@ -244,11 +298,13 @@ public class WonderPushWorker : BackgroundService
                             Titulo = notificaciones.NotificacionesPlantillas.Titulo,
                             Mensaje = notificaciones.NotificacionesPlantillas.Mensaje,
                             ImagenUrl = notificaciones.NotificacionesPlantillas.ImagenUrl,
+                            ImagenIcon = notificaciones.NotificacionesPlantillas.Icon,
                             DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
                         };
 
                         var instalationId = new List<string> { usuario.UserName };
-                        var respuestawp = await _wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
+                        var wonderPushService = scope.ServiceProvider.GetRequiredService<IWonderPushService>();
+                        var respuestawp = await wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
                     }
                 }
             }
@@ -270,40 +326,108 @@ public class WonderPushWorker : BackgroundService
 
         try
         {
-            using (var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>())
+            var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+            var fechaInicio = fechaActual.Date;
+            var fechaFin = fechaInicio.AddDays(7);
+
+            var personasEnvio = context.Usuarios
+                .Where(x => x.Personas != null &&
+                            x.Personas.FechaNacimiento.Value.Month == fechaActual.Month &&
+                            x.Personas.FechaNacimiento.Value.Day >= fechaInicio.Day &&
+                            x.Personas.FechaNacimiento.Value.Day <= fechaFin.Day)
+                .ToList();
+
+            var instalationId = personasEnvio
+                .Select(u => u.DeviceId)
+                .Where(id => !string.IsNullOrEmpty(id))
+                .ToList();
+
+            NotificacionViewModelDTO notificacionesDTO = new NotificacionViewModelDTO()
             {
-                var fechaInicio = fechaActual.Date;
-                var fechaFin = fechaInicio.AddDays(7);
+                Titulo = notificaciones.NotificacionesPlantillas.Titulo,
+                Mensaje = notificaciones.NotificacionesPlantillas.Mensaje,
+                ImagenUrl = notificaciones.NotificacionesPlantillas.ImagenUrl,
+                ImagenIcon = notificaciones.NotificacionesPlantillas.Icon,
+                DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
+            };
 
-                var personasEnvio = context.Usuarios
-                    .Where(x => x.Personas != null &&
-                                x.Personas.FechaNacimiento.Value.Month == fechaActual.Month &&
-                                x.Personas.FechaNacimiento.Value.Day >= fechaInicio.Day &&
-                                x.Personas.FechaNacimiento.Value.Day <= fechaFin.Day)
-                    .ToList();
-
-                var instalationId = personasEnvio
-                    .Select(u => u.DeviceId)
-                    .Where(id => !string.IsNullOrEmpty(id))
-                    .ToList();
-
-                NotificacionViewModelDTO notificacionesDTO = new NotificacionViewModelDTO()
-                {
-                    Titulo = notificaciones.NotificacionesPlantillas.Titulo,
-                    Mensaje = notificaciones.NotificacionesPlantillas.Mensaje,
-                    ImagenUrl = notificaciones.NotificacionesPlantillas.ImagenUrl,
-                    DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
-                };
-
-                var respuestawp = await _wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
-                notificaciones.FechaUltimaEjecucion = DateTime.Now;
-                context.Update(notificaciones);
-                context.SaveChanges();
-            }
+            var wonderPushService = scope.ServiceProvider.GetRequiredService<IWonderPushService>();
+            var respuestawp = await wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
+            notificaciones.FechaUltimaEjecucion = DateTime.Now;
+            context.Update(notificaciones);
+            context.SaveChanges();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al ejecutar el saludo de cumpleaños.");
         }
+    }
+
+    // Send birthday greetings
+    private async Task EjecutarNotificacionAsync(IServiceScope scope, Notificaciones notificaciones)
+    {
+        var fechaActual = DateTime.Now;
+
+        try
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+
+            var personasEnvio = context.DistribucionDestinatarios
+                .Where(x => x.ListaDistribucion.Id == notificaciones.ListaDistribucion.Id &&
+                            x.Destinatario.DeviceId != null).Select(d=>d.Destinatario)
+                .ToList();
+
+            var instalationId = personasEnvio
+                .Select(u => u.DeviceId)
+                .Where(id => !string.IsNullOrEmpty(id))
+                .ToList();
+
+            NotificacionViewModelDTO notificacionesDTO = new NotificacionViewModelDTO()
+            {
+                Titulo = notificaciones.NotificacionesPlantillas.Titulo,
+                Mensaje = notificaciones.NotificacionesPlantillas.Mensaje,
+                ImagenUrl = notificaciones.NotificacionesPlantillas.ImagenUrl,
+                ImagenIcon = notificaciones.NotificacionesPlantillas.Icon,
+                DeepLink = notificaciones.NotificacionesPlantillas.DeepLink,
+                
+            };
+
+            var wonderPushService = scope.ServiceProvider.GetRequiredService<IWonderPushService>();
+            var respuestawp = await wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
+            notificaciones.FechaUltimaEjecucion = DateTime.Now;
+            context.Update(notificaciones);
+            context.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al ejecutar el saludo de cumpleaños.");
+        }
+    }
+
+    /// <summary>
+    /// Devuelve true si las fechas son iguales (sin comparar hora y minutos)
+    /// </summary>
+    /// <param name="fecha1"></param>
+    /// <param name="fecha2"></param>
+    /// <returns></returns>
+    private bool ValidarFecha(DateTime fecha1, DateTime fecha2)
+    {
+        bool bandera = true;
+
+        if(fecha1.Day != fecha2.Day)
+        {
+            bandera = false;
+        }
+
+        if(fecha1.Month != fecha2.Month)
+        {
+            bandera = false;
+        }
+
+        if(fecha1.Year != fecha2.Year)
+        {
+            bandera = false;
+        }
+        return bandera;
     }
 }

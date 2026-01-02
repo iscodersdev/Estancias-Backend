@@ -3,9 +3,17 @@
 <div class="box box-info">
     <div class="box-header with-border filtro-grilla">
         <span class="txt-titulo-box">Listado de Destinatarios - @ViewBag.Lista</span>
-        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+        <div class="input-group input-group-sm pull-right" style="max-width: 100rem;">
             <a onclick="nuevoDestinatario(@ViewBag.ListaId)" class="btn btn-info btn-sm">
                 <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+            &emsp;
+            <a asp-action="VaciarListaDestinatarios" asp-route-id="@ViewBag.ListaId" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Vaciar" confirm="¿Está seguro de vaciar la lista de destinatarios? Esta acción no se puede deshacer." class="btn btn-danger btn-sm">
+                <i class="fa fa-trash"><span class="hidden-xs"> Vaciar Lista</span></i>
+            </a>
+            &emsp;
+            <a onclick="importarDestinatarios(@ViewBag.ListaId)" class="btn btn-success btn-sm">
+                <i class="fa fa-file-excel-o"><span class="hidden-xs"> Importar Excel</span></i>
             </a>
         </div>
     </div>
@@ -62,6 +70,7 @@
     </div>
 </div>
 <modal title="Nuevo Destinatario" callback-modal="true" function="nuevoDestinatario" load-url="/Core/ListaDistribucion/_CreateDestinatario/" size="Medium"></modal>
+<modal title="Importar Destinatarios" callback-modal="true" function="importarDestinatarios" load-url="/Core/ListaDistribucion/_ImportarDestinatarios/" size="Medium"></modal>
 
 <script>
     $(document).ready(function () {

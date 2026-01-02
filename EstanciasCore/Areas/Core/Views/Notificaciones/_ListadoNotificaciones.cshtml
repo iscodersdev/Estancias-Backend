@@ -28,6 +28,9 @@
                     Plantilla
                 </th>
                 <th>
+                    Lista
+                </th>
+                <th>
                     Estado
                 </th>
                 <th>
@@ -59,6 +62,16 @@
                         }
                     </td>
                     <td>
+                        @if (item.ListaDistribucion!=null)
+                        {
+                            @Html.Raw($"<small class='label pull-center bg-purple'>{item.ListaDistribucion.Nombre}</small>")
+                        }
+                        else
+                        {
+                            @Html.Raw("<small class='label pull-center bg-orange'>Sin Plantilla</small>")
+                        }
+                    </td>
+                    <td>
                         @if (item.Activo)
                         {
                             @Html.Raw("<small class='label pull-center bg-green'>Activo</small>")
@@ -70,16 +83,18 @@
                     </td>              
              
                  <td>
-                    <a onclick="asignarPlantilla(@item.Id)" title="Asignar Plantilla" class="btn btn-primary btn-xs"><i class="fa fa-sticky-note"></i></a>
+                    <a onclick="editarNotificacion(@item.Id)" title="Editar Notificación" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                    <a onclick="asignarPlantilla(@item.Id)" title="Asignar Plantilla" class="btn btn-warning btn-xs"><i class="fa fa-sticky-note"></i></a>
                     <a onclick="asignarListaDistribucion(@item.Id)" title="Asignar Lista de Distribución" class="btn btn-info btn-xs"><i class="fa fa-users"></i></a>
                     @if (item.Activo)
                     {
-                        <a onclick="borrarBanner(@item.Id)" title="Deshabilitar" class="btn btn-danger btn-xs"><i class="fa fa-close"></i></a>
+                        <a onclick="borrarNotificacion(@item.Id)" title="Deshabilitar" class="btn btn-danger btn-xs"><i class="fa fa-close"></i></a>
                     }
                     else
                     {
-                        <a onclick="borrarBanner(@item.Id)" title="Habilitar" class="btn btn-success btn-xs"><i class="fa fa-check"></i></a>
+                        <a onclick="borrarNotificacion(@item.Id)" title="Habilitar" class="btn btn-success btn-xs"><i class="fa fa-check"></i></a>
                     }
+                    <a onclick="borrarNotificacionPermanente(@item.Id)" title="Borrar" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
                 </td>
              </tr>
             }
@@ -89,3 +104,4 @@
 
 
 <modal title="Nueva Notificación" function="nuevaNotificacion" load-url="/Core/Notificaciones/_Create/" size="Medium"></modal>
+<modal title="Editar Notificación" function="editarNotificacion" load-url="/Core/Notificaciones/_Update/" size="Medium"></modal>

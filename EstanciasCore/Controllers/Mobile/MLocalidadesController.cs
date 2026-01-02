@@ -45,6 +45,7 @@ namespace EstanciasCore.Controllers.Mobile
             {
                 Localidades = _context.Localidad;
             }
+
             List<LocalidadDTO> lista = new List<LocalidadDTO>();
             foreach (var localidad in Localidades)
             {

@@ -79,6 +79,7 @@ namespace DAL.Models.Core
         public int Variable2 { get; set; }
         public int Variable3 { get; set; }
         public bool Activo { get; set; }
+        public bool Borrado { get; set; } = false;
         public virtual TipoNotificacionesProcedimientos TipoNotificacionesProcedimientos { get; set; }
         public virtual NotificacionesPlantillas NotificacionesPlantillas { get; set; }
         public virtual ListaDistribucion ListaDistribucion { get; set; }

@@ -129,8 +129,6 @@ namespace EstanciasCore.Services
                                         type = "bigPicture",
                                         bigPicture = notificacion.ImagenUrl,
                                         largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon.Replace("w=1920", "w=200").Replace("q=85", "q=60") : null
-                                        //bigPicture = "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png",
-                                        //largeIcon = "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png"
                                     }
                                     : null,
 

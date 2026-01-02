@@ -41,7 +41,38 @@
 <modal title="Asignar Lista de Distribución" function="asignarListaDistribucion" load-url="/Core/Notificaciones/_AsignarListaDistribucion/" size="Medium"></modal>
 
 <script>
-    function borrarBanner(id) {
+    function borrarNotificacionPermanente(id) {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Se eliminará permanentemente esta notificación.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, continuar!'
+        }).then((result) => {
+            if (result.value) {
+                $.post("/Core/Notificaciones/BorrarPermanente", { id: id }, function (data) {
+                     if (data.success) {
+                        // Reload the table
+                        if (typeof reload_loadNotificaciones === "function") {
+                            reload_loadNotificaciones();
+                        } else {
+                            location.reload(); 
+                        }
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            data.message,
+                            'error'
+                        )
+                    }
+                });
+            }
+        })
+    }
+
+    function borrarNotificacion(id) {
         Swal.fire({
             title: '¿Estás seguro?',
             text: "Se cambiará el estado de la notificación.",

@@ -1,0 +1,29 @@
+@model DAL.Models.Core.DistribucionDestinatarios
+@{
+    ViewData["Title"] = "Importar Destinatarios";
+}
+<form method="post" asp-action="_ImportarDestinatarios" asp-controller="ListaDistribucion" asp-area="Core" asp-antiforgery="true" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div class="box-body">
+        <div class="callout callout-info" style="margin-bottom: 20px;">
+            <h4><i class="fa fa-info"></i> Importante:</h4>
+            <p>Descargue la plantilla para conocer el formato correcto del archivo. El archivo debe contener una columna con el DNI de los usuarios a importar.</p>
+            <a href="javascript:void(0);" onclick="window.open('@Url.Action("DescargarPlantilla", "ListaDistribucion", new { Area = "Core" })', '_blank');" class="btn btn-primary" style="text-decoration: none; margin-top: 10px;">
+                <i class="fa fa-download"></i> Descargar Plantilla
+            </a>
+        </div>
+
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input name="Id" value="@ViewBag.ListaId" type="hidden" />
+        
+        <div class="form-group">
+            <label class="control-label">Archivo Excel (.xlsx)</label>
+            <input type="file" name="file" class="form-control" accept=".xlsx" required />
+            <span class="text-danger"></span>
+        </div>
+    </div>
+    <div class="box-footer">
+        <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+        <button type="submit" class="btn btn-info pull-right">Importar</button>
+    </div>
+</form>

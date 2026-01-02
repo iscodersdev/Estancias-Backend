@@ -6,13 +6,14 @@ using DAL.Models.Core;
 using EstanciasCore.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace EstanciasCore.Controllers
 {
@@ -37,7 +38,7 @@ namespace EstanciasCore.Controllers
             ViewBag.BotonNuevo = true;
             ViewBag.BotonBorrar = true;
             ViewBag.Titulo = "Listado Notificaciones Manuales";
-            page.SelectPage("/NotificacionesPlantillas/ObtenerNotificaciones", _context.Notificaciones.Where(x => x.TipoNotificacionesProcedimientos.Codigo=="MA" && (string.IsNullOrEmpty(page.SearchText) || x.Nombre.Contains(page.SearchText))));
+            page.SelectPage("/NotificacionesPlantillas/ObtenerNotificaciones", _context.Notificaciones.Where(x => x.TipoNotificacionesProcedimientos.Codigo=="MA" && !x.Borrado && (string.IsNullOrEmpty(page.SearchText) || x.Nombre.Contains(page.SearchText))));
             return PartialView("_ListadoNotificaciones", page);
         }
         
@@ -74,6 +75,25 @@ namespace EstanciasCore.Controllers
 
 
 
+
+        public ActionResult _Update(int Id)
+        {
+            Notificaciones notificaciones = _context.Notificaciones.Where(x => x.Id==Id).FirstOrDefault();
+            return PartialView(notificaciones);
+        }
+
+
+        [HttpPost]
+        public ActionResult _Update(Notificaciones notificaciones)
+        {
+            Notificaciones notificacionesUpdate = _context.Notificaciones.Where(x => x.Id==notificaciones.Id).FirstOrDefault();
+            notificacionesUpdate.Nombre = notificaciones.Nombre;
+            notificacionesUpdate.Descripcion = notificaciones.Descripcion;
+            notificacionesUpdate.FechaEjecucion = notificaciones.FechaEjecucion;
+            _context.Notificaciones.Update(notificacionesUpdate);
+            _context.SaveChanges();
+            return RedirectToAction("Index");
+        }
 
 
 
@@ -283,7 +303,6 @@ namespace EstanciasCore.Controllers
 
             ViewBag.NotificacionId = id;
             var listas = _context.ListaDistribucion
-                .Where(x => x.Activo)
                 .Select(x => new SelectListItem 
                 { 
                     Text = x.Nombre, 
@@ -343,6 +362,27 @@ namespace EstanciasCore.Controllers
                 if (notificacion != null)
                 {
                     notificacion.Activo = !notificacion.Activo;
+                    _context.Notificaciones.Update(notificacion);
+                    await _context.SaveChangesAsync();
+                    return Json(new { success = true, message = "Estado actualizado correctamente." });
+                }
+                return Json(new { success = false, message = "Notificación no encontrada." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> BorrarPermanente(int id)
+        {
+            try
+            {
+                var notificacion = await _context.Notificaciones.FirstOrDefaultAsync(x => x.Id == id);
+                if (notificacion != null)
+                {
+                    notificacion.Borrado = true;
                     _context.Notificaciones.Update(notificacion);
                     await _context.SaveChangesAsync();
                     return Json(new { success = true, message = "Estado actualizado correctamente." });

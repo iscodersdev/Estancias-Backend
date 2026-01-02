@@ -99,8 +99,8 @@
                         @Html.DisplayFor(modelItem => item.DeepLink)
                     </td>
                     <td>
-                     <a href="/Core/NotificacionesPlantillas/Update/@item.Id" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>                      
-                     <a onclick="enviarTest(@item.Id)" title="Enviar Test" class="btn btn-success btn-xs"><i class="fa fa-paper-plane"></i></a>
+                        <a href="/Core/NotificacionesPlantillas/Update/@item.Id" title="Edita" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                        <a onclick="enviarTest(@item.Id)" title="Enviar Test" class="btn btn-success btn-xs"><i class="fa fa-paper-plane"></i></a>
                         @if (ViewBag.BotonBorrar)
                         {
                             <a onclick="borrarPlantilla(@item.Id)" title="Borrar Plantilla" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>                            

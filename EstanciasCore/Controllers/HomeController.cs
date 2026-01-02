@@ -47,6 +47,10 @@ namespace EstanciasCore.Controllers
         }
         public IActionResult Index()
         {
+
+
+            _context.Usuarios.ToList();
+
             //_resumen.GenerarResumenTarjetas();
 
             //var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };
