@@ -45,157 +45,16 @@ namespace EstanciasCore.Controllers
             _viewEngine=viewEngine;
             _serviceProvider = serviceProvider;
         }
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-
-
-            _context.Usuarios.ToList();
-
-            //_resumen.GenerarResumenTarjetas();
-
-            //var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };
-            var dnisConfig = new List<string>() { "30463400" };
-
-
-
-            //var dnisConfig = new List<string>()
-            //{
-            //    "30924029",
-            //    "28169057",
-            //    "38321219",
-            //    "35757417",
-            //    "29168051",
-            //    "16792876",
-            //    "35171364",
-            //    "32554335",
-            //    "18273739",
-            //    "27454114",
-            //    "28113350",
-            //    "32478751",
-            //    "25701145",
-            //    "35989033",
-            //    "35989032",
-            //    "35430172",
-            //    "36569558",
-            //    "34019479",
-            //    "24927167",
-            //    "29129264",
-            //    "28023078",
-            //    "27187368",
-            //    "26127387",
-            //    "32286891",
-            //    "20842208",
-            //    "33719151",
-            //    "35201728",
-            //    "29195727",
-            //    "28523742",
-            //    "28437058",
-            //    "26618906",
-            //    "33909892",
-            //    "23268714",
-            //    "39910737",
-            //    "38277329",
-            //    "36577204",
-            //    "38267503",
-            //    "30829596",
-            //    "30181342",
-            //    "35727463",
-            //    "32182575",
-            //    "14863065",
-            //    "35427465",
-            //    "25047626",
-            //    "31240157",
-            //    "26018519",
-            //    "29643784",
-            //    "40643147",
-            //    "22695028",
-            //    "95485082",
-            //    "29930619",
-            //    "18153372",
-            //    "31176068",
-            //    "35958627", // DNI con puntos en fuente original
-            //    "42673010", // DNI con puntos en fuente original
-            //    "30463400", // DNI con puntos en fuente original
-            //    "22522125", // DNI con puntos en fuente original
-            //    "32717628", // DNI con puntos en fuente original
-            //    "38185189", // DNI con puntos en fuente original
-            //    "35387306", // DNI con puntos en fuente original
-            //    "38922110", // DNI con puntos en fuente original
-            //    "29146686", // DNI con puntos en fuente original
-            //    "36081727", // DNI con puntos en fuente original
-            //    "37993818", // DNI con puntos en fuente original
-            //    "24305610", // DNI con puntos en fuente original
-            //    "33556326", // DNI con puntos en fuente original
-            //    "24036404", // DNI con puntos en fuente original
-            //    "31256516", // DNI con puntos en fuente original
-            //    "23314245",
-            //    "31060131",
-            //    "93873881", // DNI con puntos en fuente original
-            //    "38681089", // DNI con puntos en fuente original
-            //    "32028780",
-            //    "28592571",
-            //    "45283916",
-            //    "38944663",
-            //    "44098727",
-            //    "38586490",
-            //    "93873882", // DNI con puntos en fuente original
-            //    "37783316",
-            //    "40545832",
-            //    "33790183",
-            //    "41292897",
-            //    "40761199",
-            //    "29313551",
-            //    "37702113",
-            //    "46959064",
-            //    "39293397",
-            //    "39644088",
-            //    "43243389",
-            //    "37120795",
-            //    "45519294",
-            //    "43399989",
-            //    "34269913",
-            //    "45462171",
-            //    "41671764",
-            //    "38047383",
-            //    "37217944" // DNI inicial
-            //};
-
-
-            //foreach (var item in dnisConfig)
-            //{
-            //    var resumenesUsuario = _context.ResumenTarjeta.Where(x => x.Usuario.Personas.NroDocumento == item && x.Periodo.Id==94).FirstOrDefault();
-
-            //    CultureInfo culturaAR = new CultureInfo("es-AR");
-            //    string mesNombre = culturaAR.DateTimeFormat.GetMonthName(12);
-            //    string asunto = $" Tu resumen de Tarjeta Estancias ya está disponible";
-
-            //    // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
-            //    byte[] pdfBytes = resumenesUsuario.Adjunto;
-            //    DateTime fechaVencimiento = new DateTime(2025, 11, 10);
-
-            //    var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
-            //    {
-            //        Fecha = fechaVencimiento.ToString("dd/MM"),
-            //        // Nota: Usando decimales correctos para la suma.
-            //        Monto = resumenesUsuario.Monto + resumenesUsuario.MontoAdeudado,
-            //    };
-
-            //    // **2. Renderiza la vista del correo electrónico**
-            //    var viewHtml = RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre).Result;
-
-            //    //common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resumenesUsuario.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
-            //    common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
-
-            //}
-
-            AddPageAlerts(PageAlertType.Success, $"Bienvenido {User.Identity.Name}!");        
+            AddPageAlerts(PageAlertType.Success, $"Bienvenido {User.Identity.Name}!");
             var usuario = _context.Usuarios.FirstOrDefault(x => x.Email == User.Identity.Name);
             ViewBag.title1 = "Socios Con App";
             ViewBag.title4 = "Cantidad Socios Nuevos del Mes";
-            
+
             @ViewBag.Uno = _context.Clientes.Count().ToString();
             @ViewBag.Cuatro = _context.Clientes.Where(x => x.FechaIngreso.Date >= DateTime.Today.AddDays(-30).Date).Count();
-           
+
             return View();
         }
 
@@ -275,6 +134,67 @@ namespace EstanciasCore.Controllers
             var html = await _datosTarjeta.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
 
             return View("ResumenBancarioTemplate", datosParaResumenDTO);
+        }
+
+        public async Task<string> EnvioDeMail(int PeriodoId)
+        {
+            //var dnisConfig = _context.Usuarios.Where(x=>x.Personas!=null).Select(x=>x.Personas.NroDocumento).ToList();
+
+            //_resumen.GenerarResumenTarjetas();
+
+            //var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };
+            //var dnisConfig = new List<string>() { "30463400" };
+
+
+            try
+            {
+                int cont = 0;
+                var periodo = _context.Periodo.Where(x => x.Id==PeriodoId).FirstOrDefault();
+                if (periodo==null)
+                {
+                    return "El periodo no existe";
+                }
+
+                var dnisConfig = _context.ResumenTarjeta.Where(x => x.Periodo.Id==PeriodoId).ToList();
+                if (dnisConfig.Count()==0)
+                {
+                    return "No hay Resumen del Periodode "+periodo.Descripcion;
+                }
+
+                foreach (var item in dnisConfig)
+                {
+                    cont++;
+                    //var resumenesUsuario = _context.ResumenTarjeta.Where(x => x.Usuario.Personas.NroDocumento == item && x.Periodo.Id==95).FirstOrDefault();
+
+                    CultureInfo culturaAR = new CultureInfo("es-AR");
+                    string mesNombre = culturaAR.DateTimeFormat.GetMonthName(periodo.FechaHasta.Month);
+                    string asunto = $" Tu resumen de Tarjeta Estancias ya está disponible";
+
+                    // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
+                    byte[] pdfBytes = item.Adjunto;
+                    DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
+
+                    var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
+                    {
+                        Fecha = fechaVencimiento.ToString("dd/MM"),
+                        // Nota: Usando decimales correctos para la suma.
+                        Monto = item.Monto + item.MontoAdeudado,
+                    };
+
+                    // **2. Renderiza la vista del correo electrónico**
+                    var viewHtml = RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre).Result;
+
+                    common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = item.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+                    //common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "javiermercenario@hotmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+                }
+
+                return "Finalizado con Exito - se enviaron "+cont+" resumenes";
+            }
+            catch (Exception e)
+            {
+                return "Error"+ e.Message;
+            }                     
+
         }
 
         public async Task<IActionResult> DescargarResumenpdf(string dni)
