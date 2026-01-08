@@ -53,6 +53,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
             // --- 1. Configuración del Proceso ---
             var tamanoLote = _configuration.GetValue<int>("ProcesoResumen:TamanoLote", 100);
             var limiteConcurrencia = _configuration.GetValue<int>("ProcesoResumen:LimiteConcurrencia", 10);
+            var tamanoBatchGuardado = 50; // Guardamos en SQL de a 50 para ver progreso
 
             var resumenesGenerados = new ConcurrentBag<ResumenTarjeta>();
             var usuariosFallidos = new ConcurrentBag<(string UsuarioId, string Error)>();
@@ -71,8 +72,11 @@ public class ResumenTarjetaService : IResumenTarjetaService
 
                 if (periodo == null)
                 {
-                    DateTime FechaDesde = new DateTime(fechaActualPerido.Year, fechaActualPerido.AddMonths(-2).Month, 26);
-                    DateTime FechaHasta = new DateTime(fechaActualPerido.Year, fechaActualPerido.AddMonths(-1).Month, 25);
+                    var anioFechaDesde = fechaActualPerido.AddMonths(-2);
+                    var anioFechaHasta = fechaActualPerido.AddMonths(-1);
+
+                    DateTime FechaDesde = new DateTime(anioFechaDesde.Year, anioFechaDesde.Month, 26);
+                    DateTime FechaHasta = new DateTime(anioFechaHasta.Year, anioFechaHasta.Month, 25);
                     DateTime proximoMes = fechaActualPerido.AddMonths(1);
                     DateTime fechaDeVencimiento = new DateTime(fechaActualPerido.Year, fechaActualPerido.Month, 15);
                     periodo = new Periodo
@@ -139,13 +143,22 @@ public class ResumenTarjetaService : IResumenTarjetaService
                     // Creamos una tarea por cada usuario del lote
                     var tasks = usuariosDelLote.Select(usuario => ProcessarUsuarioAsync(usuario, semaphore, resumenesGenerados, usuariosFallidos, datosEstructura, periodo));
                     await Task.WhenAll(tasks);
+
+                    // --- GUARDADO INTERMEDIO (BATCHING) ---
+                    // Si acumulamos suficientes o es el último lote, guardamos en DB
+                    if (resumenesGenerados.Count >= tamanoBatchGuardado || i == totalLotes - 1)
+                    {
+                        await GuardarProgresoEnDB(resumenesGenerados);
+                    }
                 }
             }
 
             // --- 4. Guardado de Resultados ---
             using (var scope = _scopeFactory.CreateScope())
             {
-                var finalContext = scope.ServiceProvider.GetRequiredService<EstanciasContext>(); 
+                var finalContext = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+                // Iniciamos un cronómetro solo para la base de datos
+                var dbStopwatch = Stopwatch.StartNew();
 
                 // 1. Agrega los resúmenes que se generaron correctamente
                 await finalContext.AddRangeAsync(resumenesGenerados);
@@ -177,6 +190,7 @@ public class ResumenTarjetaService : IResumenTarjetaService
 
                 // 6. Guarda todo en UNA SOLA transacción.
                 await finalContext.SaveChangesAsync();
+                dbStopwatch.Stop();
             }
 
             stopwatch.Stop();
@@ -186,6 +200,27 @@ public class ResumenTarjetaService : IResumenTarjetaService
         {
             stopwatch.Stop();
             return false;
+        }
+    }
+
+    private async Task GuardarProgresoEnDB(ConcurrentBag<ResumenTarjeta> resumenes)
+    {
+        if (resumenes.IsEmpty) return;
+
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+
+            // Extraemos lo que hay en la bolsa hasta ahora
+            var listaParaGuardar = new List<ResumenTarjeta>();
+            while (resumenes.TryTake(out var item)) { listaParaGuardar.Add(item); }
+
+            if (listaParaGuardar.Any())
+            {
+                await context.ResumenTarjeta.AddRangeAsync(listaParaGuardar);
+                await context.SaveChangesAsync();
+                // En este punto, los registros ya son visibles en SQL Server
+            }
         }
     }
 

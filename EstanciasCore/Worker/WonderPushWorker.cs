@@ -95,7 +95,8 @@ public class WonderPushWorker : BackgroundService
                             .Include("ListaDistribucion")
                             .Where(p => p.TipoNotificacionesProcedimientos.Codigo == "MA")
                             .Where(p => p.Activo == true
-                                     && p.FechaEjecucion <= ahora
+                                     && p.FechaEjecucion.Hour == ahora.Hour
+                                     && p.FechaEjecucion.Minute == ahora.Minute
                                      && p.FechaEjecucion.Date == fechaHoy
                                      && p.FechaUltimaEjecucion.Date != fechaHoy)
                             .Where(p => p.NotificacionesPlantillas != null && p.ListaDistribucion != null)
