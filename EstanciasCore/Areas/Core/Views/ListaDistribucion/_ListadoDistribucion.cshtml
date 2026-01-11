@@ -37,7 +37,7 @@
                         <td>
                             @if (item.Nombre!="Todos")
                             {
-                                <a asp-controller="ListaDistribucion" asp-action="Index" asp-route-id="@item.Id" class="btn btn-warning btn-xs"><i class="fa fa-bars"></i></a>
+                                <a asp-controller="ListaDistribucion" asp-action="Index" asp-route-id="@item.Id" class="btn btn-warning btn-xs" id="botonListaDestinatarios"><i class="fa fa-bars"></i></a>
                                 <a onclick="editLista('@item.Id')" title="Editar Lista" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
                                 <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar esta Lista de Distribución?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
                             }

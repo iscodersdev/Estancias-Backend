@@ -38,6 +38,12 @@
                     Descripcion
                 </th>
                 <th>
+                    Día
+                </th>
+                <th>
+                    Hora
+                </th>
+                <th>
                     Plantilla
                 </th>
                 <th>
@@ -56,7 +62,28 @@
                         @Html.DisplayFor(modelItem => item.Nombre)
                     </td>
                     <td>
+
                         @Html.DisplayFor(modelItem => item.Descripcion)
+                    </td>
+                    <td>
+                        @if (item.Codigo=="PC" || item.Codigo=="PA" || item.Codigo == "PR")
+                        {
+                            @Html.Raw("-")
+                        }
+                        else
+                        {
+                            @Html.DisplayFor(modelItem => item.FechaEjecucion.Day)                                
+                        }
+                    </td>
+                    <td>
+                        @if (item.Codigo=="PC" || item.Codigo=="PA" || item.Codigo == "PR")
+                        {
+                            @Html.Raw("-")
+                        }
+                        else
+                        {
+                            @item.FechaEjecucion.ToString("HH:mm")
+                        }
                     </td>
                     <td>
                         @if (item.NotificacionesPlantillas!=null)
@@ -80,6 +107,22 @@
                     </td>              
              
                  <td>
+                    @if (item.Codigo=="AS")
+                    {
+                        <a onclick="CambiarFecha(@item.Id)" title="Cambiar Fecha" class="btn btn-primary btn-xs"><i class="fa fa-calendar-o"></i></a>
+                    }
+                    else if (item.Codigo=="PV")
+                    {
+                        <a onclick="CambiarFecha(@item.Id)" title="Cambiar Fecha" class="btn btn-primary btn-xs"><i class="fa fa-calendar-o"></i></a>
+                    }
+                    else if (item.Codigo=="MI")
+                    {
+                        <a onclick="CambiarFecha(@item.Id)" title="Cambiar Fecha" class="btn btn-primary btn-xs"><i class="fa fa-calendar-o"></i></a>
+                    }
+                    else if (item.Codigo=="C")
+                    {
+                        <a onclick="CambiarFecha(@item.Id)" title="Cambiar Fecha" class="btn btn-primary btn-xs"><i class="fa fa-calendar-o"></i></a>
+                    }
                     <a onclick="asignarPlantillaAutomaticas(@item.Id)" title="Asignar Plantilla" class="btn btn-warning btn-xs"><i class="fa fa-sticky-note"></i></a>
                     @if (item.Activo)
                     {
@@ -89,6 +132,8 @@
                     {
                         <a onclick="borrarNotificacion(@item.Id)" title="Habilitar" class="btn btn-success btn-xs"><i class="fa fa-check"></i></a>
                     }
+
+       
                 </td>
              </tr>
             }

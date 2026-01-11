@@ -396,6 +396,48 @@ namespace EstanciasCore.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult _CambiarFecha(int id)
+        {
+            var notificacion = _context.Notificaciones.FirstOrDefault(x => x.Id == id);
+            if (notificacion == null)
+            {
+                return NotFound();
+            }
+            return PartialView("_CambiarFecha", notificacion);
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> CambiarFecha(int Id, int Dia, DateTime Hora)
+        {
+            try
+            {
+                var notificacion = await _context.Notificaciones.FirstOrDefaultAsync(x => x.Id == Id);
+                if (notificacion != null)
+                {                    
+                    var baseDate = notificacion.FechaEjecucion;
+                    
+                    try {
+                        var newDate = new DateTime(baseDate.Year, baseDate.Month, Dia, Hora.Hour, Hora.Minute, 0);
+                        
+                         notificacion.FechaEjecucion = newDate;
+                        _context.Notificaciones.Update(notificacion);
+                        await _context.SaveChangesAsync();
+                        return Json(new { success = true, message = "Fecha actualizada correctamente." });
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                         return Json(new { success = false, message = "El día seleccionado no es válido para el mes actual." });
+                    }
+                }
+                return Json(new { success = false, message = "Notificación no encontrada." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
+        }
+
 
         /*-------------------------------------------------- Funciones -------------------------------------------------------------*/
 

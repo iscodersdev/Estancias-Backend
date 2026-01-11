@@ -59,33 +59,65 @@ public class WonderPushWorker : BackgroundService
                     var ahora = DateTime.Now;
                     var fechaHoy = ahora.Date;
 
-                    // --- 1. PROCESO DE AUTOMÁTICAS (Cada 1 hora aproximadamente) ---
-                    // Solo entra si es la primera vez del día o si pasó más de una hora desde la última revisión
-                    if (ultimaRevisionAU == null || (ahora - ultimaRevisionAU.Value).TotalHours >= 1)
+                    // --- 1. PROCESO DE AUTOMÁTICAS ---
+
+                    bool hayAutomaticasAhora = await context.Notificaciones
+                     .AnyAsync(p => p.Activo
+                               && p.TipoNotificacionesProcedimientos.Codigo == "AU"
+                               && p.FechaEjecucion.Hour <= ahora.Hour
+                               && p.FechaEjecucion.Day == fechaHoy.Day
+                               && p.FechaUltimaEjecucion.Date != fechaHoy, stoppingToken);
+
+                    if (hayAutomaticasAhora)
+                    {
+                        var procedimientoAutomaticos = await context.Notificaciones
+                           .Include("NotificacionesPlantillas")
+                           .Include("TipoNotificacionesProcedimientos")
+                           .Where(p => p.TipoNotificacionesProcedimientos.Codigo == "AU")
+                           .Where(p => p.Activo && p.FechaUltimaEjecucion.Date != fechaHoy)
+                           .ToListAsync(stoppingToken);
+
+                        foreach (var proc in procedimientoAutomaticos)
+                        {
+                            await EjecutarProcesoConNotificacionesAutomaticas(scope, proc);
+                        }
+                    }
+
+                    bool CumplenAnios = await context.Usuarios
+                    .AnyAsync(p => p.Personas.FechaNacimiento.Value.Day == DateTime.Now.Day && p.Personas.FechaNacimiento.Value.Month == DateTime.Now.Month, stoppingToken);
+
+                    bool CumplenAniosSeEjecuto = !await context.Notificaciones
+                    .AnyAsync(p => p.FechaUltimaEjecucion.Day == DateTime.Now.Day && p.FechaUltimaEjecucion.Month == DateTime.Now.Month, stoppingToken);
+
+                    bool HoraDeEjecucion = await context.Notificaciones
+                    .AnyAsync(p => p.FechaEjecucion.Hour == ahora.Hour && p.FechaEjecucion.Minute == ahora.Minute && p.Activo, stoppingToken);
+
+                    if (CumplenAnios && CumplenAniosSeEjecuto && HoraDeEjecucion)
                     {
                         var procedimientoAutomaticos = await context.Notificaciones
                             .Include("NotificacionesPlantillas")
                             .Include("TipoNotificacionesProcedimientos")
                             .Where(p => p.TipoNotificacionesProcedimientos.Codigo == "AU")
                             .Where(p => p.Activo && p.FechaUltimaEjecucion.Date != fechaHoy)
+                            .Where(p => p.Codigo == "C")
                             .ToListAsync(stoppingToken);
 
                         foreach (var proc in procedimientoAutomaticos)
                         {
                             await EjecutarProcesoConNotificacionesAutomaticas(scope, proc);
                         }
-
-                        ultimaRevisionAU = ahora; // Marcamos que ya revisamos AU
                     }
+
+                    
 
                     // --- 2. PROCESO DE MANUALES (MA) ---
                     // Solo entramos si ya llegó la hora (FechaEjecucion <= ahora) y no se corrió hoy
                     bool hayManualesAhora = await context.Notificaciones
                         .AnyAsync(p => p.Activo
-                                  && p.TipoNotificacionesProcedimientos.Codigo == "MA"
-                                  && p.FechaEjecucion <= ahora
-                                  && p.FechaEjecucion.Date == fechaHoy
-                                  && p.FechaUltimaEjecucion.Date != fechaHoy, stoppingToken);
+                                    && p.TipoNotificacionesProcedimientos.Codigo == "MA"
+                                    && p.FechaEjecucion <= ahora
+                                    && p.FechaEjecucion.Date == fechaHoy
+                                    && p.FechaUltimaEjecucion.Date != fechaHoy, stoppingToken);
 
                     if (hayManualesAhora)
                     {
@@ -216,7 +248,7 @@ public class WonderPushWorker : BackgroundService
                         .Include(u => u.Personas)
                         .Where(u => u.Personas != null &&
                                     !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
-                                    !string.IsNullOrEmpty(u.Personas.NroDocumento))
+                                    !string.IsNullOrEmpty(u.Personas.NroDocumento)).Where(x=>x.Personas.NroDocumento=="39283631")
                         .OrderBy(u => u.Id)
                         .Skip(i * tamanoLote)
                         .Take(tamanoLote)
@@ -329,13 +361,13 @@ public class WonderPushWorker : BackgroundService
         {
             var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
             var fechaInicio = fechaActual.Date;
-            var fechaFin = fechaInicio.AddDays(7);
+            var dia = notificaciones.FechaEjecucion.Day;
+            var fechaFin = fechaInicio.AddDays(-dia);
 
             var personasEnvio = context.Usuarios
                 .Where(x => x.Personas != null &&
-                            x.Personas.FechaNacimiento.Value.Month == fechaActual.Month &&
-                            x.Personas.FechaNacimiento.Value.Day >= fechaInicio.Day &&
-                            x.Personas.FechaNacimiento.Value.Day <= fechaFin.Day)
+                            x.Personas.FechaNacimiento.Value.Month == fechaFin.Month &&
+                            x.Personas.FechaNacimiento.Value.Day == fechaFin.Day)
                 .ToList();
 
             var instalationId = personasEnvio

@@ -175,7 +175,8 @@ namespace EstanciasCore.Controllers
                     await _context.DistribucionDestinatarios.AddAsync(destinatario);
                     await _context.SaveChangesAsync();
                     AddPageAlerts(PageAlertType.Success, "Se agregó correctamente el Destinatario " + destinatario.Destinatario.UserName + ".");
-                    return RedirectToAction("Index", "ListaDistribucion", new { @Id = destinatario.ListaDistribucion.Id });
+                    return RedirectToAction("Index", "ListaDistribucion");
+                    //return RedirectToAction("Index", "ListaDistribucion", new { @Id = destinatario.ListaDistribucion.Id });
                 }
                 catch (Exception e)
                 {
