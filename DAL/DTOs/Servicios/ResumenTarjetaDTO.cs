@@ -11,6 +11,7 @@ namespace DAL.DTOs.Servicios
         public string NombreCompleto { get; set; }
         public string NroDocumento { get; set; }
         public string NroTarjeta { get; set; }
+        public string DeviceId { get; set; }
     }
 
     public class ResultadoCuotasDTO

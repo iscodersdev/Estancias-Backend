@@ -56,25 +56,29 @@ public class WonderPushWorker : BackgroundService
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
-                    var ahora = DateTime.Now;
-                    var fechaHoy = ahora.Date;
+                    var fechaActual = DateTime.Now;
 
                     // --- 1. PROCESO DE AUTOMÁTICAS ---
 
                     bool hayAutomaticasAhora = await context.Notificaciones
                      .AnyAsync(p => p.Activo
                                && p.TipoNotificacionesProcedimientos.Codigo == "AU"
-                               && p.FechaEjecucion.Hour <= ahora.Hour
-                               && p.FechaEjecucion.Day == fechaHoy.Day
-                               && p.FechaUltimaEjecucion.Date != fechaHoy, stoppingToken);
+                               && p.FechaEjecucion.Day == fechaActual.Day
+                               && p.FechaEjecucion.Hour == fechaActual.Hour
+                               && p.FechaEjecucion.Minute <= fechaActual.Minute
+                               && p.FechaUltimaEjecucion.Date != fechaActual.Date, stoppingToken);
 
                     if (hayAutomaticasAhora)
                     {
                         var procedimientoAutomaticos = await context.Notificaciones
                            .Include("NotificacionesPlantillas")
                            .Include("TipoNotificacionesProcedimientos")
-                           .Where(p => p.TipoNotificacionesProcedimientos.Codigo == "AU")
-                           .Where(p => p.Activo && p.FechaUltimaEjecucion.Date != fechaHoy)
+                           .Where(p => p.Activo
+                               && p.TipoNotificacionesProcedimientos.Codigo == "AU"
+                               && p.FechaEjecucion.Day == fechaActual.Day
+                               && p.FechaEjecucion.Hour == fechaActual.Hour
+                               && p.FechaEjecucion.Minute <= fechaActual.Minute
+                               && p.FechaUltimaEjecucion.Date != fechaActual.Date)
                            .ToListAsync(stoppingToken);
 
                         foreach (var proc in procedimientoAutomaticos)
@@ -90,7 +94,7 @@ public class WonderPushWorker : BackgroundService
                     .AnyAsync(p => p.FechaUltimaEjecucion.Day == DateTime.Now.Day && p.FechaUltimaEjecucion.Month == DateTime.Now.Month, stoppingToken);
 
                     bool HoraDeEjecucion = await context.Notificaciones
-                    .AnyAsync(p => p.FechaEjecucion.Hour == ahora.Hour && p.FechaEjecucion.Minute == ahora.Minute && p.Activo, stoppingToken);
+                    .AnyAsync(p => p.FechaEjecucion.Hour == fechaActual.Hour && p.FechaEjecucion.Minute == fechaActual.Minute && p.Activo, stoppingToken);
 
                     if (CumplenAnios && CumplenAniosSeEjecuto && HoraDeEjecucion)
                     {
@@ -98,7 +102,7 @@ public class WonderPushWorker : BackgroundService
                             .Include("NotificacionesPlantillas")
                             .Include("TipoNotificacionesProcedimientos")
                             .Where(p => p.TipoNotificacionesProcedimientos.Codigo == "AU")
-                            .Where(p => p.Activo && p.FechaUltimaEjecucion.Date != fechaHoy)
+                            .Where(p => p.Activo && p.FechaUltimaEjecucion.Date != fechaActual.Date)
                             .Where(p => p.Codigo == "C")
                             .ToListAsync(stoppingToken);
 
@@ -115,9 +119,9 @@ public class WonderPushWorker : BackgroundService
                     bool hayManualesAhora = await context.Notificaciones
                         .AnyAsync(p => p.Activo
                                     && p.TipoNotificacionesProcedimientos.Codigo == "MA"
-                                    && p.FechaEjecucion <= ahora
-                                    && p.FechaEjecucion.Date == fechaHoy
-                                    && p.FechaUltimaEjecucion.Date != fechaHoy, stoppingToken);
+                                    && p.FechaEjecucion <= fechaActual
+                                    && p.FechaEjecucion.Date == fechaActual.Date
+                                    && p.FechaUltimaEjecucion.Date != fechaActual.Date, stoppingToken);
 
                     if (hayManualesAhora)
                     {
@@ -127,10 +131,10 @@ public class WonderPushWorker : BackgroundService
                             .Include("ListaDistribucion")
                             .Where(p => p.TipoNotificacionesProcedimientos.Codigo == "MA")
                             .Where(p => p.Activo == true
-                                     && p.FechaEjecucion.Hour == ahora.Hour
-                                     && p.FechaEjecucion.Minute == ahora.Minute
-                                     && p.FechaEjecucion.Date == fechaHoy
-                                     && p.FechaUltimaEjecucion.Date != fechaHoy)
+                                     && p.FechaEjecucion.Hour == fechaActual.Hour
+                                     && p.FechaEjecucion.Minute == fechaActual.Minute
+                                     && p.FechaEjecucion.Date == fechaActual.Date
+                                     && p.FechaUltimaEjecucion.Date != fechaActual.Date)
                             .Where(p => p.NotificacionesPlantillas != null && p.ListaDistribucion != null)
                             .AsNoTracking()
                             .ToListAsync(stoppingToken);
@@ -248,7 +252,7 @@ public class WonderPushWorker : BackgroundService
                         .Include(u => u.Personas)
                         .Where(u => u.Personas != null &&
                                     !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
-                                    !string.IsNullOrEmpty(u.Personas.NroDocumento)).Where(x=>x.Personas.NroDocumento=="39283631")
+                                    !string.IsNullOrEmpty(u.Personas.NroDocumento))
                         .OrderBy(u => u.Id)
                         .Skip(i * tamanoLote)
                         .Take(tamanoLote)
@@ -258,7 +262,8 @@ public class WonderPushWorker : BackgroundService
                             NombreCompleto = u.Personas.GetNombreCompleto(),
                             NroDocumento = u.Personas.NroDocumento,
                             NroTarjeta = u.Personas.NroTarjeta,
-                            UserName = u.UserName
+                            UserName = u.UserName,
+                            DeviceId = u.DeviceId
                         })
                         .ToListAsync();
 
@@ -335,7 +340,7 @@ public class WonderPushWorker : BackgroundService
                             DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
                         };
 
-                        var instalationId = new List<string> { usuario.UserName };
+                        var instalationId = new List<string> { usuario.DeviceId };
                         var wonderPushService = scope.ServiceProvider.GetRequiredService<IWonderPushService>();
                         var respuestawp = await wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
                     }
@@ -444,32 +449,5 @@ public class WonderPushWorker : BackgroundService
         {
             _logger.LogError(ex, "Error al ejecutar el saludo de cumpleaños.");
         }
-    }
-
-    /// <summary>
-    /// Devuelve true si las fechas son iguales (sin comparar hora y minutos)
-    /// </summary>
-    /// <param name="fecha1"></param>
-    /// <param name="fecha2"></param>
-    /// <returns></returns>
-    private bool ValidarFecha(DateTime fecha1, DateTime fecha2)
-    {
-        bool bandera = true;
-
-        if(fecha1.Day != fecha2.Day)
-        {
-            bandera = false;
-        }
-
-        if(fecha1.Month != fecha2.Month)
-        {
-            bandera = false;
-        }
-
-        if(fecha1.Year != fecha2.Year)
-        {
-            bandera = false;
-        }
-        return bandera;
     }
 }

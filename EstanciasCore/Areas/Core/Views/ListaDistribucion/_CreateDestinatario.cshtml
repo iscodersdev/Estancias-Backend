@@ -2,6 +2,46 @@
 @{
     ViewData["Title"] = "Nueva Lista de Distribución";
 }
+
+<style>
+    /* Oculta el contenedor generado por Bootstrap-Select */
+    .bootstrap-select.form-control {
+        display: none !important;
+    }
+
+    /* Asegura que el select original (que Select2 usa de base) sea visible
+       solo para Select2 y no sea reemplazado visualmente por el botón gris */
+    select#destinatarioId {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    /* Selector simplificado y robusto para el contenedor de selección de Select2 */
+    #nuevoDestinatarioModal .select2-container .selection .select2-selection--single {
+        height: 2rem !important;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Ajuste para el ícono y el texto dentro de la nueva altura */
+    #nuevoDestinatarioModal .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 2rem !important;
+    }
+
+    /* Ajuste para la flecha de apertura */
+    #nuevoDestinatarioModal .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 1.9rem !important;
+    }
+    /* Oculta el span interno del contenedor de Select2 */
+    #select2-destinatarioId-container span {
+        display: none !important;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        margin-top: 0px!important;
+    }
+</style>
+
 <form method="post" asp-action="_CreateDestinatario" asp-controller="ListaDistribucion" asp-area="Core" asp-antiforgery="true">
     @Html.AntiForgeryToken()
     <div class="box-body">
@@ -9,19 +49,67 @@
         <input asp-for="ListaDistribucion.Id" value="@ViewBag.ListaId" type="hidden" />
         <div class="form-group">
             <label asp-for="Destinatario" class="control-label"></label>
-            <select-ajax title="Ingrese Nro Documento"
-                            class="form-control"
-                            url="@Url.Action("DestinatariosComboJson", $"ListaDistribucion")"
-                            color="Default"
-                            width="100%"
-                            name="destinatarioId"
-                            class-btn="btn-flat"
-                            text-no-results="<h4 class='text-center'>El Usuario no está en el sistema.<br></h3>"></select-ajax>
+            <select id="destinatarioId" name="destinatarioId" class="form-control" style="width: 100%;">
+            </select>
             <span asp-validation-for="Destinatario" class="text-danger"></span>
-            </div>
+        </div>
     </div>
     <div class="box-footer">
         <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
         <button type="submit" class="btn btn-info pull-right">Agregar</button>
     </div>
 </form>
+
+<script>
+    $(document).ready(function () {
+        // Esperamos un instante para que el modal termine de renderizar el DOM
+        setTimeout(function () {
+            var modalParent = $('#destinatarioId').closest('.modal');
+
+            $('#destinatarioId').select2({
+                placeholder: "Ingrese Nro Documento",
+                minimumInputLength: 3,
+                allowClear: true,
+                width: '100%',
+                // ESTO ES VITAL: Si no pones el parent, el buscador no funcionará dentro del modal
+                dropdownParent: modalParent.length > 0 ? modalParent : $(document.body),
+                ajax: {
+                    url: '@Url.Action("DestinatariosComboJson", "ListaDistribucion", new { area = "Core" })',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return { q: params.term };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.map(function (item) {
+                                return {
+                                    id: item.Value,
+                                    text: item.Text,
+                                    subtext: item.Subtext,
+                                    icon: item.Icon
+                                };
+                            })
+                        };
+                    }
+                },
+                templateResult: formatRepo,
+                templateSelection: formatRepoSelection
+            });
+        }, 300);
+    });
+
+    function formatRepo(repo) {
+        if (repo.loading) return repo.text;
+        // Usamos strings simples para evitar el SyntaxError de appendChild
+        var html = "<div>" +
+                   "<div><b><i class='" + (repo.icon || 'fa fa-user') + "'></i> " + repo.text + "</b></div>" +
+                   "<div style='font-size: 0.85em; color: #999;'>" + (repo.subtext || '') + "</div>" +
+                   "</div>";
+        return $(html);
+    }
+
+    function formatRepoSelection(repo) {
+        return repo.text || "Seleccione un destinatario";
+    }
+</script>

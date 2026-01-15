@@ -105,7 +105,7 @@ namespace EstanciasCore.Services
                 {
                     var url = $"{API_URL}?accessToken={ACCESS_TOKEN}";
 
-
+                    /*
                     var payload = new
                     {
                         targetInstallationIds = deviceIds,
@@ -128,6 +128,7 @@ namespace EstanciasCore.Services
                                     {
                                         type = "bigPicture",
                                         bigPicture = notificacion.ImagenUrl,
+                                        priority = "high",
                                         largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon.Replace("w=1920", "w=200").Replace("q=85", "q=60") : null
                                     }
                                     : null,
@@ -142,13 +143,56 @@ namespace EstanciasCore.Services
                                     }
                                     : null,
 
-                                //targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink)
-                                //    ? notificacion.DeepLink
-                                //    : null
+                                targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink)
+                                    ? notificacion.DeepLink
+                                    : null
                             }
                         }
                     };
+                    */
 
+
+                    var payload = new
+                    {
+                        targetInstallationIds = deviceIds,
+                        notification = new
+                        {
+                            // Prioridad global
+                            priority = 2,
+                            alert = new
+                            {
+                                title = notificacion.Titulo,
+                                text = notificacion.Mensaje,
+
+                                // WEB / GENÉRICO (Respaldo)
+                                web = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new { image = notificacion.ImagenUrl } : null,
+
+                                // ANDROID: Enviamos LAS DOS IMÁGENES (Banner + Icono)
+                                android = (!string.IsNullOrEmpty(notificacion.ImagenUrl)) ? new
+                                {
+                                    type = "bigPicture",
+                                    bigPicture = notificacion.ImagenUrl, // Banner Promo
+                                    priority = 2,
+                                    channelId = "default",
+                                    summaryText = notificacion.Mensaje,
+                                    // Logo de la marca (círculo derecha)
+                                    largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon : null
+                                }: null,
+
+                                // IOS: Enviamos SOLO EL BANNER (Apple ya pone tu icono de App automáticamente)
+                                ios = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new
+                                {
+                                    // "subtitle" es un truco para agregar más info en iOS ya que no tenemos el icono extra
+                                    subtitle = "",
+                                    attachments = new[]
+                                    {
+                                        new { url = notificacion.ImagenUrl } // Banner Promo
+                                    }
+                                } : null,
+                                targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink) ? notificacion.DeepLink : null
+                            }
+                        }
+                    };
 
                     var json = JsonConvert.SerializeObject(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
