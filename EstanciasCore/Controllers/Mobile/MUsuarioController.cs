@@ -221,6 +221,16 @@ namespace EstanciasCore.Controllers
                 if (cliente.Usuario.DeviceId != Login.InstallationId)
                 {
                     Login.PrimerIngreso = true;
+                    var asignados = _context.Usuarios.Where(x => x.DeviceId == Login.InstallationId).ToList();
+
+                    if (asignados.Any())
+                    {
+                        foreach (var u in asignados)
+                        {
+                            u.DeviceId = null;
+                        }
+                        _context.Usuarios.UpdateRange(asignados);
+                    }
                 }
 
                 cliente.Usuario.RecordarPassword = Login.Recordarme;

@@ -421,6 +421,7 @@ namespace EstanciasCore.Controllers
                         var newDate = new DateTime(baseDate.Year, baseDate.Month, Dia, Hora.Hour, Hora.Minute, 0);
                         
                          notificacion.FechaEjecucion = newDate;
+                         notificacion.FechaUltimaEjecucion = new DateTime(1111, 1, 1, 0, 0, 0);
                         _context.Notificaciones.Update(notificacion);
                         await _context.SaveChangesAsync();
                         return Json(new { success = true, message = "Fecha actualizada correctamente." });

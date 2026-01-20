@@ -448,17 +448,17 @@ namespace EstanciasCore.API.Controllers.Billetera
                         pagotarjetaDTO.id = pagoTarjeta.Id;
 
 
-                        return new JsonResult(new PagoTarjetaDTO { Status = 200, UAT = pagotarjetaDTO.UAT, Mensaje = "Solicitud de pago de tarjeta", NroTarjeta = pagotarjetaDTO.NroTarjeta.ToString(), Persona = pers.Id,  MontoAdeudado = pagoTarjeta.MontoAdeudado.ToString().Replace(".", ","), EstadoPago = EstadoPago.Pendiente,  FechaPagoProximaCuota = pagoTarjeta.FechaPagoProximaCuota?.ToString("dd/MM/yyyy"), FechaVencimiento=pagoTarjeta.FechaVencimiento?.ToString("dd/MM/yyyy"), FechaComprobante=pagoTarjeta.FechaComprobante?.ToString("dd/MM/yyyy"), id=pagotarjetaDTO.id, alias = empresa.Alias ,CBU=empresa.CBU });
+                        return new JsonResult(new PagoTarjetaDTO { Status = 200, UAT = pagotarjetaDTO.UAT, Mensaje = "Solicitud de pago de tarjeta - SolicitarPagoTarjeta", NroTarjeta = pagotarjetaDTO.NroTarjeta.ToString(), Persona = pers.Id,  MontoAdeudado = pagoTarjeta.MontoAdeudado.ToString().Replace(".", ","), EstadoPago = EstadoPago.Pendiente,  FechaPagoProximaCuota = pagoTarjeta.FechaPagoProximaCuota?.ToString("dd/MM/yyyy"), FechaVencimiento=pagoTarjeta.FechaVencimiento?.ToString("dd/MM/yyyy"), FechaComprobante=pagoTarjeta.FechaComprobante?.ToString("dd/MM/yyyy"), id=pagotarjetaDTO.id, alias = empresa.Alias ,CBU=empresa.CBU });
                     }
                     else
-                        return new JsonResult(new PagoTarjetaDTO { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = "Error a Solicitar pago de tarjeta" });
+                        return new JsonResult(new PagoTarjetaDTO { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = "Error a Solicitar pago de tarjeta - SolicitarPagoTarjeta" });
 
             }
             catch (Exception e)
             {
                 Log.Error($"Error en creacion de tarjeta - {e.Message}");
-                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error en creacion de terjeta" });
-            }
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error en metodo SolicitarPagoTarjeta "+ e.Message });
+                }
 
         }
 
@@ -484,62 +484,62 @@ namespace EstanciasCore.API.Controllers.Billetera
                     DatosEstructura empresa = _context.DatosEstructura.FirstOrDefault();
                     var pers = _context.Personas.Where(x => x.NroTarjeta == usuario.Personas.NroTarjeta).FirstOrDefault();
 
-                    var fechaMesActualCuotas = DateTime.Now;
-                    int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
+                    //var fechaMesActualCuotas = DateTime.Now;
+                    //int diasEnMes = DateTime.DaysInMonth(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month);
 
-                    //Fecha para Punitorios
-                    if (fechaMesActualCuotas.Day>15)
-                    {
-                        DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
-                    }
-                    else
-                    {
-                        DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
-                    }
+                    ////Fecha para Punitorios
+                    //if (fechaMesActualCuotas.Day>15)
+                    //{
+                    //    DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+                    //}
+                    //else
+                    //{
+                    //    DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
+                    //}
 
-                    DateTime fechaActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+                    //DateTime fechaActualCuotas = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
 
-                    //Fecha para Punitorios
-                    if (fechaMesActualCuotas.Day>15)
-                    {
-                        DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
-                    }
-                    else
-                    {
-                        DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
-                    }                   
+                    ////Fecha para Punitorios
+                    //if (fechaMesActualCuotas.Day>15)
+                    //{
+                    //    DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, diasEnMes);
+                    //}
+                    //else
+                    //{
+                    //    DateTime fechaPunitorios = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 15);
+                    //}                   
 
-                    var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10, 0).Result;
-                    if (datosMovimientos.Detalle.Resultado=="EXITO")
-                    {
-                        CultureInfo.CurrentCulture = new CultureInfo("es-AR");
+                    //var datosMovimientos = _datosServices.ConsultarMovimientos(empresa.UsernameWS.ToLower(), empresa.PasswordWS, usuario.Personas.NroDocumento, movimientostarjetaDTOS.NroTarjeta, 10, 0).Result;
+                    //if (datosMovimientos.Detalle.Resultado=="EXITO")
+                    //{
+                    //    CultureInfo.CurrentCulture = new CultureInfo("es-AR");
 
-                        //Monto Disponible
-                        MontoDisponible = Math.Round(Convert.ToDecimal(datosMovimientos.Detalle.MontoDisponible.Replace(".", ",")), 2);
+                    //    //Monto Disponible
+                    //    MontoDisponible = Math.Round(Convert.ToDecimal(datosMovimientos.Detalle.MontoDisponible.Replace(".", ",")), 2);
 
-                        //Calcula Cuota del Mes
-                        MontoCuota = await _datosServices.CalcularMontoCuota(datosMovimientos, fechaActualCuotas);
+                    //    //Calcula Cuota del Mes
+                    //    MontoCuota = await _datosServices.CalcularMontoCuota(datosMovimientos, fechaActualCuotas);
 
-                        //Calculo de Punitorios
-                        MontoPunitorios = await _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
-                    }
+                    //    //Calculo de Punitorios
+                    //    MontoPunitorios = await _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
+                    //}
+
+                    
 
                     //Calcula Deuda total suma la cuota mas los punitorios.
-                    DeudaTotal = MontoCuota + MontoPunitorios;
-                    TotalRedondeo = Math.Round(DeudaTotal, 2);
-                    var fechaVencimiento = new DateTime(fechaActualCuotas.Year, fechaActualCuotas.Month, 15);
+                    //DeudaTotal = MontoCuota + MontoPunitorios;
+                    //TotalRedondeo = Math.Round(DeudaTotal, 2);
+                    //var fechaVencimiento = new DateTime(fechaActualCuotas.Year, fechaActualCuotas.Month, 15);
 
                     var fechaPago = ConvertirFechaCompleta(pagotarjetaDTO.FechaComprobante);
 
                     var pagoTarjeta = new PagoTarjeta
                     {
                         NroTarjeta = pagotarjetaDTO.NroTarjeta,
-                        MontoAdeudado = TotalRedondeo,                        
-                        FechaVencimiento = fechaVencimiento,
+                        MontoAdeudado = TotalRedondeo,         
                         Persona = pers,
                         EstadoPago = EstadoPago.Pagado,
                         FechaComprobante = DateTime.Now,
-                        FechaPagoProximaCuota = fechaVencimiento,
                         ComprobantePago = pagotarjetaDTO.ComprobantePago,
                         FechaDePago = fechaPago!=null? fechaPago : DateTime.Now,
                         MontoInformado = Convert.ToDecimal(pagotarjetaDTO.MontoInformado)
@@ -547,7 +547,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                     };
                         _context.PagoTarjeta.Add(pagoTarjeta);
                         _context.SaveChanges();
-                        return new JsonResult(new PagoTarjetaDTO { Status = 200, UAT = pagotarjetaDTO.UAT, Mensaje = "Comprobante cargado con exito" });
+                        return new JsonResult(new PagoTarjetaDTO { Status = 200, UAT = pagotarjetaDTO.UAT, Mensaje = "Comprobante cargado con exito - SubirComprobantePagoTarjeta" });
                     }
                     else
                     {
@@ -557,7 +557,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             catch (Exception e)
             {
                 Log.Error($"Error en creacion de tarjeta - {e.Message}");
-                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al subir comprobante"});
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al subir comprobante - SubirComprobantePagoTarjeta "+ e.Message});
             }
 
         }
@@ -721,7 +721,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                         };
                         _context.PagoTarjeta.Add(pagoTarjeta);
                         _context.SaveChanges();
-                        return new JsonResult(new PagoTarjetaDTO { Status = 200, UAT = pagotarjetaDTO.UAT, Mensaje = "Comprobante cargado con exito" });
+                        return new JsonResult(new PagoTarjetaDTO { Status = 200, UAT = pagotarjetaDTO.UAT, Mensaje = "Comprobante cargado con exito - SubirComprobantePago" });
                     }
                     else
                     {
@@ -740,7 +740,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             catch (Exception e)
             {
                 Log.Error($"Error en creacion de tarjeta - {e.Message}");
-                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al subir comprobante" });
+                return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al subir comprobante SubirComprobantePago" + e.Message});
             }
 
         }

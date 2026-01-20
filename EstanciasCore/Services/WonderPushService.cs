@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ namespace EstanciasCore.Services
         private const string ACCESS_TOKEN = "NjQ3MDQwODVmYTRjZjNjMjRiZTQ4OGE0N2MwYjFkY2E2ZTZmOTAyNDVjYWE4MmExMjE5YTNjZTM3MGY0YzJmNQ";
         private const string API_URL = "https://management-api.wonderpush.com/v1/deliveries";
         private readonly IWonderPushService _wonderpushService;
+        private static readonly HttpClient _httpClient = new HttpClient();
 
         public WonderPushService(IServiceScopeFactory scopeFactory, IConfiguration configuration)
         {
@@ -96,117 +98,212 @@ namespace EstanciasCore.Services
                 return false;
             }
         }
-        
+
+
+
+
+
         public async Task<bool> EnviarNotificacionAIds(NotificacionViewModelDTO notificacion, List<string> deviceIds)
         {
             try
             {
-                using (var client = new HttpClient())
-                {
-                    var url = $"{API_URL}?accessToken={ACCESS_TOKEN}";
+                // Creamos una lista de tareas (una por cada ID)
+                var tareas = deviceIds.Select(id => EnviarPeticionIndividual(notificacion, id));
 
-                    /*
-                    var payload = new
-                    {
-                        targetInstallationIds = deviceIds,
-                        notification = new
-                        {
-                            alert = new
-                            {
-                                title = notificacion.Titulo,
-                                text = notificacion.Mensaje,
+                // Ejecutamos todas en paralelo
+                var resultados = await Task.WhenAll(tareas);
 
-                                web = !string.IsNullOrEmpty(notificacion.ImagenUrl)
-                                    ? new
-                                    {
-                                        image = notificacion.ImagenUrl
-                                    }
-                                    : null,
-
-                                android = (!string.IsNullOrEmpty(notificacion.ImagenUrl) || !string.IsNullOrEmpty(notificacion.ImagenIcon))
-                                    ? new
-                                    {
-                                        type = "bigPicture",
-                                        bigPicture = notificacion.ImagenUrl,
-                                        priority = "high",
-                                        largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon.Replace("w=1920", "w=200").Replace("q=85", "q=60") : null
-                                    }
-                                    : null,
-
-                                ios = !string.IsNullOrEmpty(notificacion.ImagenUrl)
-                                    ? new
-                                    {
-                                        attachments = new[]
-                                        {
-                                            new { url = notificacion.ImagenUrl }
-                                        }
-                                    }
-                                    : null,
-
-                                targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink)
-                                    ? notificacion.DeepLink
-                                    : null
-                            }
-                        }
-                    };
-                    */
-
-
-                    var payload = new
-                    {
-                        targetInstallationIds = deviceIds,
-                        notification = new
-                        {
-                            // Prioridad global
-                            priority = 2,
-                            alert = new
-                            {
-                                title = notificacion.Titulo,
-                                text = notificacion.Mensaje,
-
-                                // WEB / GENÉRICO (Respaldo)
-                                web = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new { image = notificacion.ImagenUrl } : null,
-
-                                // ANDROID: Enviamos LAS DOS IMÁGENES (Banner + Icono)
-                                android = (!string.IsNullOrEmpty(notificacion.ImagenUrl)) ? new
-                                {
-                                    type = "bigPicture",
-                                    bigPicture = notificacion.ImagenUrl, // Banner Promo
-                                    priority = 2,
-                                    channelId = "default",
-                                    summaryText = notificacion.Mensaje,
-                                    // Logo de la marca (círculo derecha)
-                                    largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon : null
-                                }: null,
-
-                                // IOS: Enviamos SOLO EL BANNER (Apple ya pone tu icono de App automáticamente)
-                                ios = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new
-                                {
-                                    // "subtitle" es un truco para agregar más info en iOS ya que no tenemos el icono extra
-                                    subtitle = "",
-                                    attachments = new[]
-                                    {
-                                        new { url = notificacion.ImagenUrl } // Banner Promo
-                                    }
-                                } : null,
-                                targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink) ? notificacion.DeepLink : null
-                            }
-                        }
-                    };
-
-                    var json = JsonConvert.SerializeObject(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                    var response = await client.PostAsync(url, content);
-
-                    return response.IsSuccessStatusCode;
-                }
+                // Retornamos true si al menos una se envió correctamente
+                return resultados.Any(r => r == true);
             }
             catch (Exception ex)
             {
-                // Log error
+                // Log error ex
                 return false;
             }
         }
+
+
+        // Este es el método que hace el trabajo sucio para un solo ID
+        private async Task<bool> EnviarPeticionIndividual(NotificacionViewModelDTO notificacion, string deviceId)
+        {
+            try
+            {
+                var url = $"{API_URL}?accessToken={ACCESS_TOKEN}";
+
+                var payload = new
+                {
+                    targetInstallationIds = new[] { deviceId }, // Enviamos solo uno
+                    notification = new
+                    {
+                        priority = "High",
+                        alert = new
+                        {
+                            title = notificacion.Titulo,
+                            text = notificacion.Mensaje,
+                            web = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new { image = notificacion.ImagenUrl } : null,
+                            android = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new
+                            {
+                                type = "bigPicture",
+                                bigPicture = notificacion.ImagenUrl,
+                                priority = "high", // Usamos string "high" por compatibilidad
+                                channelId = "default",
+                                bigText = notificacion.Mensaje,
+                                summaryText = notificacion.Mensaje,
+                                largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon : null
+                            } : null,
+                            ios = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new
+                            {
+                                attachments = new[] { new { url = notificacion.ImagenUrl } }
+                            } : null,
+                            targetUrl = notificacion.DeepLink
+                        }
+                    }
+                };
+
+                var json = JsonConvert.SerializeObject(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Usamos la instancia estática _httpClient
+                var response = await _httpClient.PostAsync(url, content);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //public async Task<bool> EnviarNotificacionAIds(NotificacionViewModelDTO notificacion, List<string> deviceIds)
+        //{
+        //    try
+        //    {
+        //        using (var client = new HttpClient())
+        //        {
+        //            var url = $"{API_URL}?accessToken={ACCESS_TOKEN}";
+
+        //            /*
+        //            var payload = new
+        //            {
+        //                targetInstallationIds = deviceIds,
+        //                notification = new
+        //                {
+        //                    alert = new
+        //                    {
+        //                        title = notificacion.Titulo,
+        //                        text = notificacion.Mensaje,
+
+        //                        web = !string.IsNullOrEmpty(notificacion.ImagenUrl)
+        //                            ? new
+        //                            {
+        //                                image = notificacion.ImagenUrl
+        //                            }
+        //                            : null,
+
+        //                        android = (!string.IsNullOrEmpty(notificacion.ImagenUrl) || !string.IsNullOrEmpty(notificacion.ImagenIcon))
+        //                            ? new
+        //                            {
+        //                                type = "bigPicture",
+        //                                bigPicture = notificacion.ImagenUrl,
+        //                                priority = "high",
+        //                                largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon.Replace("w=1920", "w=200").Replace("q=85", "q=60") : null
+        //                            }
+        //                            : null,
+
+        //                        ios = !string.IsNullOrEmpty(notificacion.ImagenUrl)
+        //                            ? new
+        //                            {
+        //                                attachments = new[]
+        //                                {
+        //                                    new { url = notificacion.ImagenUrl }
+        //                                }
+        //                            }
+        //                            : null,
+
+        //                        targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink)
+        //                            ? notificacion.DeepLink
+        //                            : null
+        //                    }
+        //                }
+        //            };
+        //            */
+
+
+        //            var payload = new
+        //            {
+        //                targetInstallationIds = deviceIds,
+        //                notification = new
+        //                {
+        //                    // Prioridad global
+        //                    priority = "High",
+        //                    alert = new
+        //                    {
+        //                        title = notificacion.Titulo,
+        //                        text = notificacion.Mensaje,
+
+        //                        // WEB / GENÉRICO (Respaldo)
+        //                        web = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new { image = notificacion.ImagenUrl } : null,
+
+        //                        // ANDROID: Enviamos LAS DOS IMÁGENES (Banner + Icono)
+        //                        android = (!string.IsNullOrEmpty(notificacion.ImagenUrl)) ? new
+        //                        {
+        //                            type = "bigPicture",
+        //                            bigPicture = notificacion.ImagenUrl, // Banner Promo
+        //                            priority = 2,
+        //                            channelId = "default",
+        //                            summaryText = notificacion.Mensaje,
+        //                            // Logo de la marca (círculo derecha)
+        //                            largeIcon = !string.IsNullOrEmpty(notificacion.ImagenIcon) ? notificacion.ImagenIcon : null
+        //                        }: null,
+
+        //                        // IOS: Enviamos SOLO EL BANNER (Apple ya pone tu icono de App automáticamente)
+        //                        ios = !string.IsNullOrEmpty(notificacion.ImagenUrl) ? new
+        //                        {
+        //                            // "subtitle" es un truco para agregar más info en iOS ya que no tenemos el icono extra
+        //                            subtitle = "",
+        //                            attachments = new[]
+        //                            {
+        //                                new { url = notificacion.ImagenUrl } // Banner Promo
+        //                            }
+        //                        } : null,
+        //                        targetUrl = !string.IsNullOrEmpty(notificacion.DeepLink) ? notificacion.DeepLink : null
+        //                    }
+        //                }
+        //            };
+
+        //            var json = JsonConvert.SerializeObject(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+        //            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        //            var response = await client.PostAsync(url, content);
+
+        //            return response.IsSuccessStatusCode;
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Log error
+        //        return false;
+        //    }
+        //}
     }
 }

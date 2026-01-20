@@ -87,16 +87,27 @@ public class WonderPushWorker : BackgroundService
                         }
                     }
 
-                    bool CumplenAnios = await context.Usuarios
-                    .AnyAsync(p => p.Personas.FechaNacimiento.Value.Day == DateTime.Now.Day && p.Personas.FechaNacimiento.Value.Month == DateTime.Now.Month, stoppingToken);
+                    var NotificacionCumple = context.Notificaciones
+                        .Include("NotificacionesPlantillas")
+                        .Include("TipoNotificacionesProcedimientos")
+                        .Where(p => p.Codigo == "C")
+                        .AsNoTracking()
+                        .FirstOrDefault();
 
-                    bool CumplenAniosSeEjecuto = !await context.Notificaciones
-                    .AnyAsync(p => p.FechaUltimaEjecucion.Day == DateTime.Now.Day && p.FechaUltimaEjecucion.Month == DateTime.Now.Month, stoppingToken);
+                    var fechaInicio = fechaActual.Date;
+                    var dia = NotificacionCumple.FechaEjecucion.Day;
+                    var fechaFin = fechaInicio.AddDays(dia);
+
+                    bool CumplenAnios = await context.Usuarios
+                    .AnyAsync(p => p.Personas.FechaNacimiento.Value.Day == fechaFin.Day && p.Personas.FechaNacimiento.Value.Month == fechaFin.Month, stoppingToken);
+
+                    bool CumplenAniosSeEjecuto = await context.Notificaciones
+                    .AnyAsync(p => p.Codigo == "C" && p.FechaUltimaEjecucion.Day == fechaInicio.Day && p.FechaUltimaEjecucion.Month == fechaInicio.Month, stoppingToken);
 
                     bool HoraDeEjecucion = await context.Notificaciones
-                    .AnyAsync(p => p.FechaEjecucion.Hour == fechaActual.Hour && p.FechaEjecucion.Minute == fechaActual.Minute && p.Activo, stoppingToken);
+                    .AnyAsync(p => p.Codigo == "C" && p.FechaEjecucion.Hour == fechaActual.Hour && p.FechaEjecucion.Minute == fechaActual.Minute && p.Activo, stoppingToken);
 
-                    if (CumplenAnios && CumplenAniosSeEjecuto && HoraDeEjecucion)
+                    if (CumplenAnios && !CumplenAniosSeEjecuto && HoraDeEjecucion)
                     {
                         var procedimientoAutomaticos = await context.Notificaciones
                             .Include("NotificacionesPlantillas")
@@ -235,7 +246,8 @@ public class WonderPushWorker : BackgroundService
                 .Include(u => u.Personas)
                 .CountAsync(u => u.Personas != null &&
                                     !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
-                                    !string.IsNullOrEmpty(u.Personas.NroDocumento));
+                                    !string.IsNullOrEmpty(u.Personas.NroDocumento) &&
+                                    !string.IsNullOrEmpty(u.DeviceId));
 
             var totalLotes = (int)Math.Ceiling((double)totalUsuarios / tamanoLote);
             var empresa = new DatosEstructura();
@@ -252,7 +264,8 @@ public class WonderPushWorker : BackgroundService
                         .Include(u => u.Personas)
                         .Where(u => u.Personas != null &&
                                     !string.IsNullOrEmpty(u.Personas.NroTarjeta) &&
-                                    !string.IsNullOrEmpty(u.Personas.NroDocumento))
+                                    !string.IsNullOrEmpty(u.Personas.NroDocumento) &&
+                                    !string.IsNullOrEmpty(u.DeviceId))
                         .OrderBy(u => u.Id)
                         .Skip(i * tamanoLote)
                         .Take(tamanoLote)
@@ -367,7 +380,7 @@ public class WonderPushWorker : BackgroundService
             var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
             var fechaInicio = fechaActual.Date;
             var dia = notificaciones.FechaEjecucion.Day;
-            var fechaFin = fechaInicio.AddDays(-dia);
+            var fechaFin = fechaInicio.AddDays(dia);
 
             var personasEnvio = context.Usuarios
                 .Where(x => x.Personas != null &&

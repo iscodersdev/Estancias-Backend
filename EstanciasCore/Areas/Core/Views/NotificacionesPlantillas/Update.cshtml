@@ -324,8 +324,11 @@
 
         function updatePreview() {
             preTitulo.textContent = inTitulo.value || "Probando Notificacion";
-            preMensaje.textContent = inMensaje.value || "Probando Notificaciones de la App.";
             
+            preMensaje.textContent = (inMensaje.value.length > 74)
+                ? inMensaje.value.substring(0, 74) + "..."
+                : (inMensaje.value || "Probando Notificaciones de la App.");
+
             if(inTitulo.value.length > 0 && titleCount) titleCount.textContent = inTitulo.value.length;
             if(inMensaje.value.length > 0 && msgCount) msgCount.textContent = inMensaje.value.length;
 
