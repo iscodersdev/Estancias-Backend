@@ -287,7 +287,7 @@ namespace EstanciasCore.Controllers
                     }
                     break;
                 case "3":
-                    persona = _context.Personas.FirstOrDefault(x => x.NroTarjeta == valor.TrimStart('0'));
+                    persona = _context.Personas.Where(x => x.NroTarjeta != null).Where(x => x.NroTarjeta.TrimStart('0') == valor.TrimStart('0')).FirstOrDefault();
                     if (persona != null)
                     {
                         usuario = _context.Usuarios.FirstOrDefault(x => x.Personas.Id == persona.Id);
@@ -299,7 +299,7 @@ namespace EstanciasCore.Controllers
                     break;
             }
 
-            if (usuario == null || persona == null || cliente == null)
+            if (usuario == null && persona == null && cliente == null)
             {
                 return JsonConvert.SerializeObject(new { success = false, message = "No se encontraron resultados." });
             }
@@ -377,7 +377,7 @@ namespace EstanciasCore.Controllers
                         }
                         break;
                     case "3":
-                        persona = _context.Personas.FirstOrDefault(x => x.NroTarjeta == valor.TrimStart('0'));
+                        persona = _context.Personas.Where(x => x.NroTarjeta != null).Where(x => x.NroTarjeta.TrimStart('0') == valor.TrimStart('0')).FirstOrDefault();
                         if (persona != null)
                         {
                             usuario = _context.Usuarios.FirstOrDefault(x => x.Personas.Id == persona.Id);
