@@ -279,7 +279,9 @@ namespace EstanciasCore.Services
                 return 0;
             }
         }
-        public static bool EnviarMailSendinBlue(MailAPI mail)
+
+
+        public static async Task<bool> EnviarMailSendinBlue(MailAPI mail)
         {
             if (mail.Mail == null)
             {
@@ -287,10 +289,8 @@ namespace EstanciasCore.Services
             }
             try
             {
-                string usuario = "39ad53001@smtp-brevo.com";
-                string password = "K90kxAdQmTtjpJHv";
-                //var origen = new MailAddress("sender@servicemailing.com.ar", "Estancias ");
-                //var origen = new MailAddress("noresponder@estancias.com.ar", "Estancias ");
+                string usuario = "8f0e79001@smtp-brevo.com";
+                string password = "bskFRw5Mkfm5cmq";
                 var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
                 string host = "smtp-relay.brevo.com";
                 int puerto = 587;
@@ -304,24 +304,7 @@ namespace EstanciasCore.Services
                 servicio.Credentials = credenciales;
                 servicio.EnableSsl = ssl;
                 string token = "";
-                servicio.SendAsync(correo, token);
-
-                //string usuario = "7ed2ee002@smtp-brevo.com";
-                //string password = "UzdvJfpAtByYwx60";
-                //var origen = new MailAddress("no-reply@itarconsulting.com.ar", "Estancias ");
-                //string host = "smtp-relay.brevo.com";
-                //int puerto = 587;
-                //bool ssl = true;
-                //NetworkCredential credenciales = new NetworkCredential(usuario, password);
-                //MailMessage correo = new MailMessage("noresponder@estancias.com.ar", mail.Mail, mail.Titulo, cuerpoHTMLGmail(mail.Titulo, mail.Html, ""));
-                //correo.From = origen;
-                //correo.IsBodyHtml = true;
-                //SmtpClient servicio = new SmtpClient(host, puerto);
-                //servicio.UseDefaultCredentials = true;
-                //servicio.Credentials = credenciales;
-                //servicio.EnableSsl = ssl;
-                //string token = "";
-                //servicio.SendAsync(correo, token);
+                await servicio.SendMailAsync(correo);
             }
             catch
             {
@@ -339,9 +322,8 @@ namespace EstanciasCore.Services
 
             try
             {
-                string usuario = "39ad53001@smtp-brevo.com";
-                string password = "K90kxAdQmTtjpJHv";
-                //var origen = new MailAddress("sender@servicemailing.com.ar", "Estancias ");
+                string usuario = "8f0e79001@smtp-brevo.com";
+                string password = "bskFRw5Mkfm5cmq";
                 var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
                 string host = "smtp-relay.brevo.com";
                 int puerto = 587;
