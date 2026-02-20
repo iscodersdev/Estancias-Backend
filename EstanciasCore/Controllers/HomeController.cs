@@ -62,31 +62,10 @@ namespace EstanciasCore.Controllers
         {
             Usuario usuarioLocal = _context.Usuarios.Where(x => x.Personas.NroDocumento == dni).FirstOrDefault();
             DateTime fecha = DateTime.Now;
-            var movimientos = _datosTarjeta.ConsultarMovimientos("APPESTANCIAS", "appcpe01", dni, Convert.ToInt32(usuarioLocal.Personas.NroTarjeta), 100, 1).Result;
-            var datosResumen = _datosTarjeta.CuotasDetallesResumen(movimientos, fecha).Result;
-            Periodo periodo = _context.Periodo.Where(x => x.FechaDesde <= fecha && x.FechaHasta >= fecha).FirstOrDefault();
 
-            UsuarioParaProcesarDTO usuarioDTO = new UsuarioParaProcesarDTO()
-            {
-                NroDocumento = usuarioLocal.Personas.NroDocumento,
-                NombreCompleto = usuarioLocal.Personas.GetNombreCompleto(),
-                Id = usuarioLocal.Id,
-                UserName = User.Identity.Name,
-                NroTarjeta = usuarioLocal.Personas.NroTarjeta
-            };
+            var resumen = _context.ResumenTarjeta.Where(x => x.Usuario.Personas.NroDocumento == dni).OrderByDescending(x => x.Periodo.FechaHasta).FirstOrDefault();        
 
-            var datosParaResumenDTO = _datosTarjeta.PrepararDatosResumen(movimientos, datosResumen, periodo, usuarioDTO).Result;
-
-            var html = await _datosTarjeta.RenderViewToStringAsync("ResumenBancarioTemplate", datosParaResumenDTO);
-
-            byte[] pdfBytesPDF;
-            using (var memoryStream = new MemoryStream())
-            {
-                HtmlConverter.ConvertToPdf(html, memoryStream);
-                pdfBytesPDF = memoryStream.ToArray();
-            }
-
-            return File(pdfBytesPDF, "application/pdf", "ResumenBancario.pdf");
+            return File(resumen.Adjunto, "application/pdf", "ResumenBancario.pdf");
         }
 
         public async Task<IActionResult> DescargarResumenHtml(string dni)
