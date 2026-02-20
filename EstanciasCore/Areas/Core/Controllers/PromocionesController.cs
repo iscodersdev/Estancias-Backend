@@ -45,8 +45,13 @@ namespace EstanciasCore.Controllers
             }
             else
             {
+                if (page.SearchText==null)
+                {
+                    page.SearchText="";
+                }
+
                 var promocionesFiltradas = _context.Promociones
-                    .Where(x => x.Empresa.Id == usuario.Clientes.Empresa.Id && (x.Titulo.Contains(page.SearchText) || x.Texto.Contains(page.SearchText)))
+                    .Where(x => (x.Titulo.Contains(page.SearchText) || x.Texto.Contains(page.SearchText)))
                     .OrderBy(x => x.Orden); // Ordenar por Titulo o el campo que desees
 
                 page.SelectPage("/Promociones/ObtenerPromociones", promocionesFiltradas.OrderBy(x => x.Orden));

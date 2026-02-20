@@ -120,7 +120,7 @@ public class EnvioDeResumenWorker : BackgroundService
         // Esto hace que la consulta baje de segundos/minutos a milisegundos.
         var resumenesLigeros = await context.ResumenTarjeta
             .AsNoTracking() // Importante: No necesitamos rastrear cambios en esta lista
-            .Where(x => x.PeriodoId == periodo.Id)
+            .Where(x => x.PeriodoId == periodo.Id).Where(x=>x.Usuario.RecibirResumen==true)
             .Select(x => new
             {
                 x.Id,

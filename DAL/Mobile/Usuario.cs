@@ -47,6 +47,7 @@ namespace DAL.Models
         public string Domicilio { get; set; }
         public string NroTarjeta { get; set; }
         public bool Administrador { get; set; }
+        public bool RecibirResumen { get; set; }
     }
     public class MRegistraPersonaDTO
     {
@@ -245,5 +246,13 @@ namespace DAL.Models
         public string UserId { get; set; }
         public int Status { get; set; }
         public string Mensaje { get; set; }
+    }
+
+    public class MRecibirResumenDTO
+    {
+        public int Status { get; set; }
+        public string Mensaje { get; set; }
+        public string UAT { get; set; }
+        public bool RecibirResumen { get; set; }
     }
 }

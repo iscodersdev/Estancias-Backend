@@ -178,6 +178,7 @@ namespace EstanciasCore.Controllers
                 Login.Apellido = cliente.Persona.Apellido;
                 Login.Nombres = cliente.Persona.Nombres;
                 Login.ClienteId = cliente.Id;
+                Login.RecibirResumen = cliente.Usuario.RecibirResumen;
                 Login.Status = 200;
                 Login.UAT = common.Encrypt(DateTime.Now.ToString("ffffssmmHHddMMyyyy") + cliente.Id.ToString(), "Estancias");
                 if (cliente.TipoCliente == null)
@@ -1611,6 +1612,55 @@ namespace EstanciasCore.Controllers
             return Registro;
         }
 
+
+
+
+        [HttpPost]
+        [Route("RecibirResumen")]
+        [EnableCors("CorsPolicy")]
+        [AllowAnonymous]
+
+        public MRecibirResumenDTO RecibirResumen([FromBody] MRecibirResumenDTO request) //Utilizado por la App Mobile
+        {
+            try
+            {
+                var uat = _context.UAT.Where(x => x.Token == request.UAT).FirstOrDefault();
+                if (uat == null)
+                {
+                    request.Status = 500;
+                    request.Mensaje = "UAT Inválida";
+                    return request;
+                }
+                if (uat.Cliente == null)
+                {
+                    request.Status = 500;
+                    request.Mensaje = "Cliente no válido";
+                    return request;
+                }
+
+                uat.Cliente.Usuario.RecibirResumen = request.RecibirResumen;
+                _context.Usuarios.Update(uat.Cliente.Usuario);
+                _context.SaveChanges();
+
+                if (request.RecibirResumen)
+                {
+                    request.Mensaje = "Suscripto a Resumen Mensual";
+                }
+                else
+                {
+                    request.Mensaje = "Suscripcion cancelada";
+                }
+
+                request.Status = 200;
+                return request;
+            }
+            catch (Exception e)
+            {
+                request.Status = 500;
+                request.Mensaje = "Error - " + e.Message;
+                return request;
+            }            
+        }
 
 
         private PersonaLoan Personaloan(string dni) //Obtiene la persona y me comprueba la existensia de la persona.
