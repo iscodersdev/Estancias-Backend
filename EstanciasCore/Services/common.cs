@@ -289,10 +289,17 @@ namespace EstanciasCore.Services
             }
             try
             {
-                string usuario = "8f0e79001@smtp-brevo.com";
-                string password = "bskFRw5Mkfm5cmq";
-                var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
+
+                //string usuario = "8f0e79001@smtp-brevo.com";
+                //string password = "bskFRw5Mkfm5cmq";
+                //var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
+                //string host = "smtp-relay.brevo.com";
+
+                string usuario = "39ad53001@smtp-brevo.com";
+                string password = "bskUijSyZsAA8bU";
+                var origen = new MailAddress("no-responder-estanciaschiripa@servicemailing.com.ar", "Estancias ");
                 string host = "smtp-relay.brevo.com";
+
                 int puerto = 587;
                 bool ssl = true;
                 NetworkCredential credenciales = new NetworkCredential(usuario, password);
@@ -322,10 +329,16 @@ namespace EstanciasCore.Services
 
             try
             {
-                string usuario = "8f0e79001@smtp-brevo.com";
-                string password = "bskFRw5Mkfm5cmq";
-                var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
+                //string usuario = "8f0e79001@smtp-brevo.com";
+                //string password = "bskFRw5Mkfm5cmq";
+                //var origen = new MailAddress("no-responder@estanciaschiripa.com.ar", "Estancias ");
+                //string host = "smtp-relay.brevo.com";
+
+                string usuario = "39ad53001@smtp-brevo.com";
+                string password = "bskUijSyZsAA8bU";
+                var origen = new MailAddress("no-responder-estanciaschiripa@servicemailing.com.ar", "Estancias ");
                 string host = "smtp-relay.brevo.com";
+
                 int puerto = 587;
                 bool ssl = true;
 
