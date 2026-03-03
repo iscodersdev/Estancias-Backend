@@ -37,6 +37,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using static EstanciasCore.Services.common;
 
 namespace EstanciasCore.Controllers
 {
@@ -49,9 +50,10 @@ namespace EstanciasCore.Controllers
         private readonly ICompositeViewEngine _viewEngine;
         private readonly IServiceProvider _serviceProvider;
         private readonly IDatosTarjetaService _datosServices;
+        private readonly IMailService _mailService;
         public bool test = false;
         public string CorreTest = "jorgecutuli@hotmail.com";
-        public MUsuarioController(EstanciasContext context, UserService<Usuario> userService, SignInManager<Usuario> signInManager, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider, IDatosTarjetaService datosServices)
+        public MUsuarioController(EstanciasContext context, UserService<Usuario> userService, SignInManager<Usuario> signInManager, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider, IDatosTarjetaService datosServices, IMailService mailService)
         {
             _context = context;
             _userService = userService;
@@ -59,6 +61,7 @@ namespace EstanciasCore.Controllers
             _viewEngine = viewEngine;
             _serviceProvider = serviceProvider;
             _datosServices = datosServices;
+            _mailService=mailService;
         }
         [HttpPost]
         [Route("Login")]
@@ -1959,11 +1962,15 @@ namespace EstanciasCore.Controllers
         {
             if (test)
             {
-                common.EnviarMail(CorreTest, titulo, texto, "");
+                //common.EnviarMail(CorreTest, titulo, texto, "");
+                var mail = new MailAPI { Mail = CorreTest, Titulo = titulo, Html = texto };
+                _mailService.EnviarAsync(mail);
             }
             else
             {
-                common.EnviarMail(email, titulo, texto, "");
+                //common.EnviarMail(email, titulo, texto, "");
+                var mail = new MailAPI { Mail = email, Titulo = titulo, Html = texto };
+                _mailService.EnviarAsync(mail);
             }
         }
 

@@ -106,7 +106,8 @@ namespace DAL.Data
         public DbSet<ResumenTarjeta> ResumenTarjeta { get; set; }
         public DbSet<DistribucionResumen> DistribucionResumen { get; set; }
 
-
+        //MAIL
+        public DbSet<MailConfig> MailConfig { get; set; }
 
 
         //MOCK API EXTERNA DE PAGOS Y COBROS

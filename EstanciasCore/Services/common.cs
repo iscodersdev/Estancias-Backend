@@ -297,7 +297,7 @@ namespace EstanciasCore.Services
 
                 string usuario = "39ad53001@smtp-brevo.com";
                 string password = "bskUijSyZsAA8bU";
-                var origen = new MailAddress("no-responder-estanciaschiripa@servicemailing.com.ar", "Estancias ");
+                var origen = new MailAddress("no-responder-estanciaschiripa@servicemailing.com.ar", "Estancias");
                 string host = "smtp-relay.brevo.com";
 
                 int puerto = 587;

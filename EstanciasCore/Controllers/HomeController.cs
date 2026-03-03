@@ -36,7 +36,8 @@ namespace EstanciasCore.Controllers
         private readonly IDatosTarjetaService _datosTarjeta;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly IServiceProvider _serviceProvider;
-        public HomeController(EstanciasContext context, UserService<Usuario> userManager, SignInManager<Usuario> signInManager, IResumenTarjetaService resumen, IDatosTarjetaService datosTarjeta, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider) : base(context)
+        private readonly IMailService _mailService;
+        public HomeController(EstanciasContext context, UserService<Usuario> userManager, SignInManager<Usuario> signInManager, IResumenTarjetaService resumen, IDatosTarjetaService datosTarjeta, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider, IMailService mailService) : base(context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -44,6 +45,7 @@ namespace EstanciasCore.Controllers
             _datosTarjeta=datosTarjeta;
             _viewEngine=viewEngine;
             _serviceProvider = serviceProvider;
+            _mailService = mailService;
         }
         public async Task<IActionResult> Index()
         {
@@ -242,7 +244,24 @@ namespace EstanciasCore.Controllers
             // **2. Renderiza la vista del correo electrónico**
             var viewHtml = RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, Mes).Result;
 
-            common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = "Tu resumen de Tarjeta Estancias ya está disponible", Html = viewHtml }, pdfBytesPDF);
+
+            // Creamos el objeto que espera nuestra interfaz
+            var mail = new MailAPI
+            {
+                //Mail = prestamo.Cliente.Empresa.Mail,
+                Mail = "jorge.cutulli@iscoders.com.ar",
+                Titulo = "Tu resumen de Tarjeta Estancias ya está disponible",
+                Html = viewHtml
+            };
+
+            var configActiva = _context.MailConfig.Where(c => c.Activo).FirstOrDefault();
+
+            if (configActiva != null)
+                await _mailService.EnviarAsync(mail, pdfBytesPDF);
+
+            //common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = "Tu resumen de Tarjeta Estancias ya está disponible", Html = viewHtml }, pdfBytesPDF);
+
+
             /*-----------------*/
 
             return File(pdfBytesPDF, "application/pdf", nombreArchivo);

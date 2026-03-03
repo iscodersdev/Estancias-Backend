@@ -3,6 +3,8 @@ using DAL.Data;
 using DAL.DTOs.Reportes;
 using DAL.Models;
 using DAL.Models.Core;
+using EstanciasCore.Areas.Administracion.ViewModels;
+using EstanciasCore.Interface;
 using EstanciasCore.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,14 +33,16 @@ public class EnvioDeResumenWorker : BackgroundService
     private readonly ILogger<EnvioDeResumenWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IConfiguration _configuration;
+    private readonly IMailService _mailService;
     private readonly string[] _adminEmails;
 
-    public EnvioDeResumenWorker(ILogger<EnvioDeResumenWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
+    public EnvioDeResumenWorker(ILogger<EnvioDeResumenWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration, IMailService mailService)
     {
         var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };    
         _logger = logger;
         _scopeFactory = scopeFactory;
         _configuration = configuration;
+        _mailService = mailService;
         var emails = _configuration["NotificationSettings:AdminEmails"];
         _adminEmails = emails?.Split(';', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
     }
@@ -169,17 +173,11 @@ public class EnvioDeResumenWorker : BackgroundService
 
                 // Envía el email
 
-                await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resuInfo.UsuarioUserName.Trim(), Titulo = asunto, Html = viewHtml }, pdfBytes);
-                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
+                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resuInfo.UsuarioUserName.Trim(), Titulo = asunto, Html = viewHtml }, pdfBytes);
 
-                // 3. Guarda el registro
-                // Nota: Como 'resuInfo' es un objeto anónimo, necesitamos instanciar la entidad o usar el ID para guardar el log.
-                // Asumo que tu método GuardarRegistroCorreo espera la entidad completa. 
-                // Si puedes cambiarlo para que acepte solo el ID sería mejor, si no, puedes hacer un "Fake" attach o buscarlo.
+                var mail = new MailAPI { Mail = resuInfo.UsuarioUserName.Trim(), Titulo = asunto, Html = viewHtml };
+                await _mailService.EnviarAsync(mail, pdfBytes);
 
-                // Opción A: Modificar GuardarRegistroCorreo para recibir solo IDs.
-                // Opción B (Rápida aquí): Crear un objeto dummy solo con el ID si tu logica lo permite, 
-                // o si necesitas la entidad completa para el log, recupérala sin el adjunto.
                 var resumenParaLog = new ResumenTarjeta { Id = resuInfo.Id, Usuario = new Usuario { UserName = resuInfo.UsuarioUserName } };
                 await GuardarRegistroCorreo(context, resumenParaLog);
 
@@ -374,8 +372,8 @@ public class EnvioDeResumenWorker : BackgroundService
         {
             try
             {
-                // --- TU LÍNEA DE CÓDIGO INTEGRADA AQUÍ ---
-                common.EnviarMail(emailDestino.Trim(), asunto, cuerpoHTML, "");
+                var mail = new MailAPI { Mail = emailDestino.Trim(), Titulo = asunto, Html = cuerpoHTML };
+                _mailService.EnviarAsync(mail);
                 _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
             }
             catch (Exception ex)

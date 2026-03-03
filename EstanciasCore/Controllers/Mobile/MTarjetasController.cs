@@ -52,8 +52,9 @@ namespace EstanciasCore.API.Controllers.Billetera
         private readonly IConfiguration _configuration;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IMailService _mailService;
 
-        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory scopeFactory, ILogger<MTarjetasController> logger, IConfiguration configuration, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider) : base(context)
+        public MTarjetasController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory scopeFactory, ILogger<MTarjetasController> logger, IConfiguration configuration, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider, IMailService mailService) : base(context)
         {
             _datosServices = datosServices;
             _mp = mp;
@@ -63,6 +64,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             _configuration = configuration;
             _viewEngine=viewEngine;
             _serviceProvider=serviceProvider;
+            _mailService = mailService;
         }
 
         [HttpPost("Alta")]
@@ -278,11 +280,16 @@ namespace EstanciasCore.API.Controllers.Billetera
                 var viewHtml = await RenderViewToString(_viewEngine, _serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
                 if (body.email!=null)
                 {
-                    await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = body.email, Titulo = asunto, Html = viewHtml }, pdfBytes);
+                    //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = body.email, Titulo = asunto, Html = viewHtml }, pdfBytes);
+
+                    var mail = new MailAPI { Mail = body.email, Titulo = asunto, Html = viewHtml};                    
+                    await _mailService.EnviarAsync(mail, pdfBytes);
                 }
                 else
                 {
-                    await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resumen.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+                    //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resumen.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
+                    var mail = new MailAPI { Mail = usuario.UserName, Titulo = asunto, Html = viewHtml };
+                    await _mailService.EnviarAsync(mail, pdfBytes);
                 }
                     
                 return Ok(new { Mensaje = "Resumen enviado correctamente.", NombreArchivo = nombreArchivo });

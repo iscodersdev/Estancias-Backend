@@ -73,6 +73,11 @@ namespace EstanciasCore
             services.AddTransient<IWonderPushService, WonderPushService>();
             services.AddTransient<MercadoPagoServices>();
 
+
+            services.AddHttpClient<ResendProviderService>();
+            services.AddTransient<BrevoSmtpProviderService>();
+            services.AddTransient<IMailService, MailService>();
+
             //Genera Resumen Mensual
             services.AddHostedService<ResumenMensualWorker>();
             services.AddHostedService<EnvioDeResumenWorker>();

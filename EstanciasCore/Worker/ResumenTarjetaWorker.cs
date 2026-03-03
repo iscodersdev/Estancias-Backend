@@ -11,6 +11,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static EstanciasCore.Services.common;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
 public class ResumenMensualWorker : BackgroundService
@@ -18,6 +19,7 @@ public class ResumenMensualWorker : BackgroundService
     private readonly ILogger<ResumenMensualWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IConfiguration _configuration;
+    private readonly IMailService _mailService;
     private readonly string[] _adminEmails;
 
     // Estado del worker
@@ -25,7 +27,7 @@ public class ResumenMensualWorker : BackgroundService
     private int _intentosHoy = 0;
     private int _ultimoDiaDeIntentos = 0;
 
-    public ResumenMensualWorker(ILogger<ResumenMensualWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
+    public ResumenMensualWorker(ILogger<ResumenMensualWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration, IMailService mailService)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
@@ -33,6 +35,7 @@ public class ResumenMensualWorker : BackgroundService
 
         var emails = _configuration["NotificationSettings:AdminEmails"];
         _adminEmails = emails?.Split(';', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
+        _mailService=mailService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -128,8 +131,8 @@ public class ResumenMensualWorker : BackgroundService
         {
             try
             {
-                // --- TU LÍNEA DE CÓDIGO INTEGRADA AQUÍ ---
-                common.EnviarMail(emailDestino.Trim(), asunto, cuerpoHTML, "");
+                var mail = new MailAPI { Mail = emailDestino.Trim(), Titulo = asunto, Html = cuerpoHTML };
+                _mailService.EnviarAsync(mail);
                 _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
             }
             catch (Exception ex)
