@@ -444,21 +444,44 @@
 
     $('#exportar-excel-btn').on('click', function () {
         const selectedIds = getSelectedIds();
-        if (selectedIds.length === 0) {
-            Swal.fire({
-                title: 'Advertencia',
-                text: 'Debe seleccionar al menos un registro para exportar.',
-                icon: 'warning'
-            });
-            return;
-        }
+        if (selectedIds.length === 0) { /* Alerta de error */ return; }
 
+        let timerInterval;
         Swal.fire({
-            title: "Función de exportar",
-            text: `Se exportarán los registros seleccionados en formato .xlsx`,
-            icon: "info"
+            title: 'Generando Excel...',
+            html: 'Preparando <b></b> registros. Por favor, espere.',
+            timerProgressBar: true,
+            didOpen: () => {
+                Swal.showLoading();
+                const b = Swal.getHtmlContainer().querySelector('b');
+                b.textContent = selectedIds.length;
+            }
         });
-        window.location.href = '@Url.Action("ExportarExcel")' + '?ids=' + selectedIds.join(',');
+
+        // Usamos Fetch para poder cerrar la alerta cuando el archivo llegue
+        fetch('@Url.Action("ExportarExcel")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'ids=' + selectedIds.join(',')
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Error en el servidor');
+            return response.blob();
+        })
+        .then(blob => {
+            // Crear link de descarga manual
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Comprobantes_${new Date().getTime()}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            Swal.close(); // Cerramos el loading
+        })
+        .catch(error => {
+            Swal.fire('Error', 'No se pudo generar el archivo', 'error');
+        });
     });
 
 </script>

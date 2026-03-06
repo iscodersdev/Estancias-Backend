@@ -283,7 +283,7 @@ namespace EstanciasCore.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpPost]
         public IActionResult ExportarExcel(string ids)
         {
             try
