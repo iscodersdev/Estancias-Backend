@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
@@ -92,6 +92,21 @@ namespace EstanciasCore.Areas.Identity.Pages.Account
                 //    return Page();
                 //}             
                 var User = _context.Users.Where(x => x.UserName==Input.Email).FirstOrDefault();
+
+                if (User == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Intento de inicio de sesión no válido.");
+                    return Page();
+                }
+                if(User.UserName != "admin@admin.com")
+                {
+                    var tieneRoles = _context.UserRoles.Any(x => x.UserId == User.Id);
+                    if (!tieneRoles)
+                    {
+                        ModelState.AddModelError(string.Empty, "El usuario no tiene un rol asignado para ingresar al portal.");
+                        return Page();
+                    }
+                }          
 
                 var usuario = await _context.Users.FindAsync(User.Id);
 

@@ -133,53 +133,57 @@ namespace EstanciasCore.Controllers
         public async Task<IActionResult> _CambiarImagen(int id)
         {
             var premio = await _context.Premios.FindAsync(id);
-            PremiosImagenDTO premiosImagenDTO = new PremiosImagenDTO();
-            List<FotosPremios> fotos = _context.FotosPremios.Where(x=>x.Premio.Id==id).ToList();
-
-            premiosImagenDTO.Id = id;
-            premiosImagenDTO.Imagenes = fotos.Select(x => x.Foto).ToList();
+            var fotoExistente = _context.FotosPremios.FirstOrDefault(x => x.Premio.Id == id);
+            ViewBag.Foto = fotoExistente?.Foto;
 
             if (premio == null) return NotFound();
 
-            return PartialView(premiosImagenDTO);
+            return PartialView(premio);
         }
 
-
         [HttpPost]
-        public async Task<IActionResult> _CambiarImagen(int Id, IFormFile file)
+        public async Task<IActionResult> _CambiarImagen(IFormFile file, int id)
         {
             try
             {
-                var premio = await _context.Premios.FindAsync(Id);
+                var premio = await _context.Premios.FindAsync(id);
                 if (premio == null)
                 {
                     AddPageAlerts(PageAlertType.Error, "El premio no fue encontrado.");
                     return RedirectToAction("Index");
                 }
 
-                if (file == null || file.Length == 0)
+                if (file != null && file.Length > 0)
                 {
-                    AddPageAlerts(PageAlertType.Warning, "No se seleccionó ninguna imagen para subir.");
-                    return RedirectToAction("Index");
+                    var fotoExistente = _context.FotosPremios.FirstOrDefault(fp => fp.Premio.Id == id);
+
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await file.CopyToAsync(memoryStream);
+                        string base64Foto = Convert.ToBase64String(memoryStream.ToArray());
+
+                        if (fotoExistente != null)
+                        {
+                            fotoExistente.Foto = base64Foto;
+                            fotoExistente.Fecha = DateTime.Now;
+                            _context.FotosPremios.Update(fotoExistente);
+                        }
+                        else
+                        {
+                            FotosPremios nuevaFoto = new FotosPremios
+                            {
+                                Premio = premio,
+                                Foto = base64Foto,
+                                Orden = 1,
+                                Fecha = DateTime.Now
+                            };
+                            _context.FotosPremios.Add(nuevaFoto);
+                        }
+                        await _context.SaveChangesAsync();
+                    }
                 }
 
-                var fotosExistentes = _context.FotosPremios.Where(fp => fp.Premio.Id == Id).ToList();
-                _context.FotosPremios.RemoveRange(fotosExistentes);
-
-                using (var memoryStream = new MemoryStream())
-                {
-                    await file.CopyToAsync(memoryStream);
-                    FotosPremios fotosPremio = new FotosPremios();
-                    fotosPremio.Premio = premio; 
-                    fotosPremio.Orden = 1;
-                    fotosPremio.Fecha = DateTime.Now;
-                    fotosPremio.Foto = Convert.ToBase64String(memoryStream.ToArray());   
-                    _context.FotosPremios.Add(fotosPremio);
-                }
-
-                await _context.SaveChangesAsync();
-
-                AddPageAlerts(PageAlertType.Success, "Se cargó la imagen correctamente.");
+                AddPageAlerts(PageAlertType.Success, "Se actualizó la imagen correctamente.");
                 return RedirectToAction("Index");
             }
             catch (Exception ex)

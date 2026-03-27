@@ -88,6 +88,7 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                     MenuHelpers.AddModule("Imagen de Intro", "/Core/ImagenIntro"),
                     MenuHelpers.AddModule("Categorias de Premios", "/Core/Categorias"),
                     MenuHelpers.AddModule("Premios", "/Core/Premios"),
+                    MenuHelpers.AddModule("Validar Cupón", "/Core/Cupon"),
                     MenuHelpers.AddModule("Catálogo", "/Core/Catalogo"),
             };
                 //reportes.TreeChild = new List<SidebarMenu>()

@@ -1,4 +1,4 @@
-﻿using DAL.Models;
+using DAL.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -33,6 +33,7 @@ namespace DAL.DTOs
         public bool Activo { get; set; }
         public int CategoriaId { get; set; }
         public string CategoriaNombre { get; set; }
+        public string Imagen { get; set; }
     }
 
     public class CanjearCuponDTO : RequestApi
@@ -58,6 +59,7 @@ namespace DAL.DTOs
         public string CategoriaNombre { get; set; }
         public int DiasRestantesVencimiento { get; set; }
         public DateTime FechaVencimiento { get; set; }
+        public string Imagen { get; set; }
     }
 
 

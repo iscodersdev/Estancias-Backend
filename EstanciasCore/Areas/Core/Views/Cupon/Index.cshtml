@@ -1,0 +1,88 @@
+@model List<DAL.Models.HistorialCanje>
+@{
+    ViewData["Title"] = "Validación de Cupones";
+    ViewData["BackArrow"] = "/Home/Index";
+}
+
+<div class="box box-info">
+    <div class="box-header with-border">
+        <h3 class="box-title">Ingresar Código de Cupón o DNI del Cliente</h3>
+    </div>
+    <form asp-action="Buscar" method="post">
+        <div class="box-body">
+            <div class="form-group">
+                <label for="codigo">Código del Cupón o DNI</label>
+                <div class="input-group input-group-lg">
+                    <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Ej: ABCD-1234 o 12345678" required autocomplete="off" style="text-transform: uppercase;">
+                    <span class="input-group-btn">
+                        <button type="submit" class="btn btn-info btn-flat">Buscar</button>
+                    </span>
+                </div>
+                <p class="help-block">Ingrese el código generado por la aplicación para canjear el premio, o el DNI del cliente para ver sus cupones disponibles.</p>
+            </div>
+        </div>
+    </form>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    var cliente = Model.First().Cliente.Persona;
+    <div class="box box-success">
+        <div class="box-header with-border">
+            <h3 class="box-title">Cupones Disponibles de @cliente.Apellido, @cliente.Nombres</h3>
+        </div>
+        <div class="box-body table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Premio</th>
+                        <th>Descripción</th>
+                        <th>Puntos</th>
+                        <th>Código Cupón</th>
+                        <th>Vencimiento</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Premio.Nombre</td>
+                            <td>@item.Premio.Descripcion</td>
+                            <td>@item.Premio.Puntos</td>
+                            <td>@item.CodigoCupon</td>
+                            <td>@item.FechaVencimientoCupon.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <form asp-action="Validar" method="post" style="display:inline;">
+                                    <input type="hidden" name="codigo" value="@item.CodigoCupon" />
+                                    <button type="button" class="btn btn-success btn-sm" onclick="confirmarValidacion(this, '@item.CodigoCupon')"><i class="fa fa-check"></i> Validar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function confirmarValidacion(btn, codigo) {
+            Swal.fire({
+                title: '¿Confirmar validación?',
+                text: '¿Confirma que desea validar el cupón ' + codigo + '?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Aceptar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $(btn).closest('form').submit();
+                }
+            });
+        }
+    </script>
+}

@@ -1,4 +1,4 @@
-﻿using DAL.Data;
+using DAL.Data;
 using DAL.DTOs;
 using DAL.DTOs.API;
 using DAL.DTOs.Reportes;
@@ -85,7 +85,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                     Activo = x.Activo,
                     CategoriaId = x.Categoria.Id,
                     CategoriaNombre = x.Categoria.Nombre,
-                    Fecha = x.Fecha
+                    Fecha = x.Fecha,
+                    Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Id).Select(f => f.Foto).FirstOrDefault()
                 }).ToListAsync();
 
                 request.UAT = request.UAT;
@@ -202,7 +203,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                     Codigo = x.CodigoCupon,
                     Fecha = x.Fecha,
                     DiasRestantesVencimiento = (x.FechaVencimientoCupon.Date - DateTime.Now.Date).Days,
-                    FechaVencimiento = x.FechaVencimientoCupon
+                    FechaVencimiento = x.FechaVencimientoCupon,
+                    Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Premio.Id).Select(f => f.Foto).FirstOrDefault()
                 }).ToListAsync();
 
                 request.UAT = request.UAT;
