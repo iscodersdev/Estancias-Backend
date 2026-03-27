@@ -21,6 +21,8 @@ namespace DAL.Models
         public int StockActual { get; set; }
         public int Puntos { get; set; }
         public DateTime Fecha { get; set; }
+        public DateTime FechaVencimiento { get; set; }
+        public int DiasDeVencimiento { get; set; }
         public bool Activo { get; set; }
         [Display(Name = "Categoría")]
         public virtual Categorias Categoria { get; set; }
@@ -50,15 +52,19 @@ namespace DAL.Models
         public int Id { get; set; }
         public virtual Premios Premio { get; set; }
         public virtual Clientes Cliente { get; set; }
+        public string CodigoCupon { get; set; }
+        public DateTime FechaVencimientoCupon { get; set; }
         public string NroTarjeta { get; set; }
         [Display(Name = "Puntos Consumidos")]
         public int PuntosConsumidos { get; set; }
         [Display(Name = "Puntos Restantes")]
         public int PuntosRestantes { get; set; }
         public DateTime Fecha { get; set; }
+        public bool Activo { get; set; }
     }
     public class HistorialDePuntos
     {
+        public virtual Clientes Cliente { get; set; }
         public int Id { get; set; }
         [Display(Name = "Puntos Obtenidos")]
         public int PuntosObtenidos { get; set; }

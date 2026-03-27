@@ -1,4 +1,5 @@
-﻿using DAL.DTOs.Reportes;
+﻿using DAL.DTOs.ApiCpeCreditos;
+using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
 using DAL.DTOs.Servicios.DatosTarjeta;
 using DAL.Mobile;
@@ -90,6 +91,22 @@ namespace EstanciasCore.Interface
         /// <param name="model"></param>
         /// <returns></returns>
         Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model);
+
+
+        /// <summary>
+        /// Obtiene los datos de una persona a partir de su DNI utilizando la API Antigua.
+        /// </summary>
+        /// <param name="dni"></param>
+        /// <returns></returns>
+        Task<ResponseObtenerDatosPersonaDTO> ObtenerPersona(string dni);
+
+
+        /// <summary>
+        /// Obtiene los créditos asociados a una solicitud utilizando la API Antigua.
+        /// </summary>
+        /// <param name="idSolicitud"></param>
+        /// <returns></returns>
+        Task<ResponseObtenerCreditosDTO> ObtenerCreditos(int idSolicitud);
 
 
     }

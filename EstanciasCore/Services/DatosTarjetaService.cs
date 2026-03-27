@@ -1,4 +1,5 @@
 ﻿using DAL.Data;
+using DAL.DTOs.ApiCpeCreditos;
 using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
 using DAL.Mobile;
@@ -15,6 +16,7 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
 using System;  
 using System.Collections.Generic;
@@ -319,8 +321,80 @@ namespace EstanciasCore.Services
             return MovientosOrdenadosPorFecha;
         }
 
+        public async Task<ResponseObtenerDatosPersonaDTO> ObtenerPersona(string dni)
+        {
+            var requestBody = new ObtenerPersonaRequestDTO
+            {
+                LoginInterface = new LoginInterface
+                {
+                    Login = "appestancias",
+                    Clave = "appcpe01"
+                },
+                Documento = dni
+            };
+
+            var jsonPayload = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            try
+            {
+                var response = await _httpClient.PostAsync(this._apiBaseUrl+"api/ecommerce/ObtenerPersona", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<ResponseObtenerDatosPersonaDTO>(jsonResponse);
+                }
+                else
+                {
+                    throw new Exception($"Error al llamar a la API: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error en la comunicación con el servicio de personas", ex);
+            }
+        }
 
 
+        public async Task<ResponseObtenerCreditosDTO> ObtenerCreditos(int idSolicitud)
+        {
+            var requestBody = new ObtenerCreditosRequestDTO
+            {
+                LoginInterface = new LoginInterface
+                {
+                    Login = "appestancias",
+                    Clave = "appcpe01"
+                },
+                IdSolicitud = idSolicitud
+            };
+
+            var jsonPayload = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            try
+            {
+                var response = await _httpClient.PostAsync(this._apiBaseUrl+"api/ecommerce/ObtenerCreditos", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<ResponseObtenerCreditosDTO>(jsonResponse);
+                }
+                else
+                {
+                    throw new Exception($"Error al llamar a la API: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error en la comunicación con el servicio de personas", ex);
+            }
+        }
+
+
+
+        #region Métodos Para Resumen Tarjeta    
         //Métodos Para Resumen Tarjeta        
         public async Task<List<ResultadoCuotasDTO>> CuotasDetallesResumen(CombinedData datosMovimientos, DateTime fechaActualCuotas)
         {
@@ -458,10 +532,10 @@ namespace EstanciasCore.Services
                 return output.ToString();
             }
         }
-
+        #endregion
 
         #region Extra 
-            private IView FindView(ActionContext actionContext, string viewName)
+        private IView FindView(ActionContext actionContext, string viewName)
             {
                 var getViewResult = _razorViewEngine.GetView(executingFilePath: null, viewPath: viewName, isMainPage: true);
                 if (getViewResult.Success)
@@ -478,46 +552,48 @@ namespace EstanciasCore.Services
                 throw new ArgumentNullException($"No se pudo encontrar la vista {viewName}. Se buscó en las siguientes ubicaciones: {string.Join(", ", findViewResult.SearchedLocations)}");
             }
 
-            private ActionContext GetActionContext()
+        private ActionContext GetActionContext()
+        {
+            var httpContext = new DefaultHttpContext { RequestServices = _serviceProvider };
+            return new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
+        }
+
+        /// <summary>
+        /// Calcula el último día de un mes y año específicos.
+        /// </summary>
+        /// <param name="anio">El año.</param>
+        /// <param name="mes">El mes.</param>
+        /// <returns>El último día hábil del mes.</returns>
+        private DateTime ObtenerUltimoDia(int anio, int mes)
+        {
+            DateTime ultimoDia = new DateTime(anio, mes, DateTime.DaysInMonth(anio, mes));
+            return ultimoDia;
+        }
+
+        public DateTime ObtenerFechaDeCalculoCorrecta()
+        {
+            DateTime hoy = DateTime.Now;
+
+            if (hoy.Day <= 15)
             {
-                var httpContext = new DefaultHttpContext { RequestServices = _serviceProvider };
-                return new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
+                // Si es antes del día 15, la fecha de cálculo es el 15 del mes actual.
+                return new DateTime(hoy.Year, hoy.Month, 15);
             }
-
-            /// <summary>
-            /// Calcula el último día de un mes y año específicos.
-            /// </summary>
-            /// <param name="anio">El año.</param>
-            /// <param name="mes">El mes.</param>
-            /// <returns>El último día hábil del mes.</returns>
-            private DateTime ObtenerUltimoDia(int anio, int mes)
+            else
             {
-                DateTime ultimoDia = new DateTime(anio, mes, DateTime.DaysInMonth(anio, mes));
-                return ultimoDia;
+                // Si es día 15 o posterior, la fecha de cálculo es el último día del mes actual.
+                return ObtenerUltimoDia(hoy.Year, hoy.Month);
             }
+        }
 
-            public DateTime ObtenerFechaDeCalculoCorrecta()
-            {
-                DateTime hoy = DateTime.Now;
-
-                if (hoy.Day <= 15)
-                {
-                    // Si es antes del día 15, la fecha de cálculo es el 15 del mes actual.
-                    return new DateTime(hoy.Year, hoy.Month, 15);
-                }
-                else
-                {
-                    // Si es día 15 o posterior, la fecha de cálculo es el último día del mes actual.
-                    return ObtenerUltimoDia(hoy.Year, hoy.Month);
-                }
-            }
-
-            public DateTime ObtenerFechaDeCalculoCorrectaResumen()
-            {
-                DateTime hoy = DateTime.Now;
-                return new DateTime(hoy.Year, hoy.AddMonths(1).Month, 01);
+        public DateTime ObtenerFechaDeCalculoCorrectaResumen()
+        {
+            DateTime hoy = DateTime.Now;
+            return new DateTime(hoy.Year, hoy.AddMonths(1).Month, 01);
                 
-            }
+        }
+
+   
         #endregion
 
 

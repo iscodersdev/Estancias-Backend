@@ -4,14 +4,16 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(EstanciasContext))]
-    partial class EstanciasContextModelSnapshot : ModelSnapshot
+    [Migration("20260319123656_HistorialDeCupones")]
+    partial class HistorialDeCupones
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1608,8 +1610,6 @@ namespace DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int?>("ClienteId");
-
                     b.Property<DateTime>("Fecha");
 
                     b.Property<int>("PuntosObtenidos");
@@ -1617,8 +1617,6 @@ namespace DAL.Migrations
                     b.Property<int>("PuntosTotales");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ClienteId");
 
                     b.ToTable("HistorialDePuntos");
                 });
@@ -3051,13 +3049,6 @@ namespace DAL.Migrations
                     b.HasOne("DAL.Models.Premios", "Premio")
                         .WithMany()
                         .HasForeignKey("PremioId");
-                });
-
-            modelBuilder.Entity("DAL.Models.HistorialDePuntos", b =>
-                {
-                    b.HasOne("DAL.Models.Clientes", "Cliente")
-                        .WithMany()
-                        .HasForeignKey("ClienteId");
                 });
 
             modelBuilder.Entity("DAL.Models.Horarios", b =>

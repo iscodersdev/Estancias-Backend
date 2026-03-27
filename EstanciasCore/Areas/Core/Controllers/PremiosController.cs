@@ -1,4 +1,4 @@
-﻿using Commons.Models;
+using Commons.Models;
 using DAL.Data;
 using DAL.DTOs;
 using DAL.Models;
@@ -146,7 +146,7 @@ namespace EstanciasCore.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> _CambiarImagen(int Id, List<IFormFile> Imagenes)
+        public async Task<IActionResult> _CambiarImagen(int Id, IFormFile file)
         {
             try
             {
@@ -157,40 +157,34 @@ namespace EstanciasCore.Controllers
                     return RedirectToAction("Index");
                 }
 
-                // Verificar si se subieron imágenes
-                if (Imagenes == null || !Imagenes.Any())
+                if (file == null || file.Length == 0)
                 {
-                    AddPageAlerts(PageAlertType.Warning, "No se seleccionaron imágenes para subir.");
+                    AddPageAlerts(PageAlertType.Warning, "No se seleccionó ninguna imagen para subir.");
                     return RedirectToAction("Index");
                 }
 
-                // Eliminar fotos anteriores asociadas al premio (si es necesario)
                 var fotosExistentes = _context.FotosPremios.Where(fp => fp.Premio.Id == Id).ToList();
                 _context.FotosPremios.RemoveRange(fotosExistentes);
 
-                int cont = 0;
-                foreach (var file in Imagenes)
+                using (var memoryStream = new MemoryStream())
                 {
-                    if (file.Length > 0)
-                    {
-                        cont++;
-                        FotosPremios fotosPremio = new FotosPremios();
-                        fotosPremio.Premio.Id = Id; // Asignar directamente el ID del premio
-                        fotosPremio.Orden = cont;
-                        fotosPremio.Fecha = DateTime.Now;
-                        fotosPremio.Foto = Convert.ToBase64String(ComprimirImagen(file));   
-                        _context.FotosPremios.Add(fotosPremio);
-                    }
+                    await file.CopyToAsync(memoryStream);
+                    FotosPremios fotosPremio = new FotosPremios();
+                    fotosPremio.Premio = premio; 
+                    fotosPremio.Orden = 1;
+                    fotosPremio.Fecha = DateTime.Now;
+                    fotosPremio.Foto = Convert.ToBase64String(memoryStream.ToArray());   
+                    _context.FotosPremios.Add(fotosPremio);
                 }
 
                 await _context.SaveChangesAsync();
 
-                AddPageAlerts(PageAlertType.Success, "Se cargaron las imágenes correctamente.");
+                AddPageAlerts(PageAlertType.Success, "Se cargó la imagen correctamente.");
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                AddPageAlerts(PageAlertType.Error, "Hubo un error al cargar las imágenes: " + ex.Message);
+                AddPageAlerts(PageAlertType.Error, "Hubo un error al cargar la imagen: " + ex.Message);
                 return RedirectToAction("Index");
             }
         }

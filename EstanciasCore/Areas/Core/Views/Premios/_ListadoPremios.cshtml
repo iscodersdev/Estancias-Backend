@@ -26,6 +26,9 @@
                         Canjes Totales
                     </th>
                     <th>
+                        Stock Actual
+                    </th>
+                    <th>
                         Puntos
                     </th>
                     <th>
@@ -54,6 +57,9 @@
                         </td>
                         <td>
                             @Html.DisplayFor(modelItem => item.Stock)
+                        </td>
+                        <td>
+                            @(item.Stock - item.StockActual)
                         </td>
                         <td>
                             @Html.DisplayFor(modelItem => item.StockActual)

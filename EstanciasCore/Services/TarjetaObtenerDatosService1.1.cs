@@ -310,5 +310,7 @@ namespace EstanciasCore.Services
 		public List<SolicitudDetail> DetallesSolicitud { get; set; }
 	}
 
+
+
 }
 

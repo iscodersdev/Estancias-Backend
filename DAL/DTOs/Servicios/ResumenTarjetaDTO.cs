@@ -34,5 +34,7 @@ namespace DAL.DTOs.Servicios
         public string NroTarjeta { get; set; }
         public string DeviceId { get; set; }
         public string Token { get; set; }
-    }
+    }    
 }
+
+
