@@ -17,11 +17,21 @@ namespace EstanciasCore.Controllers
             breadcumb.Add(new Message() { DisplayName = "Validación de Cupones" });
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             breadcumb.Add(new Message() { DisplayName = "Validar Cupón" });
             ViewBag.Breadcrumb = breadcumb;
-            return View();
+            ViewBag.EsBusqueda = false;
+
+            var historial = await _context.HistorialCanje
+                .Include(x => x.Premio)
+                .Include(x => x.Cliente.Persona)
+                .Where(x => !x.Activo)
+                .OrderByDescending(x => x.Fecha)
+                .Take(50)
+                .ToListAsync();
+
+            return View(historial);
         }
 
         [HttpPost]
@@ -41,36 +51,47 @@ namespace EstanciasCore.Controllers
                     .Include(x => x.Premio)
                     .Include(x => x.Cliente)
                     .Include(x => x.Cliente.Persona)
-                    .Where(x => (x.CodigoCupon == codigo || x.Cliente.Persona.NroDocumento == codigo) && x.Activo)
+                    .Where(x => x.CodigoCupon == codigo || x.Cliente.Persona.NroDocumento == codigo)
                     .OrderBy(x => x.FechaVencimientoCupon)
                     .ToListAsync();
 
                 if (cupones.Any())
                 {
-                    var cupones_disponibles = cupones.Where(x => x.FechaVencimientoCupon.Date >= DateTime.Now.Date).ToList();
-
-                    if (!cupones_disponibles.Any())
-                    {
-                        AddPageAlerts(PageAlertType.Warning, "Se encontraron cupones, pero se encuentran vencidos.");
-                        return RedirectToAction("Index");
-                    }
+                    var cupones_disponibles = cupones.Where(x => x.Activo && x.FechaVencimientoCupon.Date >= DateTime.Now.Date).ToList();
+                    var cupones_canjeados = cupones.Where(x => !x.Activo).ToList();
 
                     breadcumb.Add(new Message() { DisplayName = "Validar Cupón" });
                     ViewBag.Breadcrumb = breadcumb;
+                    ViewBag.EsBusqueda = true;
                     
-                    if (cupones_disponibles.Count == 1 && cupones_disponibles.First().CodigoCupon == codigo)
+                    if (cupones_disponibles.Any())
                     {
-                        AddPageAlerts(PageAlertType.Info, $"Se encontró el cupón {codigo}.");
+                        if (cupones_disponibles.Count == 1 && cupones_disponibles.First().CodigoCupon == codigo)
+                        {
+                            AddPageAlerts(PageAlertType.Info, $"Se encontró el cupón {codigo}.");
+                        }
+                        else
+                        {
+                            AddPageAlerts(PageAlertType.Info, $"Se encontraron {cupones_disponibles.Count} cupon(es) disponible(s).");
+                        }
+                    }
+                    else if (cupones_canjeados.Any() && cupones_canjeados.Any(c => c.CodigoCupon == codigo))
+                    {
+                        AddPageAlerts(PageAlertType.Warning, $"El cupón {codigo} ya fue canjeado el {cupones_canjeados.First(c => c.CodigoCupon == codigo).Fecha:dd/MM/yyyy}.");
+                    }
+                    else if (cupones_canjeados.Any())
+                    {
+                        AddPageAlerts(PageAlertType.Warning, "No hay cupones disponibles, pero el cliente tiene cupones canjeados en su historial.");
                     }
                     else
                     {
-                        AddPageAlerts(PageAlertType.Info, $"Se encontraron {cupones_disponibles.Count} cupon(es) disponible(s).");
+                        AddPageAlerts(PageAlertType.Warning, "Se encontraron cupones, pero se encuentran vencidos.");
                     }
                     
-                    return View("Index", cupones_disponibles);
+                    return View("Index", cupones);
                 }
 
-                AddPageAlerts(PageAlertType.Error, "No existe el cupón ingresado o el cliente no tiene cupones disponibles.");
+                AddPageAlerts(PageAlertType.Error, "No existe el cupón ingresado o el cliente no tiene cupones registrados.");
                 return RedirectToAction("Index");
             }
             catch (Exception ex)

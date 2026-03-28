@@ -4,70 +4,225 @@
     ViewData["BackArrow"] = "/Home/Index";
 }
 
-<div class="box box-info">
-    <div class="box-header with-border">
-        <h3 class="box-title">Ingresar Código de Cupón o DNI del Cliente</h3>
-    </div>
-    <form asp-action="Buscar" method="post">
-        <div class="box-body">
-            <div class="form-group">
-                <label for="codigo">Código del Cupón o DNI</label>
-                <div class="input-group input-group-lg">
-                    <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Ej: ABCD-1234 o 12345678" required autocomplete="off" style="text-transform: uppercase;">
-                    <span class="input-group-btn">
-                        <button type="submit" class="btn btn-info btn-flat">Buscar</button>
-                    </span>
-                </div>
-                <p class="help-block">Ingrese el código generado por la aplicación para canjear el premio, o el DNI del cliente para ver sus cupones disponibles.</p>
+<div class="row">
+    <div class="col-md-6">
+        <div class="box box-info">
+            <div class="box-header with-border">
+                <h3 class="box-title">Buscar por Cupón</h3>
             </div>
+            <form asp-action="Buscar" method="post">
+                <div class="box-body">
+                    <div class="form-group">
+                        <label for="cupon_input">Código del Cupón</label>
+                        <div class="input-group input-group-lg">
+                            <input type="text" class="form-control" id="cupon_input" name="codigo" placeholder="Ej: ABCD-1234" required autocomplete="off" style="text-transform: uppercase;" maxlength="9">
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn btn-info btn-flat">Buscar</button>
+                            </span>
+                        </div>
+                        <p class="help-block">Ingrese el código del cupón (ej. 6BSE-6U5D).</p>
+                    </div>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
+    <div class="col-md-6">
+        <div class="box box-primary">
+            <div class="box-header with-border">
+                <h3 class="box-title">Buscar por DNI</h3>
+            </div>
+            <form asp-action="Buscar" method="post">
+                <div class="box-body">
+                    <div class="form-group">
+                        <label for="dni_input">DNI del Cliente</label>
+                        <div class="input-group input-group-lg">
+                            <input type="text" class="form-control" id="dni_input" name="codigo" placeholder="Ej: 12345678" required autocomplete="off" maxlength="15">
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn btn-primary btn-flat">Buscar</button>
+                            </span>
+                        </div>
+                        <p class="help-block">Ingrese el DNI del cliente para ver sus cupones disponibles.</p>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @if (Model != null && Model.Any())
 {
-    var cliente = Model.First().Cliente.Persona;
-    <div class="box box-success">
-        <div class="box-header with-border">
-            <h3 class="box-title">Cupones Disponibles de @cliente.Apellido, @cliente.Nombres</h3>
+    if (ViewBag.EsBusqueda == true)
+    {
+        var cliente = Model.First().Cliente.Persona;
+        var cuponesDisponibles = Model.Where(x => x.Activo && x.FechaVencimientoCupon.Date >= DateTime.Now.Date).ToList();
+        var cuponesCanjeados = Model.Where(x => !x.Activo).OrderByDescending(x => x.Fecha).ToList();
+        var cuponesVencidos = Model.Where(x => x.Activo && x.FechaVencimientoCupon.Date < DateTime.Now.Date).ToList();
+
+        <div class="row" style="margin-bottom: 10px;">
+            <div class="col-xs-12">
+                <a asp-action="Index" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Volver al Historial General</a>
+            </div>
         </div>
-        <div class="box-body table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>Premio</th>
-                        <th>Descripción</th>
-                        <th>Puntos</th>
-                        <th>Código Cupón</th>
-                        <th>Vencimiento</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model)
-                    {
+
+        if (cuponesDisponibles.Any())
+        {
+            <div class="box box-success">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Cupones Disponibles de @cliente.Apellido, @cliente.Nombres</h3>
+                </div>
+                <div class="box-body table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>Premio</th>
+                                <th>Descripción</th>
+                                <th>Puntos</th>
+                                <th>Código Cupón</th>
+                                <th>Vencimiento</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in cuponesDisponibles)
+                            {
+                                <tr>
+                                    <td>@item.Premio.Nombre</td>
+                                    <td>@item.Premio.Descripcion</td>
+                                    <td>@item.Premio.Puntos</td>
+                                    <td>@item.CodigoCupon</td>
+                                    <td>@item.FechaVencimientoCupon.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <form asp-action="Validar" method="post" style="display:inline;">
+                                            <input type="hidden" name="codigo" value="@item.CodigoCupon" />
+                                            <button type="button" class="btn btn-success btn-sm" onclick="confirmarValidacion(this, '@item.CodigoCupon')"><i class="fa fa-check"></i> Validar</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        if (cuponesCanjeados.Any())
+        {
+            <div class="box box-warning">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Historial de Cupones Canjeados de @cliente.Apellido, @cliente.Nombres</h3>
+                </div>
+                <div class="box-body table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>Premio</th>
+                                <th>Descripción</th>
+                                <th>Código Cupón</th>
+                                <th>Fecha de Canje</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in cuponesCanjeados)
+                            {
+                                <tr>
+                                    <td>@item.Premio.Nombre</td>
+                                    <td>@item.Premio.Descripcion</td>
+                                    <td>@item.CodigoCupon</td>
+                                    <td>@item.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td><span class="label label-warning">Canjeado</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        if (cuponesVencidos.Any())
+        {
+            <div class="box box-danger">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Cupones Vencidos de @cliente.Apellido, @cliente.Nombres</h3>
+                </div>
+                <div class="box-body table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>Premio</th>
+                                <th>Descripción</th>
+                                <th>Código Cupón</th>
+                                <th>Vencimiento</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in cuponesVencidos)
+                            {
+                                <tr>
+                                    <td>@item.Premio.Nombre</td>
+                                    <td>@item.Premio.Descripcion</td>
+                                    <td>@item.CodigoCupon</td>
+                                    <td>@item.FechaVencimientoCupon.ToString("dd/MM/yyyy")</td>
+                                    <td><span class="label label-danger">Vencido</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="box box-warning">
+            <div class="box-header with-border">
+                <h3 class="box-title">Historial Reciente de Canjes (Global)</h3>
+            </div>
+            <div class="box-body table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead>
                         <tr>
-                            <td>@item.Premio.Nombre</td>
-                            <td>@item.Premio.Descripcion</td>
-                            <td>@item.Premio.Puntos</td>
-                            <td>@item.CodigoCupon</td>
-                            <td>@item.FechaVencimientoCupon.ToString("dd/MM/yyyy")</td>
-                            <td>
-                                <form asp-action="Validar" method="post" style="display:inline;">
-                                    <input type="hidden" name="codigo" value="@item.CodigoCupon" />
-                                    <button type="button" class="btn btn-success btn-sm" onclick="confirmarValidacion(this, '@item.CodigoCupon')"><i class="fa fa-check"></i> Validar</button>
-                                </form>
-                            </td>
+                            <th>Cliente</th>
+                            <th>Premio</th>
+                            <th>Código Cupón</th>
+                            <th>Fecha de Canje</th>
+                            <th>Estado</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.Cliente.Persona.Apellido, @item.Cliente.Persona.Nombres</td>
+                                <td>@item.Premio.Nombre</td>
+                                <td>@item.CodigoCupon</td>
+                                <td>@item.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td><span class="label label-warning">Canjeado</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    }
 }
 
 @section Scripts {
     <script>
+        document.getElementById('cupon_input').addEventListener('input', function (e) {
+            var target = e.target;
+            // Solo permitimos caracteres alfanuméricos
+            var val = target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            
+            // Si la longitud es mayor a 4, insertamos el guión
+            if (val.length > 4) {
+                val = val.substring(0, 4) + '-' + val.substring(4, 8);
+            }
+            
+            target.value = val;
+        });
+
         function confirmarValidacion(btn, codigo) {
             Swal.fire({
                 title: '¿Confirmar validación?',

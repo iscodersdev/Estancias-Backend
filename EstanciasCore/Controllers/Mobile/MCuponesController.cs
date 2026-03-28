@@ -115,14 +115,14 @@ namespace EstanciasCore.API.Controllers.Billetera
                     return new CanjearCuponDTO { Status = 500, UAT = request.UAT, Mensaje = $"no existe UAT de Usuario" };
 
                 var puntosCliente = _context.PuntosClientes.Where(x => x.Cliente.Id == usuario.Clientes.Id).FirstOrDefault();
-                var cupon = await _context.Premios.Where(x => x.Activo).FirstOrDefaultAsync();
+                var cupon = await _context.Premios.Where(x => x.Activo && x.Id==request.CuponId).FirstOrDefaultAsync();
                 if (cupon.StockActual<=0)
                 {
                     request.Status = 500;
                     request.Mensaje = "El cupón seleccionado ya no tiene stock disponible.";
                     return request;
                 }
-                if (cupon.FechaVencimiento.Date>DateTime.Now.Date)
+                if (cupon.FechaVencimiento.Date<DateTime.Now.Date)
                 {
                     request.Status = 500;
                     request.Mensaje = "El cupón está expirado.";
@@ -193,7 +193,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 if (usuario == null)
                     return new ListCuponesClienteDTO { Status = 500, UAT = request.UAT, Mensaje = $"no existe UAT de Usuario" };
 
-                var cupones = await _context.HistorialCanje.Where(x => x.Activo).Select(x => new CuponesClienteDTO()
+                var cupones = await _context.HistorialCanje.Select(x => new CuponesClienteDTO()
                 {
                     Id = x.Id,
                     Nombre = x.Premio.Nombre,

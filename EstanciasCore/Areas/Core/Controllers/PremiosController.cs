@@ -57,6 +57,7 @@ namespace EstanciasCore.Controllers
                 {
                     Categorias categoria = _context.Categorias.Where(x=>x.Id==premio.Categoria.Id).FirstOrDefault();
                     premio.Categoria=categoria;
+                    premio.StockActual=premio.Stock;
                     premio.Fecha=DateTime.Now;
                     premio.Activo=true;
                     await _context.Premios.AddAsync(premio);
@@ -80,6 +81,7 @@ namespace EstanciasCore.Controllers
         public async Task<IActionResult> _Update(int Id)
         {
 
+            ViewBag.Categorias = _context.Categorias.Select(g => new SelectListItem() { Text = g.Nombre, Value = g.Id.ToString() });
             Premios premio = await _context.Premios.FindAsync(Id);
             return PartialView(premio);
         }
