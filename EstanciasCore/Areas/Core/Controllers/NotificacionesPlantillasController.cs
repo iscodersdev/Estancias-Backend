@@ -20,9 +20,9 @@ namespace EstanciasCore.Controllers
     [Area("Core")]
     public class NotificacionesPlantillasController : EstanciasCoreController
     {
-        private readonly IWonderPushService _wonderPushService;
+        private readonly IPushService _wonderPushService;
 
-        public NotificacionesPlantillasController(EstanciasContext context, IWonderPushService wonderPushService) : base(context)
+        public NotificacionesPlantillasController(EstanciasContext context, IPushService wonderPushService) : base(context)
         {
             _wonderPushService = wonderPushService;
             breadcumb.Add(new Message() { DisplayName = "Datos" });

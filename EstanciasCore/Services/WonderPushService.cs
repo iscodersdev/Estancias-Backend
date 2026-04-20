@@ -13,14 +13,14 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Services
 {
-    public class WonderPushService : IWonderPushService
+    public class WonderPushService : IPushService
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IConfiguration _configuration;
         // In a real scenario, move these to appsettings.json
         private const string ACCESS_TOKEN = "NjQ3MDQwODVmYTRjZjNjMjRiZTQ4OGE0N2MwYjFkY2E2ZTZmOTAyNDVjYWE4MmExMjE5YTNjZTM3MGY0YzJmNQ";
         private const string API_URL = "https://management-api.wonderpush.com/v1/deliveries";
-        private readonly IWonderPushService _wonderpushService;
+        private readonly IPushService _wonderpushService;
         private static readonly HttpClient _httpClient = new HttpClient();
 
         public WonderPushService(IServiceScopeFactory scopeFactory, IConfiguration configuration)

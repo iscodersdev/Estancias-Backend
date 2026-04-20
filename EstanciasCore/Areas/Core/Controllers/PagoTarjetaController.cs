@@ -23,8 +23,8 @@ namespace EstanciasCore.Controllers
 
 	public class PagoTarjetaController : EstanciasCoreController
     {
-        private readonly IWonderPushService _wonderPushService;
-        public PagoTarjetaController(EstanciasContext context, IWonderPushService wonderPushService) : base(context)
+        private readonly IPushService _wonderPushService;
+        public PagoTarjetaController(EstanciasContext context, IPushService wonderPushService) : base(context)
         {
             breadcumb.Add(new Commons.Models.Message() { DisplayName = "Datos" });
             _wonderPushService = wonderPushService;

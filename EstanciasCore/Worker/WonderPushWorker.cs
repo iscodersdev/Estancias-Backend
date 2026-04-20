@@ -354,7 +354,7 @@ public class WonderPushWorker : BackgroundService
                         };
 
                         var instalationId = new List<string> { usuario.DeviceId };
-                        var wonderPushService = scope.ServiceProvider.GetRequiredService<IWonderPushService>();
+                        var wonderPushService = scope.ServiceProvider.GetRequiredService<IPushService>();
                         var respuestawp = await wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
                     }
                 }
@@ -402,7 +402,7 @@ public class WonderPushWorker : BackgroundService
                 DeepLink = notificaciones.NotificacionesPlantillas.DeepLink
             };
 
-            var wonderPushService = scope.ServiceProvider.GetRequiredService<IWonderPushService>();
+            var wonderPushService = scope.ServiceProvider.GetRequiredService<IPushService>();
             var respuestawp = await wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
             notificaciones.FechaUltimaEjecucion = DateTime.Now;
             context.Update(notificaciones);
@@ -452,7 +452,7 @@ public class WonderPushWorker : BackgroundService
                 
             };
 
-            var wonderPushService = scope.ServiceProvider.GetRequiredService<IWonderPushService>();
+            var wonderPushService = scope.ServiceProvider.GetRequiredService<IPushService>();
             var respuestawp = await wonderPushService.EnviarNotificacionAIds(notificacionesDTO, instalationId);
             notificaciones.FechaUltimaEjecucion = DateTime.Now;
             context.Update(notificaciones);

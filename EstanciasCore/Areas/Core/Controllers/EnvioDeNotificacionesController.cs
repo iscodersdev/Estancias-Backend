@@ -19,9 +19,9 @@ namespace EstanciasCore.Controllers
     [Area("Core")]
     public class EnvioDeNotificaciones : EstanciasCoreController
     {
-        private readonly IWonderPushService _wonderPushService;
+        private readonly IPushService _wonderPushService;
 
-        public EnvioDeNotificaciones(EstanciasContext context, IWonderPushService wonderPushService) : base(context)
+        public EnvioDeNotificaciones(EstanciasContext context, IPushService wonderPushService) : base(context)
         {
             _wonderPushService = wonderPushService;
             breadcumb.Add(new Message() { DisplayName = "Datos" });

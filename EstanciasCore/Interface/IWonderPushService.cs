@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Interface
 {
-    public interface IWonderPushService
+    public interface IPushService
     {
         Task<bool> EnviarNotificacionPorCumpleanios();
         Task<bool> EnviarNotificacionGeneral(NotificacionViewModelDTO notificacion);
