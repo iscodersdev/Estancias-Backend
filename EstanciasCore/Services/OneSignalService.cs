@@ -20,7 +20,7 @@ namespace EstanciasCore.Services
 
         // Estos valores deberían ir en tu appsettings.json idealmente
         private const string APP_ID = "f1f5c4f1-87d1-4a48-a6a6-d31e27bb7e28";
-        private const string REST_API_KEY = "os_v2_app_6h24j4mh2fferjvg2mpcpo36facrfbro4eyuzwmqwnaugoikaagloz4y2l6anvhgp3tdld6yz5qmyrxuvx4vc7pys3kqygwq2xikoxa";
+        private const string REST_API_KEY = "os_v2_app_6h24j4mh2fferjvg2mpcpo36fci4ihtkcice5petr6lebynk2ky5oryfodty2t7anugsmmjn5x6hhef47vfsfjzyigpyf37aoeznegy";
         private const string API_URL = "https://onesignal.com/api/v1/notifications";
 
         public OneSignalService(IConfiguration configuration)
