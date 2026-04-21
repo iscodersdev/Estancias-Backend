@@ -20,7 +20,7 @@ namespace EstanciasCore.Services
 
         // Estos valores deberían ir en tu appsettings.json idealmente
         private const string APP_ID = "f1f5c4f1-87d1-4a48-a6a6-d31e27bb7e28";
-        private const string REST_API_KEY = "os_v2_app_6h24j4mh2fferjvg2mpcpo36fci4ihtkcice5petr6lebynk2ky5oryfodty2t7anugsmmjn5x6hhef47vfsfjzyigpyf37aoeznegy";
+        private const string REST_API_KEY = "os_v2_app_6h24j4mh2fferjvg2mpcpo36faepge4m7j6uvzfpql7zi2gjfyccyg6tuhkttqibhgpqufilygqywbeu2rl6iwxudymzeo5qj736iva";
         private const string API_URL = "https://onesignal.com/api/v1/notifications";
 
         public OneSignalService(IConfiguration configuration)
@@ -61,12 +61,19 @@ namespace EstanciasCore.Services
         {
             if (deviceIds == null || !deviceIds.Any()) return false;
 
-            // OneSignal permite enviar hasta 2000 IDs en una sola petición
-            // Es mucho más eficiente que enviarlos uno por uno.
+            // FILTRO: Solo dejamos los que parecen UUID válidos para OneSignal
+            var validIds = deviceIds.Where(id => Guid.TryParse(id, out _)).ToList();
+
+            if (!validIds.Any())
+            {
+                // Si no hay IDs válidos, no disparamos la API para evitar el error 400
+                return false;
+            }
+
             var payload = new
             {
                 app_id = APP_ID,
-                include_player_ids = deviceIds,
+                include_player_ids = validIds, // Usamos la lista filtrada
                 headings = new { en = notificacion.Titulo, es = notificacion.Titulo },
                 contents = new { en = notificacion.Mensaje, es = notificacion.Mensaje },
                 url = notificacion.DeepLink,
@@ -75,8 +82,7 @@ namespace EstanciasCore.Services
                 ios_attachments = !string.IsNullOrEmpty(notificacion.ImagenUrl)
                     ? new { id1 = notificacion.ImagenUrl }
                     : null,
-                android_accent_color = "FF0000FF", // Opcional: Color de la notificación
-                priority = 10 // Alta prioridad
+                priority = 10
             };
 
             return await EjecutarEnvio(payload);
