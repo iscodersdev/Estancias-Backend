@@ -1,3 +1,4 @@
+using DAL.Data;
 using DAL.Models.Core;
 using EstanciasCore.Interface;
 using Microsoft.Extensions.Configuration;
@@ -17,19 +18,23 @@ namespace EstanciasCore.Services
     {
         private readonly IConfiguration _configuration;
         private static readonly HttpClient _httpClient = new HttpClient();
+        private EstanciasContext _context { get; set; }
 
         // Estos valores deberían ir en tu appsettings.json idealmente
         private const string APP_ID = "f1f5c4f1-87d1-4a48-a6a6-d31e27bb7e28";
-        private const string REST_API_KEY = "os_v2_app_6h24j4mh2fferjvg2mpcpo36faepge4m7j6uvzfpql7zi2gjfyccyg6tuhkttqibhgpqufilygqywbeu2rl6iwxudymzeo5qj736iva";
+        private string REST_API_KEY = "";
         private const string API_URL = "https://onesignal.com/api/v1/notifications";
 
-        public OneSignalService(IConfiguration configuration)
+        public OneSignalService(IConfiguration configuration, EstanciasContext context)
         {
             _configuration = configuration;
+            _context = context;
 
             // Configuración básica del cliente
             if (_httpClient.DefaultRequestHeaders.Authorization == null)
             {
+                var DatosOneSignal = _context.MailConfig.Where(x => x.CodigoProveedor=="ONESIGNAL").FirstOrDefault();
+                REST_API_KEY = DatosOneSignal.ApiKey;
                 _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", REST_API_KEY);
             }
@@ -92,6 +97,8 @@ namespace EstanciasCore.Services
         {
             try
             {
+                var DatosOneSignal = _context.MailConfig.Where(x => x.CodigoProveedor=="ONESIGNAL").FirstOrDefault();
+                REST_API_KEY = DatosOneSignal.ApiKey;
                 var json = JsonConvert.SerializeObject(payload, new JsonSerializerSettings
                 {
                     NullValueHandling = NullValueHandling.Ignore
