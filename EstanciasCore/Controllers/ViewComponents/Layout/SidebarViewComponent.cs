@@ -80,6 +80,7 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
 					MenuHelpers.AddModule("Pagos Tarjeta", "/Core/PagoTarjeta"),
 					MenuHelpers.AddModule("Histórico de Pagos Tarjeta", "/Core/PagoTarjetaHistorico"),
                     notificaciones,
+                    MenuHelpers.AddModule("Datos Empresa", "/Core/DatosEmpresa/"),
                     MenuHelpers.AddModule("Vendedores", "/Core/Vendedores/"),
                     MenuHelpers.AddModule("Novedades", "/Core/Novedades"),
                     MenuHelpers.AddModule("Promociones", "/Core/Promociones"),

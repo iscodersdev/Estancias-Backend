@@ -58,5 +58,13 @@ namespace DAL.Models
         public string group { get; set; }
 
     }
+
+    public class DatosEmpresa
+    {
+        public int Id { get; set; }
+        public string CBU { get; set; }
+        public string Alias { get; set; }
+        public string Whatsapp { get; set; }
+    }
     
 }

@@ -48,6 +48,9 @@ namespace DAL.Models
         public string NroTarjeta { get; set; }
         public bool Administrador { get; set; }
         public bool RecibirResumen { get; set; }
+        public string AliasEmpresa { get; set; }
+        public string WhatsappEmpresa { get; set; }
+        public string CBUEmpresa { get; set; }
     }
     public class MRegistraPersonaDTO
     {

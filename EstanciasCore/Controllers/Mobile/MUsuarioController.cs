@@ -266,12 +266,21 @@ namespace EstanciasCore.Controllers
                         Login.Administrador=false;
                     }
                 }
+                var datosEmpresa = _context.DatosEstructura.FirstOrDefault();
+                if (datosEmpresa!=null)
+                {
+                    Login.AliasEmpresa = datosEmpresa.Alias;
+                    Login.WhatsappEmpresa = datosEmpresa.Telefono;
+                    Login.CBUEmpresa = datosEmpresa.CBU;
+                }
             }
             else
             {
                 Login.Status = 500;
                 Login.Mensaje = "eMail o Password Incorrectos";
+
             }
+
             return Login;
         }
 
