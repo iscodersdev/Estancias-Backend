@@ -26,13 +26,16 @@ namespace DAL.DTOs
         public int Id { get; set; }
         public string Nombre { get; set; }
         public string Descripcion { get; set; }
+        public string TerminosCondiciones { get; set; }
         public int Stock { get; set; }
         public int StockActual { get; set; }
-        public int Puntos { get; set; }
+        public long Puntos { get; set; }
         public DateTime Fecha { get; set; }
         public bool Activo { get; set; }
         public int CategoriaId { get; set; }
         public string CategoriaNombre { get; set; }
+        public string FechaVencimiento { get; set; }
+        public string DiasDeVencimiento { get; set; }
         public string Imagen { get; set; }
     }
 
@@ -65,6 +68,6 @@ namespace DAL.DTOs
 
     public class PuntosDTO : RequestApi
     {
-        public int Puntos { get; set; }
+        public long Puntos { get; set; }
     }
 }

@@ -4,14 +4,16 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(EstanciasContext))]
-    partial class EstanciasContextModelSnapshot : ModelSnapshot
+    [Migration("20260514185820_update_puntos-long")]
+    partial class update_puntoslong
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2005,6 +2007,8 @@ namespace DAL.Migrations
 
                     b.Property<string>("Descripcion");
 
+                    b.Property<int>("DiasDeVencimiento");
+
                     b.Property<DateTime>("Fecha");
 
                     b.Property<DateTime>("FechaVencimiento");
@@ -2016,8 +2020,6 @@ namespace DAL.Migrations
                     b.Property<int>("Stock");
 
                     b.Property<int>("StockActual");
-
-                    b.Property<string>("TerminosCondiciones");
 
                     b.HasKey("Id");
 

@@ -85,6 +85,9 @@ namespace EstanciasCore.API.Controllers.Billetera
                     Activo = x.Activo,
                     CategoriaId = x.Categoria.Id,
                     CategoriaNombre = x.Categoria.Nombre,
+                    FechaVencimiento = x.FechaVencimiento.ToString("dd/MM/yyyy"),
+                    DiasDeVencimiento = x.DiasDeVencimiento.ToString(),
+                    TerminosCondiciones = x.TerminosCondiciones,
                     Fecha = x.Fecha,
                     Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Id).Select(f => f.Foto).FirstOrDefault()
                 }).ToListAsync();

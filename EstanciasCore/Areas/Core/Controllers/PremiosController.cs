@@ -95,7 +95,15 @@ namespace EstanciasCore.Controllers
             {
                 try
                 {
-                    _context.Premios.Update(premio);
+                    var categoria = _context.Categorias.Where(x => x.Id == premio.Categoria.Id).FirstOrDefault();
+                    var premioDB = _context.Premios.Where(x => x.Id == premio.Id).FirstOrDefault();
+                    premioDB.Nombre = premio.Nombre;
+                    premioDB.Descripcion = premio.Descripcion;
+                    premioDB.Stock = premio.Stock;
+                    premioDB.Puntos = premio.Puntos;
+                    premioDB.TerminosCondiciones = premio.TerminosCondiciones;
+                    premioDB.FechaVencimiento = premio.FechaVencimiento;
+                    _context.Premios.Update(premioDB);
                     await _context.SaveChangesAsync();
                     AddPageAlerts(PageAlertType.Success, "Se editó correctamente el Premio " + premio.Nombre + ".");
                     return RedirectToAction("Index", "Premios");

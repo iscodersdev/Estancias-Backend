@@ -16,13 +16,24 @@ namespace DAL.Models
         public string Nombre { get; set; }
         [Display(Name = "Descripción")]
         public string Descripcion { get; set; }
+        [Display(Name = "Términos y Condiciones ")]
+        public string TerminosCondiciones { get; set; }
         public int Stock { get; set; }
         [Display(Name = "Canjes Totales")]
         public int StockActual { get; set; }
-        public int Puntos { get; set; }
+        public long Puntos { get; set; }
         public DateTime Fecha { get; set; }
         public DateTime FechaVencimiento { get; set; }
-        public int DiasDeVencimiento { get; set; }
+        public int DiasDeVencimiento
+        {
+            get
+            {
+                TimeSpan diferencia = FechaVencimiento.Date - Fecha.Date;
+                int dias = diferencia.Days;
+
+                return dias;
+            }
+        }
         public bool Activo { get; set; }
         [Display(Name = "Categoría")]
         public virtual Categorias Categoria { get; set; }
@@ -32,7 +43,7 @@ namespace DAL.Models
     {
         public int Id { get; set; }
         public decimal Monto { get; set; }
-        public int Puntos { get; set; }
+        public long Puntos { get; set; }
         public DateTime Fecha { get; set; }
         public bool Activo { get; set; }
     }
@@ -44,7 +55,7 @@ namespace DAL.Models
         public virtual Clientes Cliente { get; set; }
         [Display(Name = "Nro Tarjeta")]
         public string NroTarjeta { get; set; }
-        public int Puntos { get; set; }
+        public long Puntos { get; set; }
     }
 
     public class HistorialCanje
@@ -56,9 +67,9 @@ namespace DAL.Models
         public DateTime FechaVencimientoCupon { get; set; }
         public string NroTarjeta { get; set; }
         [Display(Name = "Puntos Consumidos")]
-        public int PuntosConsumidos { get; set; }
+        public long PuntosConsumidos { get; set; }
         [Display(Name = "Puntos Restantes")]
-        public int PuntosRestantes { get; set; }
+        public long PuntosRestantes { get; set; }
         public DateTime Fecha { get; set; }
         public bool Activo { get; set; }
     }
@@ -67,9 +78,9 @@ namespace DAL.Models
         public virtual Clientes Cliente { get; set; }
         public int Id { get; set; }
         [Display(Name = "Puntos Obtenidos")]
-        public int PuntosObtenidos { get; set; }
+        public long PuntosObtenidos { get; set; }
         [Display(Name = "Puntos Totales")]
-        public int PuntosTotales { get; set; }
+        public long PuntosTotales { get; set; }
         public DateTime Fecha { get; set; }
     }
 
