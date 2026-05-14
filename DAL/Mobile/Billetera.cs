@@ -113,6 +113,9 @@ namespace DAL.Mobile
         public int tipomovimiento { get; set; }
         public string CategoriaUsuario { get; set; }
         public string CategoriaColor { get; set; }
+        public string AliasEmpresa { get; set; }
+        public string WhatsappEmpresa { get; set; }
+        public string CBUEmpresa { get; set; }
 
         public List<MovimientoTarjetaDTO> MovimientosTarjeta { get; set; }
         public List<MovimientoTarjetaDTO> MovimientosTarjetaSuma { get; set; }

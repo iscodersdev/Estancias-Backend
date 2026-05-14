@@ -153,6 +153,18 @@ namespace EstanciasCore.API.Controllers.Billetera
 
                 var fechaVencimiento = new DateTime(fechaMesActualCuotas.Year, fechaMesActualCuotas.Month, 10);
 
+                var datosEmpresa = _context.DatosEstructura.FirstOrDefault();
+
+                /* 
+                var datosEmpresa = _context.DatosEstructura.FirstOrDefault();
+                if (datosEmpresa!=null)
+                {
+                    Login.AliasEmpresa = datosEmpresa.Alias;
+                    Login.WhatsappEmpresa = datosEmpresa.Telefono;
+                    Login.CBUEmpresa = datosEmpresa.CBU;
+                }
+                */
+
                 return new JsonResult(
                     new ListaMovimientoTarjetaDTO
                     {
@@ -177,7 +189,12 @@ namespace EstanciasCore.API.Controllers.Billetera
                         CantMovimientos = comprasAgrupadas.Count(),
                         CategoriaUsuario = usuario.UsuariosCategorias.Nombre,
                         CategoriaColor = usuario.UsuariosCategorias.CodigoColor,
+                        AliasEmpresa = datosEmpresa.Alias,
+                        WhatsappEmpresa = datosEmpresa.Telefono,
+                        CBUEmpresa = datosEmpresa.CBU
                     });
+
+                
             }
             catch (Exception e)
             {
