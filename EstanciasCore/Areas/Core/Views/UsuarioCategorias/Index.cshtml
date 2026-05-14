@@ -1,0 +1,10 @@
+@model IEnumerable<DAL.Models.UsuariosCategorias>
+@{
+    ViewData["Title"] = "Usuarios Categorias";
+}
+
+<box color="Info">
+    <load id="tablaUsuariosCategorias" load-url="/Core/UsuarioCategorias/ObtenerUsuariosCategorias">
+        <box-header title="Listado de Usuarios Categorias"></box-header>
+    </load>
+</box>

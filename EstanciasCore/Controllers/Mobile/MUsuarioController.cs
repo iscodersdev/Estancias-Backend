@@ -255,6 +255,8 @@ namespace EstanciasCore.Controllers
                 Login.LocalidadId = cliente.Localidad?.Id;
                 Login.LocalidadDescripcion = cliente.Localidad?.Descripcion.Trim();
                 Login.Domicilio = cliente.Domicilio;
+                Login.CategoriaUsuario = cliente.Usuario?.UsuariosCategorias.Nombre;
+                Login.CategoriaColor = cliente.Usuario?.UsuariosCategorias.CodigoColor;
                 if (cliente.Usuario!=null)
                 {
                     if (cliente.Usuario.Administradores)
@@ -1541,6 +1543,7 @@ namespace EstanciasCore.Controllers
                     // 6/10
                     user.Token = token;
                     user.activo = false;
+                    user.UsuariosCategorias = _context.UsuariosCategorias.Where(x => x.Id==5).FirstOrDefault();
                     _context.Usuarios.Update(user);
                     _context.SaveChanges();
                     Registro.Status = 200;

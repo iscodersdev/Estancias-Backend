@@ -14,6 +14,7 @@ namespace DAL.Models
         public virtual Proveedor Proveedor { get; set; }
         public virtual Vendedores Vendedores { get; set; }
         public virtual Persona Personas { get; set; }
+        public virtual UsuariosCategorias UsuariosCategorias { get; set; }
         public string UserIdNotification { get; set; }
         public bool Administradores { get; set; }
         public int Token { get; set; }

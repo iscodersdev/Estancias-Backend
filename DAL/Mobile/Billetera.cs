@@ -111,6 +111,8 @@ namespace DAL.Mobile
         public string Leyenda { get; set; }
         public string Telefono { get; set; }
         public int tipomovimiento { get; set; }
+        public string CategoriaUsuario { get; set; }
+        public string CategoriaColor { get; set; }
 
         public List<MovimientoTarjetaDTO> MovimientosTarjeta { get; set; }
         public List<MovimientoTarjetaDTO> MovimientosTarjetaSuma { get; set; }

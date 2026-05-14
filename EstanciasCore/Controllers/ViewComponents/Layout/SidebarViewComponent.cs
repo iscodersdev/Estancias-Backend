@@ -58,7 +58,8 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                     MenuHelpers.AddModule("Billetera", "/Core/Billetera/"),
                     //MenuHelpers.AddModule("Inversores", "/Core/Inversores/"),
                     MenuHelpers.AddModule("Leyendas", "/Core/LeyendaTipoMovimiento/"),
-                    MenuHelpers.AddModule("Relación Puntos", "/Core/RelacionPuntos/")
+                    MenuHelpers.AddModule("Relación Puntos", "/Core/RelacionPuntos/"),
+                    MenuHelpers.AddModule("Categoria de Usuarios", "/Core/UsuarioCategorias"),
                 };
                 datos.TreeChild.Add(generales);
                 especificos.TreeChild = new List<SidebarMenu>()

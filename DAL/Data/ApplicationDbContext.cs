@@ -60,6 +60,7 @@ namespace DAL.Data
         public DbSet<PuestosCodigos> PuestosCodigos { get; set; }
         public DbSet<Accesos> Accesos { get; set; }
         public DbSet<EstadosDeudas> EstadosDeudas { get; set; }
+        public DbSet<UsuariosCategorias> UsuariosCategorias { get; set; }
 
         //CAMPANAS PUBLICITARIAS
         public DbSet<Campanas> Campanas { get; set; }

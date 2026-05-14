@@ -175,6 +175,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                         Telefono = empresa.Telefono,
                         MovimientosTarjeta = comprasAgrupadas,
                         CantMovimientos = comprasAgrupadas.Count(),
+                        CategoriaUsuario = usuario.UsuariosCategorias.Nombre,
+                        CategoriaColor = usuario.UsuariosCategorias.CodigoColor,
                     });
             }
             catch (Exception e)

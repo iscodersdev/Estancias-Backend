@@ -1,0 +1,53 @@
+@using Commons.HtmlHelpers
+@model DAL.Models.UsuariosCategorias
+@{
+    ViewData["Title"] = "Crear Categoría de Usuario";
+}
+<form asp-action="Create">
+
+    @using (Html.BoxDefault(BoxColor.Info))
+    {
+        using (Html.BoxHeader("Nueva Categoría"))
+        {
+        }
+        using (Html.BoxBody())
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            
+            <div class="form-group">
+                <label asp-for="Nombre" class="control-label"></label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div>
+            
+            <div class="form-group">
+                <label asp-for="Color" class="control-label">Color (Nombre)</label>
+                <input asp-for="Color" class="form-control" />
+                <span asp-validation-for="Color" class="text-danger"></span>
+            </div>
+            
+            <div class="form-group">
+                <label asp-for="CodigoColor" class="control-label">Código Color (Ej: #FF0000)</label>
+                <input asp-for="CodigoColor" type="color" class="form-control" style="height: 40px;" />
+                <span asp-validation-for="CodigoColor" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Orden" class="control-label"></label>
+                <input asp-for="Orden" type="number" class="form-control" />
+                <span asp-validation-for="Orden" class="text-danger"></span>
+            </div>
+            
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="Activo" /> @Html.DisplayNameFor(model => model.Activo)
+                </label>
+            </div>
+        }
+        using (Html.BoxFooter())
+        {
+            <a class="btn btn-default" asp-action="Index">Cancelar</a>
+            <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+        }
+    }
+</form>
