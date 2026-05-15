@@ -1,0 +1,30 @@
+@model DAL.Models.UsuariosCategorias
+
+<div>
+
+    <h3 class="profile-username text-center">@Model.Nombre</h3>
+    <div style="text-align: center;">
+        @if (Model.ImagenTarjeta != null)
+        {
+            <img style="width:30em" src="data:image/png;base64,@Convert.ToBase64String(Model.ImagenTarjeta)" alt="Imagen">
+        }
+    </div>
+    <br />
+    <div style="text-align: center;">
+        <form asp-action="_CambiarImagen" method="post" enctype="multipart/form-data" id="GuardaImagen">
+            <ul class="list-group list-group-unbordered" style="text-align: -webkit-center;">
+                <li class="list-group-item">
+                    <input type="hidden" asp-for="Id"/>
+                    <input type="file" name="file" id="file" />
+                </li>
+            </ul>
+            <button id="BotonGuardar" type="submit" class="btn btn-primary btn-block"><b>Cambiar</b></button>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    $('#file').change(function () {
+    });   
+</script>

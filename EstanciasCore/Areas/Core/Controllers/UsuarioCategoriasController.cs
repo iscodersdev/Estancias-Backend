@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using System;
 using Microsoft.AspNetCore.Hosting;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 
 namespace EstanciasCore.Controllers
 {
@@ -93,6 +96,74 @@ namespace EstanciasCore.Controllers
                 AddPageAlerts(PageAlertType.Error, " Hubo un error al actualizar la Categoría.");
                 return RedirectToAction("Index", "UsuarioCategorias");
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> _CambiarImagen(int id)
+        {
+            var categoria = await _context.UsuariosCategorias.FindAsync(id);
+
+            if (categoria == null) return NotFound();
+
+            return PartialView(categoria);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> _CambiarImagen(IFormFile file, int id)
+        {
+            var categoria = await _context.UsuariosCategorias.FindAsync(id);
+
+            if (categoria == null) return NotFound();
+
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
+
+                using (var img = Image.FromStream(memoryStream))
+                {
+                    int width = img.Width;
+                    int height = img.Height;
+
+                    if (width > 1080 || height > 1080)
+                    {
+                        if (width > height)
+                        {
+                            height = (int)(height * (1080.0 / width));
+                            width = 1080;
+                        }
+                        else
+                        {
+                            width = (int)(width * (1080.0 / height));
+                            height = 1080;
+                        }
+
+                        using (var newImg = new Bitmap(width, height))
+                        using (var g = Graphics.FromImage(newImg))
+                        {
+                            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                            g.SmoothingMode = SmoothingMode.HighQuality;
+                            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                            g.CompositingQuality = CompositingQuality.HighQuality;
+
+                            g.DrawImage(img, 0, 0, width, height);
+
+                            using (var outputStream = new MemoryStream())
+                            {
+                                newImg.Save(outputStream, ImageFormat.Png);
+                                categoria.ImagenTarjeta = outputStream.ToArray();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        categoria.ImagenTarjeta = memoryStream.ToArray();
+                    }
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction("Index");
         }
 
         [HttpPost]

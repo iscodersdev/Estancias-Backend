@@ -1,4 +1,4 @@
-﻿using Commons.Identity;
+using Commons.Identity;
 using DAL.Models.Core;
 using System.Collections.Generic;
 
@@ -11,6 +11,7 @@ namespace DAL.Models
         public string Color { get; set; }
         public string CodigoColor { get; set; }
         public int Orden { get; set; }
+        public byte[] ImagenTarjeta { get; set; }
         public bool Activo { get; set; }
     }
 

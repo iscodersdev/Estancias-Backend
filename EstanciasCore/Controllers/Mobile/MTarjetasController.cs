@@ -185,13 +185,14 @@ namespace EstanciasCore.API.Controllers.Billetera
                         ContieneLeyenda = false,
                         Leyenda = "",
                         Telefono = empresa.Telefono,
-                        MovimientosTarjeta = comprasAgrupadas,
                         CantMovimientos = comprasAgrupadas.Count(),
                         CategoriaUsuario = usuario.UsuariosCategorias.Nombre,
                         CategoriaColor = usuario.UsuariosCategorias.CodigoColor,
+                        ImagenTarjeta = (usuario.UsuariosCategorias.ImagenTarjeta==null ? "" : Convert.ToBase64String(usuario.UsuariosCategorias.ImagenTarjeta)),
                         AliasEmpresa = datosEmpresa.Alias,
                         WhatsappEmpresa = datosEmpresa.Telefono,
-                        CBUEmpresa = datosEmpresa.CBU
+                        CBUEmpresa = datosEmpresa.CBU,
+                        MovimientosTarjeta = comprasAgrupadas,
                     });
 
                 

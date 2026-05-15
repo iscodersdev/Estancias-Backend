@@ -53,9 +53,20 @@
                      @(item.Activo ? "Sí" : "No")
                  </td>                
                  <td>
-                     <a onclick="editUsuarioCategoria(@item.Id)" title="Editar" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
-                     <a onclick="cambiarOrdenUsuarioCategoria(@item.Id)" title="Cambiar Orden" class="btn btn-primary btn-xs"><i class="fa fa-sort-numeric-asc"></i></a>                      
-                     <a onclick="borrarUsuarioCategoria(@item.Id)" title="Borrar" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
+                      <a onclick="editUsuarioCategoria(@item.Id)" title="Editar" class="btn btn-primary btn-xs"><i class="fa fa-file-text-o"></i></a>
+                      <a onclick="cambiarOrdenUsuarioCategoria(@item.Id)" title="Cambiar Orden" class="btn btn-primary btn-xs"><i class="fa fa-sort-numeric-asc"></i></a>                      
+                        @if (item.ImagenTarjeta != null)
+                        {
+                            <a onclick="imagen(@item.Id)" title="Editar Foto" class="btn btn-primary btn-xs"><i class="fa fa-image"></i></a>
+                        }
+                        else
+                        {
+                            <a onclick="imagen(@item.Id)" title="No ha ingresado Foto" class="btn btn-danger btn-xs">
+                                <i class="fa fa-image"></i>
+                                <i class="fa fa-exclamation"></i>
+                            </a>
+                        }
+                      <a onclick="borrarUsuarioCategoria(@item.Id)" title="Borrar" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
                  </td>
              </tr>
             }
@@ -66,6 +77,7 @@
 <box-footer page-update-div="tablaUsuariosCategorias"></box-footer>
 <modal title="Edición de Categoría de Usuario" function="editUsuarioCategoria" load-url="/Core/UsuarioCategorias/Update/" size="Medium"></modal>
 <modal title="Nueva Categoría de Usuario" function="nuevoUsuarioCategoria" load-url="/Core/UsuarioCategorias/Create/" size="Medium"></modal>
+<modal title="Cambiar Foto" function="imagen" load-url="/Core/UsuarioCategorias/_CambiarImagen/" size="Medium"></modal>
 
 
 <script>
