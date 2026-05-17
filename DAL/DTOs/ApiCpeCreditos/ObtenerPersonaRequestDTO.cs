@@ -14,10 +14,25 @@ namespace DAL.DTOs.ApiCpeCreditos
     public class ObtenerCreditosRequestDTO
     {
         public LoginInterface LoginInterface { get; set; }
+        public int IdPersona { get; set; }
+    }
+    public class ObtenerCreditosDetallesRequestDTO
+    {
+        public LoginInterface LoginInterface { get; set; }
         public int IdSolicitud { get; set; }
+    }
+    public class ObteneOperacionDetallesRequestDTO
+    {
+        public LoginServicio LoginServicio { get; set; }
+        public string numeroOperacion { get; set; }
     }
 
     public class LoginInterface
+    {
+        public string Login { get; set; }
+        public string Clave { get; set; }
+    }
+    public class LoginServicio
     {
         public string Login { get; set; }
         public string Clave { get; set; }
@@ -26,6 +41,7 @@ namespace DAL.DTOs.ApiCpeCreditos
 
     /* DTO para las Respuestas de obtener persona desde la API de CPE Creditos.*/
     /*--------------------Api Nueva-----------------------*/
+
 
     public class ResponseObtenerDatosPersonaDTO
     {
@@ -198,6 +214,9 @@ namespace DAL.DTOs.ApiCpeCreditos
         public string Descripcion { get; set; }
     }
 
+
+    /*--------------------------------------------*/
+
     public class ResponseObtenerCreditosDTO
     {
         public ResultadoInfo Resultado { get; set; }
@@ -232,6 +251,55 @@ namespace DAL.DTOs.ApiCpeCreditos
         public string Comercio { get; set; }
         public string FechaUltimoPago { get; set; }
     }
+
+    /*--------------------------------------------*/
+
+
+    public class ResponseObtenerCreditosDetallesDTO
+    {
+        public ResultadoInfo Resultado { get; set; }
+        public List<CreditoDetalleDTO> CreditoDetalles { get; set; }
+    }
+
+    public class CreditoDetalleDTO
+    {
+        public long Id { get; set; }
+        public string Fecha { get; set; }
+        public string Cuota { get; set; }
+        public string Estado { get; set; }
+        public string ImporteCuota { get; set; }
+        public string ImportePunitorios { get; set; }
+        public int idTipoEntidad { get; set; }
+    }
+
+
+
+    /*--------------------------------------------*/
+
+    public class ResultadoServicioWeb
+    {
+        public int Resultado { get; set; }
+        public string Mensaje { get; set; }
+    }
+
+    public class ResponseObtenerOperacionDetallesDTO
+    {
+        public ResultadoServicioWeb ResultadoServicioWeb { get; set; }
+        public string EstadoOperacion { get; set; }
+        public DateTime? FechaEstadoOperacion { get; set; }
+        public decimal? MontoPromesa { get; set; }
+        public DateTime? FechaPromesa { get; set; }
+        public string UsuarioPromesa { get; set; }
+        public DateTime? FechaUltimoTramite { get; set; }
+        public DateTime? FechaProximaAccion { get; set; }
+        public string Estudio { get; set; }
+        public DateTime? FechaEstudio { get; set; }
+        public string Compania { get; set; }
+        public string CodigoCompania { get; set; }
+        public string CodigoEstadoOperacion { get; set; }
+    }
+
+
 
     public class DatoAnexo
     {

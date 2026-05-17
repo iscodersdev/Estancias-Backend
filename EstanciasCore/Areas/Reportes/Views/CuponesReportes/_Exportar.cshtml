@@ -1,0 +1,109 @@
+﻿@* Asumiendo que los ViewBag vienen del controlador que muestra esta vista *@
+@{
+    ViewData["Title"] = "Exportar";
+    // Es una buena práctica definir el nombre del controlador explícitamente
+    // o asegurarse de que el controlador actual es el que tiene estos métodos de exportación.
+    var controllerName = "/"; // Reemplaza con el nombre real de tu controlador
+}
+
+<form id="formExportarConJQuery" asp-controller="PagoTarjetaReportes" asp-area="Reportes" method="post">
+    <div class="">
+        <div class="form-group">
+            <p><b>Seleccione Columnas a exportar:</b></p>
+        </div>
+        <div class="form-group">
+            @* Corregido: Usar @ViewBag para acceder a los valores *@
+            <input name="fechaDesdeFiltro" id="fechaDesdeFiltro" value="@ViewBag.fechaDesdeFiltro" type="hidden">
+            <input name="fechaHastaFiltro" id="fechaHastaFiltro" value="@ViewBag.fechaHastaFiltro" type="hidden">
+            <input name="estadoFiltro" id="estadoFiltro" value="@ViewBag.estadoFiltro" type="hidden">
+            <input name="nroDocumentoFiltro" id="nroDocumentoFiltro" value="@ViewBag.NroDocumentoFiltro" type="hidden">
+            <input name="montoFiltro" id="montoFiltro" value="@ViewBag.montoFiltro" type="hidden">
+
+            @* Checkboxes para seleccionar columnas *@
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="cliente" id="cliente" value="true" checked />
+                    Cliente (Apellido y Nombre)
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="dni" id="dni" value="true" checked />
+                    Nro Documento
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="fechaVencimiento" id="fechaVencimiento" value="true" checked />
+                    Fecha Vencimiento
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="fechaComprobante" id="fechaComprobante" value="true" checked />
+                    Fecha Comprobante
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="montoProximaCuota" id="montoProximaCuota" value="true" checked />
+                    Monto Próxima Cuota
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="estado" id="estado" value="true" checked />
+                    Estado
+                </label>
+            </div>
+        </div>
+        <hr />
+        <div style="text-align: center;">
+            <button type="button" onclick="identificadorFormato(1)" value="xlsx" class="btn btn-success" style="margin-right: 5%;">
+                <i class="fa fa-file-excel-o"><span class="hidden-xs"> .xlsx</span></i>
+            </button>
+            <button type="button" onclick="identificadorFormato(2)" value="csv" class="btn btn-success" style="margin-right: 5%;">
+                <i class="fa fa-file"><span class="hidden-xs"> .csv</span></i>
+            </button>
+            <button type="button" onclick="identificadorFormato(3)" value="txt" class="btn btn-default" style="margin-right: 5%;">
+                <i class="fa fa-file-text-o"><span class="hidden-xs"> .txt</span></i>
+            </button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+
+        </div>
+    </div>
+</form>
+
+<script>
+        function identificadorFormato(opcion){
+            console.log("asdasdasd")
+                var formulario = $('#formExportarConJQuery');
+                var datosDelFormulario = formulario.serializeArray();
+                var metodo = "";
+                switch(opcion){
+                    case "1":
+                        metodo = "ExportarExcel/";
+                    break;
+                    case "2":
+                        metodo = "ExportarExcel/";
+                    break;
+                    case "3":
+                        metodo = "ExportarExcel/";
+                    break;
+                }
+            $.ajax({
+                url: '/Reportes/PagoTarjetaReportes/'+metodo, // URL de la acción POST
+                type: 'POST',
+                data: $.param(datosDelFormulario), // Convierte el array a una cadena de query para el POST
+                xhrFields: { // Necesario para manejar la respuesta como un blob (archivo)
+                    responseType: 'blob'
+                },
+                success: function (response)
+                {
+                    console.log(response)
+                }
+            });
+
+        }   
+  
+</script>

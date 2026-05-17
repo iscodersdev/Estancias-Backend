@@ -1,35 +1,18 @@
 using DAL.Data;
 using DAL.DTOs;
-using DAL.DTOs.API;
-using DAL.DTOs.Reportes;
-using DAL.DTOs.Servicios;
-using DAL.Mobile;
 using DAL.Models;
-using DAL.Models.Core;
 using EstanciasCore.API.Filters;
 using EstanciasCore.Interface;
 using EstanciasCore.Services;
-using iText.Html2pdf;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Serilog;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -46,11 +29,10 @@ namespace EstanciasCore.API.Controllers.Billetera
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<MTarjetasController> _logger;
         private readonly IConfiguration _configuration;
-        private readonly ICompositeViewEngine _viewEngine;
-        private readonly IServiceProvider _serviceProvider;
         private readonly IMailService _mailService;
+        private readonly ObtenerPuntosService _obtenerPuntosService;
 
-        public MCuponesController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory scopeFactory, ILogger<MTarjetasController> logger, IConfiguration configuration, ICompositeViewEngine viewEngine, IServiceProvider serviceProvider, IMailService mailService) : base(context)
+        public MCuponesController(EstanciasContext context, MercadoPagoServices mp, IDatosTarjetaService datosServices, IHostingEnvironment webHostEnvironment, IServiceScopeFactory scopeFactory, ILogger<MTarjetasController> logger, IConfiguration configuration, IMailService mailService, ObtenerPuntosService obtenerPuntosService) : base(context)
         {
             _datosServices = datosServices;
             _mp = mp;
@@ -58,9 +40,8 @@ namespace EstanciasCore.API.Controllers.Billetera
             _scopeFactory = scopeFactory;
             _logger = logger;
             _configuration = configuration;
-            _viewEngine=viewEngine;
-            _serviceProvider=serviceProvider;
             _mailService = mailService;
+            _obtenerPuntosService = obtenerPuntosService;
         }
 
                 
@@ -115,33 +96,62 @@ namespace EstanciasCore.API.Controllers.Billetera
             {
                 var usuario = TraeUsuarioUAT(request.UAT);
                 if (usuario == null)
-                    return new CanjearCuponDTO { Status = 500, UAT = request.UAT, Mensaje = $"no existe UAT de Usuario" };
+                    return new CanjearCuponDTO { Status = 500, UAT = request.UAT, Mensaje = "no existe UAT de Usuario" };
 
-                var puntosCliente = _context.PuntosClientes.Where(x => x.Cliente.Id == usuario.Clientes.Id).FirstOrDefault();
-                var cupon = await _context.Premios.Where(x => x.Activo && x.Id==request.CuponId).FirstOrDefaultAsync();
-                if (cupon.StockActual<=0)
+                var cupon = await _context.Premios.Where(x => x.Activo && x.Id == request.CuponId).FirstOrDefaultAsync();
+                if (cupon == null)
+                {
+                    request.Status = 404;
+                    request.Mensaje = "El cupón seleccionado no existe.";
+                    return request;
+                }
+                if (cupon.StockActual <= 0)
                 {
                     request.Status = 500;
                     request.Mensaje = "El cupón seleccionado ya no tiene stock disponible.";
                     return request;
                 }
-                if (cupon.FechaVencimiento.Date<DateTime.Now.Date)
+                if (cupon.FechaVencimiento.Date < DateTime.Now.Date)
                 {
                     request.Status = 500;
                     request.Mensaje = "El cupón está expirado.";
                     return request;
                 }
-                if (cupon.Activo==false)
-                {
-                    request.Status = 500;
-                    request.Mensaje = "El cupón no se encuentra activo.";
-                    return request;
-                }
-                if (cupon.Puntos>puntosCliente.Puntos)
+
+                DateTime hoy = DateTime.Now;
+
+                await _obtenerPuntosService.ActualizarLotesVencidos(usuario);
+
+                var lotesDisponibles = await _context.PuntosObtenidosClientes
+                    .Where(x => x.Usuario.Id == usuario.Id && x.PuntosDisponibles > 0 && x.FechaVencimiento > hoy)
+                    .OrderBy(x => x.FechaVencimiento) 
+                    .ToListAsync();
+
+                long totalPuntosUsuario = lotesDisponibles.Sum(x => x.PuntosDisponibles);
+
+                if (cupon.Puntos > totalPuntosUsuario)
                 {
                     request.Status = 500;
                     request.Mensaje = "Puntos insuficientes para canjear este cupón.";
                     return request;
+                }
+
+                long puntosPorDescontar = cupon.Puntos;
+
+                foreach (var lote in lotesDisponibles)
+                {
+                    if (puntosPorDescontar <= 0) break;
+
+                    if (lote.PuntosDisponibles >= puntosPorDescontar)
+                    {
+                        lote.PuntosDisponibles -= puntosPorDescontar;
+                        puntosPorDescontar = 0;
+                    }
+                    else
+                    {
+                        puntosPorDescontar -= lote.PuntosDisponibles;
+                        lote.PuntosDisponibles = 0;
+                    }
                 }
 
                 var canje = new HistorialCanje()
@@ -150,16 +160,15 @@ namespace EstanciasCore.API.Controllers.Billetera
                     Cliente = usuario.Clientes,
                     CodigoCupon = CouponGenerator.GenerarCodigoAzar(),
                     FechaVencimientoCupon = cupon.FechaVencimiento,
-                    NroTarjeta = usuario.Personas.NroTarjeta,
+                    NroTarjeta = usuario.Personas?.NroTarjeta,
                     PuntosConsumidos = cupon.Puntos,
-                    PuntosRestantes = puntosCliente.Puntos - cupon.Puntos,
+                    PuntosRestantes = totalPuntosUsuario - cupon.Puntos,
                     Activo = true,
                     Fecha = DateTime.Now,
                 };
                 _context.HistorialCanje.Add(canje);
+
                 cupon.StockActual = cupon.StockActual - 1;
-                puntosCliente.Puntos = puntosCliente.Puntos - cupon.Puntos;
-                _context.PuntosClientes.Update(puntosCliente);
                 _context.Premios.Update(cupon);
 
                 var historialPuntos = new HistorialDePuntos()
@@ -167,12 +176,12 @@ namespace EstanciasCore.API.Controllers.Billetera
                     Cliente = usuario.Clientes,
                     Fecha = DateTime.Now,
                     PuntosObtenidos = -cupon.Puntos,
-                    PuntosTotales = puntosCliente.Puntos
+                    PuntosTotales = totalPuntosUsuario - cupon.Puntos
                 };
                 _context.HistorialDePuntos.Add(historialPuntos);
-                await _context.SaveChangesAsync();                
 
-                request.UAT = request.UAT;
+                await _context.SaveChangesAsync();
+
                 request.Status = 200;
                 request.Mensaje = "Cupón validado con éxito";
 
@@ -180,9 +189,8 @@ namespace EstanciasCore.API.Controllers.Billetera
             }
             catch (DbUpdateException e)
             {
-                request.UAT = request.UAT;
                 request.Status = 500;
-                request.Mensaje = e.InnerException?.Message;
+                request.Mensaje = e.InnerException?.Message ?? e.Message;
                 return request;
             }
         }
@@ -233,25 +241,104 @@ namespace EstanciasCore.API.Controllers.Billetera
             {
                 var usuario = TraeUsuarioUAT(request.UAT);
                 if (usuario == null)
-                    return new PuntosDTO { Status = 500, UAT = request.UAT, Mensaje = $"no existe UAT de Usuario" };
+                    return new PuntosDTO { Status = 500, UAT = request.UAT, Mensaje = "No existe UAT de Usuario" };
 
-                var puntosCliente = await _context.PuntosClientes.Where(x => x.Cliente.Id == usuario.Clientes.Id).FirstOrDefaultAsync();
+                await _obtenerPuntosService.ObtenerPuntos(usuario);
 
-                request.Puntos = puntosCliente!=null?puntosCliente.Puntos:0;
-                request.UAT = request.UAT;
+                await _obtenerPuntosService.ActualizarLotesVencidos(usuario);
+
+                DateTime hoy = DateTime.Now;
+
+                long totalPuntosValidos = await _context.PuntosObtenidosClientes
+                    .Where(x => x.Usuario.Id == usuario.Id && x.PuntosDisponibles > 0 && x.FechaVencimiento > hoy)
+                    .SumAsync(x => x.PuntosDisponibles);
+
+                // 5. Armar y retornar la respuesta exitosa
+                request.Puntos = totalPuntosValidos;
                 request.Status = 200;
-                request.Mensaje = "Puntos Actuales";
+                request.Mensaje = "Puntos Actuales Actualizados";
 
                 return request;
             }
             catch (Exception e)
             {
-                request.UAT = request.UAT;
                 request.Status = 500;
                 request.Mensaje = e.Message;
                 return request;
             }
         }
+
+        [HttpPost("HistorialPuntos")]
+        public async Task<HistorialPuntosResponseDto> HistorialPuntos(PuntosDTO request)
+        {
+            var response = new HistorialPuntosResponseDto();
+
+            try
+            {
+                var usuario = TraeUsuarioUAT(request.UAT);
+                if (usuario == null)
+                {
+                    response.Status = 500;
+                    response.Mensaje = "No existe UAT de Usuario";
+                    return response;
+                }
+
+                DateTime hoy = DateTime.Now;
+
+                var lotes = await _context.PuntosObtenidosClientes
+                    .Where(x => x.Usuario.Id == usuario.Id)
+                    .OrderByDescending(x => x.FechaCompra)
+                    .ToListAsync();
+
+                foreach (var lote in lotes)
+                {
+                    long puntosUsados = lote.PuntosObtenidos - lote.PuntosDisponibles;
+                    long puntosDisponiblesActivos = 0;
+                    long puntosVencidos = 0;
+
+                    if (lote.FechaVencimiento <= hoy)
+                    {
+                        puntosVencidos = lote.PuntosDisponibles;
+                    }
+                    else
+                    {
+                        puntosDisponiblesActivos = lote.PuntosDisponibles;
+                    }
+
+                    response.Movimientos.Add(new MovimientoPuntosDto
+                    {
+                        IdSolicitud = lote.IdSolicitud,
+                        IdOperacion = lote.IdOperacion,
+                        Compania = lote.Compania,
+                        MontoCompra = lote.MontoCompra,
+                        FechaCompra = lote.FechaCompra,
+                        FechaVencimiento = lote.FechaVencimiento,
+                        PuntosObtenidos = lote.PuntosObtenidos,
+                        PuntosUsados = puntosUsados,
+                        PuntosDisponiblesActivos = puntosDisponiblesActivos,
+                        PuntosVencidos = puntosVencidos
+                    });
+                }
+
+                response.Status = 200;
+                response.Mensaje = "Historial obtenido correctamente";
+                return response;
+            }
+            catch (Exception e)
+            {
+                response.Status = 500;
+                response.Mensaje = e.Message;
+                return response;
+            }
+        }
+
+
+
+
+
+
+
+
 
 
         public static class CouponGenerator

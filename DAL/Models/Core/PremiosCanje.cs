@@ -92,4 +92,20 @@ namespace DAL.Models
         public int Orden { get; set; }
         public DateTime Fecha { get; set; }
     }
+
+    public class PuntosObtenidosClientes
+    {
+        public int Id { get; set; }
+        public virtual Usuario Usuario { get; set; }
+        public long IdSolicitud { get; set; }
+        public string IdOperacion { get; set; }
+        public decimal MontoCompra { get; set; }
+        public DateTime FechaCompra { get; set; }
+        public string Compania { get; set; }
+        public int CompaniaId { get; set; }
+        public long PuntosObtenidos { get; set; }
+        public long PuntosDisponibles { get; set; }
+        public DateTime FechaVencimiento { get; set; }
+        public DateTime FechaProcesada { get; set; }
+    }
 }

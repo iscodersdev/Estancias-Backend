@@ -93,6 +93,9 @@ namespace DAL.Data
         public DbSet<HistorialCanje> HistorialCanje { get; set; }
         public DbSet<HistorialDePuntos> HistorialDePuntos { get; set; }
         public DbSet<FotosPremios> FotosPremios { get; set; }
+        public DbSet<PuntosObtenidosClientes> PuntosObtenidosClientes { get; set; }
+
+
 
         public DbSet<Catalogo> Catalogo { get; set; }
         public DbSet<Configuracion> Configuracion { get; set; }

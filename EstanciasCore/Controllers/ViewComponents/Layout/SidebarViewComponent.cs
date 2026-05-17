@@ -112,6 +112,7 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                     MenuHelpers.AddModule("Pagos Tarjeta", "/Reportes/PagoTarjetaReportes/"),
                     MenuHelpers.AddModule("Clientes", "/Reportes/ClientesReportes/"),
                     MenuHelpers.AddModule("Resumen Tarjeta", "/Reportes/ResumenTarjetaReportes/"),
+                    MenuHelpers.AddModule("Cupones", "/Reportes/CuponesReportes/"),
                     //MenuHelpers.AddModule("Resumen de Deuda", "/Reportes/ResumenDeuda/")
                 };
 
@@ -255,19 +256,19 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                 if (HttpContext.UserHasRoute("/Notificaciones/Index"))
                     gestion.TreeChild.Add(notificaciones);
 
-                if (HttpContext.UserHasRoute("/Cupon/Index")){
+                if (HttpContext.UserHasRoute("/Core/Cupon/Validar")){
                     puntosycupones.TreeChild = new List<SidebarMenu>() {
                         MenuHelpers.AddModule("Validar Cupón", "/Core/Cupon")
                     };
 
-                    if(HttpContext.UserHasRoute("/Premios/Index"))
+                    if(HttpContext.UserHasRoute("/Core/Premio/Index"))
                     {
                         puntosycupones.TreeChild.Add(MenuHelpers.AddModule("Cupones", "/Core/Premios"));
                         puntosycupones.TreeChild.Add(MenuHelpers.AddModule("Categorias de Cupones", "/Core/Categorias"));
                         puntosycupones.TreeChild.Add(MenuHelpers.AddModule("Relación Puntos", "/Core/RelacionPuntos/"));                       
                     };
 
-
+                    gestion.TreeChild.Add(puntosycupones);
 
                 }
 

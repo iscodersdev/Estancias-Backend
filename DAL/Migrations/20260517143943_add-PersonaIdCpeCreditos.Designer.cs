@@ -4,14 +4,16 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(EstanciasContext))]
-    partial class EstanciasContextModelSnapshot : ModelSnapshot
+    [Migration("20260517143943_add-PersonaIdCpeCreditos")]
+    partial class addPersonaIdCpeCreditos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2198,41 +2200,6 @@ namespace DAL.Migrations
                     b.ToTable("PuntosClientes");
                 });
 
-            modelBuilder.Entity("DAL.Models.PuntosObtenidosClientes", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("Compania");
-
-                    b.Property<int>("CompaniaId");
-
-                    b.Property<DateTime>("FechaCompra");
-
-                    b.Property<DateTime>("FechaProcesada");
-
-                    b.Property<DateTime>("FechaVencimiento");
-
-                    b.Property<string>("IdOperacion");
-
-                    b.Property<long>("IdSolicitud");
-
-                    b.Property<decimal>("MontoCompra");
-
-                    b.Property<long>("PuntosDisponibles");
-
-                    b.Property<long>("PuntosObtenidos");
-
-                    b.Property<string>("UsuarioId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UsuarioId");
-
-                    b.ToTable("PuntosObtenidosClientes");
-                });
-
             modelBuilder.Entity("DAL.Models.Referencia", b =>
                 {
                     b.Property<int>("Id")
@@ -3237,13 +3204,6 @@ namespace DAL.Migrations
                     b.HasOne("DAL.Models.Clientes", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId");
-                });
-
-            modelBuilder.Entity("DAL.Models.PuntosObtenidosClientes", b =>
-                {
-                    b.HasOne("DAL.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("UsuarioId");
                 });
 
             modelBuilder.Entity("DAL.Models.Reservas", b =>

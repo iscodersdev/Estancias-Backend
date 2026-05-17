@@ -1,0 +1,163 @@
+﻿using DAL.Data;
+using DAL.DTOs.ApiCpeCreditos;
+using DAL.DTOs.Reportes;
+using DAL.DTOs.Servicios;
+using DAL.Mobile;
+using DAL.Models;
+using EstanciasCore.Interface;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
+using System;  
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
+using static EstanciasCore.Services.DatosTarjetaService;
+namespace EstanciasCore.Services
+{
+    public class ObtenerPuntosService
+    {
+        private EstanciasContext _context { get; set; }
+        private readonly IDatosTarjetaService _datosTarjetaService;
+        private readonly ILogger<ObtenerPuntosService> _logger;
+        private readonly HttpClient _httpClient;
+        private readonly DateTime FiltroFecha = new DateTime(2026, 1, 1);
+
+
+        public ObtenerPuntosService(IConfiguration configuration, EstanciasContext context, IDatosTarjetaService datosTarjetaService, ILogger<ObtenerPuntosService> logger)
+        {
+            _context=context;
+            _datosTarjetaService = datosTarjetaService;
+            _logger = logger;
+            _httpClient = new HttpClient();
+        }
+
+
+        public async Task ObtenerPuntos(Usuario user)
+        {
+            RelacionPuntos relacionPuntos = _context.RelacionPuntos.Where(x=>x.Activo==true).FirstOrDefault();
+
+            if (user.Personas == null) return;
+
+            if (user.Personas.PersonaIdCpeCreditos == null)
+            {
+                var responsePersona = await _datosTarjetaService.ObtenerPersona(user.Personas.NroDocumento);
+                if (responsePersona?.Persona != null)
+                {
+                    user.Personas.PersonaIdCpeCreditos = Convert.ToInt32(responsePersona.Persona.Id);
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            var ontenerCreditosResponse = await _datosTarjetaService.ObtenerCreditos((int)user.Personas.PersonaIdCpeCreditos);
+
+            if (ontenerCreditosResponse?.Credito != null)
+            {
+                var comprasRegistradas = _context.PuntosObtenidosClientes
+                    .Where(p => p.Usuario.Id == user.Id)
+                    .Select(x => x.IdOperacion)
+                    .ToList();
+
+                var recorrerCreditos = ontenerCreditosResponse.Credito
+                    .Where(c => common.ConvertirFecha(c.Fecha) >= FiltroFecha && !comprasRegistradas.Contains(c.Operacion))
+                    .ToList();
+
+                var insertarPuntos = new List<PuntosObtenidosClientes>();
+
+                foreach (var c in recorrerCreditos)
+                {
+                    DateTime fechaCompra = common.ConvertirFecha(c.Fecha);
+                    decimal monto = Convert.ToDecimal(c.CapitalPedido);
+
+                    var responseCompania = await _datosTarjetaService.ObtenerOperacionDetalles(c.Operacion);
+
+                    var nuevoPuntoCliente = new PuntosObtenidosClientes
+                    {
+                        Usuario = user,
+                        IdSolicitud = c.IdSolicitud,
+                        IdOperacion = c.Operacion,
+                        MontoCompra = monto,
+                        FechaCompra = fechaCompra,
+                        Compania = responseCompania?.Compania ?? "Desconocida",
+                        CompaniaId = Convert.ToInt32(responseCompania?.CodigoCompania),
+                        PuntosObtenidos = CalcularPuntos(monto, relacionPuntos),
+                        PuntosDisponibles = CalcularPuntosVencidos(monto, relacionPuntos),
+                        FechaVencimiento = CalcularFechaVencimiento(fechaCompra),
+                        FechaProcesada = DateTime.Now
+                    };
+
+                    insertarPuntos.Add(nuevoPuntoCliente);
+                }
+
+                if (insertarPuntos.Any())
+                {
+                    _context.PuntosObtenidosClientes.AddRange(insertarPuntos);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        public async Task ActualizarLotesVencidos(Usuario user)
+        {
+            DateTime hoy = DateTime.Now;
+
+            var lotesExpirados = await _context.PuntosObtenidosClientes
+                .Where(x => x.Usuario.Id == user.Id && x.FechaVencimiento <= hoy && x.PuntosDisponibles > 0)
+                .ToListAsync();
+
+            if (lotesExpirados.Any())
+            {
+                foreach (var lote in lotesExpirados)
+                {
+                    lote.PuntosDisponibles = 0;
+                }
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+
+        private int CalcularPuntos(decimal monto, RelacionPuntos relacionPuntos)
+        {
+            if (monto <= 0) return 0;
+
+            decimal montoPorPunto = relacionPuntos.Monto;
+
+            return (int)Math.Floor(monto / montoPorPunto);
+        }
+
+        private int CalcularPuntosVencidos(decimal monto, RelacionPuntos relacionPuntos)
+        {
+            return CalcularPuntos(monto, relacionPuntos);
+        }
+
+        private DateTime CalcularFechaVencimiento(DateTime fechaCompra)
+        {
+            DateTime fechaConAnios = fechaCompra.AddYears(2);
+            DateTime vencimiento = new DateTime(fechaConAnios.Year, fechaConAnios.Month, 1).AddMonths(1);
+            return vencimiento;
+        }
+
+    }
+}

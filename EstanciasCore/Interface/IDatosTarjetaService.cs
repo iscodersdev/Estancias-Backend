@@ -108,6 +108,21 @@ namespace EstanciasCore.Interface
         /// <returns></returns>
         Task<ResponseObtenerCreditosDTO> ObtenerCreditos(int idSolicitud);
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="numOperacion"></param>
+        /// <returns></returns>
+        Task<ResponseObtenerCreditosDetallesDTO> ObtenerCreditosDetalles(int idSolicitud);
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="numOperacion"></param>
+        /// <returns></returns>
+        Task<ResponseObtenerOperacionDetallesDTO> ObtenerOperacionDetalles(string numOperacion);
+
 
     }
 }

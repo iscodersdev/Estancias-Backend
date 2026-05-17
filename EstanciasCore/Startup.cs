@@ -72,6 +72,7 @@ namespace EstanciasCore
             services.AddTransient<IResumenTarjetaService, ResumenTarjetaService>();
             services.AddTransient<IPushService, OneSignalService>();
             services.AddTransient<MercadoPagoServices>();
+            services.AddTransient<ObtenerPuntosService>();
 
 
             services.AddHttpClient<ResendProviderService>();

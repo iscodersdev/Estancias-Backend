@@ -356,8 +356,7 @@ namespace EstanciasCore.Services
             }
         }
 
-
-        public async Task<ResponseObtenerCreditosDTO> ObtenerCreditos(int idSolicitud)
+        public async Task<ResponseObtenerCreditosDTO> ObtenerCreditos(int idPersona)
         {
             var requestBody = new ObtenerCreditosRequestDTO
             {
@@ -366,7 +365,7 @@ namespace EstanciasCore.Services
                     Login = "appestancias",
                     Clave = "appcpe01"
                 },
-                IdSolicitud = idSolicitud
+                IdPersona = idPersona
             };
 
             var jsonPayload = JsonConvert.SerializeObject(requestBody);
@@ -391,6 +390,87 @@ namespace EstanciasCore.Services
                 throw new Exception("Error en la comunicación con el servicio de personas", ex);
             }
         }
+
+
+
+
+
+        public async Task<ResponseObtenerCreditosDetallesDTO> ObtenerCreditosDetalles(int idSolicitud)
+        {
+            var requestBody = new ObtenerCreditosDetallesRequestDTO
+            {
+                LoginInterface = new LoginInterface
+                {
+                    Login = "appestancias",
+                    Clave = "appcpe01"
+                },
+                IdSolicitud = idSolicitud
+            };
+
+            var jsonPayload = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            try
+            {
+                var response = await _httpClient.PostAsync(this._apiBaseUrl+"api/ecommerce/obtenerDetalleOperacion", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<ResponseObtenerCreditosDetallesDTO>(jsonResponse);
+                }
+                else
+                {
+                    throw new Exception($"Error al llamar a la API: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error en la comunicación con el servicio de personas", ex);
+            }
+        }
+
+
+        public async Task<ResponseObtenerOperacionDetallesDTO> ObtenerOperacionDetalles(string numOperacion)
+        {
+            var requestBody = new ObteneOperacionDetallesRequestDTO
+            {
+                LoginServicio = new LoginServicio
+                {
+                    Login = "appestancias",
+                    Clave = "appcpe01"
+                },
+                numeroOperacion = numOperacion
+            };
+
+            var jsonPayload = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            try
+            {
+                var response = await _httpClient.PostAsync(this._apiBaseUrl+"api/collection/obtenerDetalleOperacion", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    var detalles = JsonConvert.DeserializeObject<ResponseObtenerOperacionDetallesDTO>(jsonResponse);
+                    return detalles;
+                }
+                else
+                {
+                    throw new Exception($"Error al llamar a la API: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error en la comunicación con el servicio de personas", ex);
+            }
+        }
+
+
+
+
+
 
 
 

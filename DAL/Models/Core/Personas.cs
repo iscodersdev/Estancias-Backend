@@ -26,6 +26,7 @@ namespace DAL.Models
         public string NroTarjeta { get; set; }
         public string FechaVencimiento { get; set; }
         public int? LoanId { get; set; } = null;
+        public int? PersonaIdCpeCreditos { get; set; } = null;
         public int GetEdad()
         {
             try

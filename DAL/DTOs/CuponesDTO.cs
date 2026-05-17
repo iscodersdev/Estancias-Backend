@@ -70,4 +70,25 @@ namespace DAL.DTOs
     {
         public long Puntos { get; set; }
     }
+
+    public class HistorialPuntosResponseDto
+    {
+        public int Status { get; set; }
+        public string Mensaje { get; set; }
+        public List<MovimientoPuntosDto> Movimientos { get; set; } = new List<MovimientoPuntosDto>();
+    }
+
+    public class MovimientoPuntosDto
+    {
+        public long IdSolicitud { get; set; }
+        public string IdOperacion { get; set; }
+        public string Compania { get; set; }
+        public decimal MontoCompra { get; set; }
+        public DateTime FechaCompra { get; set; }
+        public DateTime FechaVencimiento { get; set; }
+        public long PuntosObtenidos { get; set; }
+        public long PuntosUsados { get; set; }
+        public long PuntosDisponiblesActivos { get; set; }
+        public long PuntosVencidos { get; set; }
+    }
 }

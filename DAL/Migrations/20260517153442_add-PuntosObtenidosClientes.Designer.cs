@@ -4,14 +4,16 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(EstanciasContext))]
-    partial class EstanciasContextModelSnapshot : ModelSnapshot
+    [Migration("20260517153442_add-PuntosObtenidosClientes")]
+    partial class addPuntosObtenidosClientes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2220,9 +2222,9 @@ namespace DAL.Migrations
 
                     b.Property<decimal>("MontoCompra");
 
-                    b.Property<long>("PuntosDisponibles");
+                    b.Property<int>("PuntosDisponibles");
 
-                    b.Property<long>("PuntosObtenidos");
+                    b.Property<int>("PuntosObtenidos");
 
                     b.Property<string>("UsuarioId");
 

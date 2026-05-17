@@ -1,0 +1,201 @@
+@{
+    ViewData["Title"] = "Reporte de Cupones Canjeados";
+}
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Filtros</span>
+    </div>
+    <div class="box-body">
+        <div class="row">
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="fechaDesdeFiltro">Fecha Desde</label>
+                    <input type="date" class="form-control" id="fechaDesdeFiltro" name="FechaDesde">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="fechaHastaFiltro">Fecha Hasta</label>
+                    <input type="date" class="form-control" id="fechaHastaFiltro" name="FechaHasta">
+                </div>
+            </div>
+
+            <div class="form-group col-md-3">
+                <label>Cliente</label>
+                <select-ajax title="Ingrese Nombre, Apellido o DNI"
+                             class="form-control"
+                             url="/Reportes/CuponesReportes/NombreApellidoComboJson"
+                             width="100%"
+                             name="PersonaId"
+                             class-btn="btn-flat"
+                             text-no-results="<h4 class='text-center'>El Cliente no está en el sistema.</h4>"></select-ajax>
+            </div>
+
+            <div class="form-group col-md-2" style="padding-top: 25px;">
+                <button class="btn bg-orange btn-sm" id="botonFiltrarReporte">
+                    <i class="fa fa-search"><span class="hidden-xs"> Filtrar</span></i>
+                </button>
+                <a class="btn btn-danger btn-sm" id="botonLimpiarFiltro" href="javascript:void(0);" style="margin-left: 5px;">
+                    <i class="fa fa-undo"><span class="hidden-xs"> Limpiar</span></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="box">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Comprobantes</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 900px;    min-width: 200px;">
+            <div class="btn-group">
+                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-download"></i> <span class="hidden-xs">Exportar</span> <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a href="#" class="export-link" data-format="xlsx">Exportar a Excel (.xlsx)</a></li>
+                    <li><a href="#" class="export-link" data-format="csv">Exportar a CSV (.csv)</a></li>
+                    <li><a href="#" class="export-link" data-format="txt">Exportar a Texto (.txt)</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="tablaPagos" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Nro Documento</th>
+                    <th>Fecha</th>
+                    <th>Cupon</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        const hoy = new Date();
+        const anio = hoy.getFullYear();
+        // JavaScript cuenta los meses de 0 a 11, por eso se suma 1.
+        // .padStart(2, '0') asegura que tenga dos dígitos (ej: '08' en lugar de '8').
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        const fechaDeHoy = `${anio}-${mes}-${dia}`;
+
+        // 2. Establecer la fecha de hoy en los campos de filtro
+        $('#fechaDesdeFiltro').val(fechaDeHoy);
+        $('#fechaHastaFiltro').val(fechaDeHoy);
+
+
+        var tabla = $('#tablaPagos').DataTable({
+            "processing": true,
+            "serverSide": true, 
+            "order": [[ 3, 'desc' ]],
+            "ajax": {
+                "url": "/Reportes/CuponesReportes/FiltrarCupones",
+                "type": "POST",
+                "dataType": "json",
+                "data": function (d) {
+                    d.FechaDesde = $('#fechaDesdeFiltro').val();
+                    d.FechaHasta = $('#fechaHastaFiltro').val();
+                    d.PersonaId = $('select[name="PersonaId"]').val();
+                },
+                "error": function (xhr, error, thrown) {
+                    var errorMsg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : (thrown || "Error desconocido");
+                    alert("Error al cargar los datos: " + errorMsg);
+                }
+            },
+            "columns": [                
+                 {
+                    "data": "Cliente.Persona.Apellido",
+                    "name": "Cliente.Persona.Apellido",
+                    "render": function (data, type, row) {
+                        if (row.Cliente && row.Cliente.Persona) {
+                            return row.Cliente.Persona.Apellido + ', ' + row.Cliente.Persona.Nombres;
+                        }
+                        return '';
+                    }
+                },
+                 {
+                    "data": "Cliente.Persona.NroDocumento",
+                    "name": "Cliente.Persona.NroDocumento",
+                    "render": function (data, type, row) {
+                        if (row.Cliente && row.Cliente.Persona) {
+                            return row.Cliente.Persona.NroDocumento;
+                        }
+                        return '';
+                    }
+                 },
+                {
+                    "data": "Fecha",
+                    "name": "Fecha",
+                    "render": function (data) {
+                        if (data) {
+                            return new Date(data).toLocaleDateString('es-AR');
+                        }
+                        return "";
+                    }
+                },
+                {
+                    "data": "Premio.Nombre",
+                    "name": "Premio.Nombre",
+                    "render": function (data, type, row) {
+                        if (row.Premio) {
+                            return row.Premio.Nombre;
+                        }
+                        return '';
+                    }
+                }
+            ],
+            // Traducción al español
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+            }
+        });
+
+        $('#botonFiltrarReporte').on('click', function (e) {
+            e.preventDefault();
+            tabla.ajax.reload();
+        });
+
+        $("#botonLimpiarFiltro").on("click", function () {
+            $("#fechaDesdeFiltro").val('');
+            $("#fechaHastaFiltro").val('');
+
+            $('select[name="PersonaId"]').val(null).trigger('change');
+
+            tabla.ajax.reload();
+        });
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        $('.export-link').on('click', function(e) {
+            e.preventDefault();
+
+            // Obtenemos el formato deseado (xlsx, csv, o txt)
+            var format = $(this).data('format');
+
+            // Recolectamos los valores actuales de los filtros
+            var params = {
+                FechaDesde: $('#fechaDesdeFiltro').val(),
+                FechaHasta: $('#fechaHastaFiltro').val(),
+                PersonaId: $('select[name="PersonaId"]').val(),
+                formato: format // Añadimos el formato a los parámetros
+            };
+
+            // Construimos la URL con los parámetros
+            var url = "/Reportes/CuponesReportes/Exportar?" + $.param(params);
+
+            // Redirigimos para que comience la descarga
+            window.location.href = url;
+        });
+    });
+</script>
