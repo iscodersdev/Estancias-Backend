@@ -1,0 +1,28 @@
+@using Commons.HtmlHelpers
+@model DAL.Models.Usuario
+
+<form asp-action="ChangeCategory">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" name="userId" value="@Model.Id" />
+
+        <div class="form-group">
+            <label class="control-label">Categoría de Usuario</label>
+            <select name="categoryId" class="form-control" asp-items="ViewBag.Categorias">
+            </select>
+        </div>
+    }
+
+    @using (Html.BoxFooter())
+    {
+        <div class="col-md-12" style="display: flex; justify-content: right; align-items: center;">
+            <div class="form-group">
+                <a class="btn btn-default" data-dismiss="modal">Cancelar</a>
+                <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+            </div>
+        </div>
+    }
+
+</form>

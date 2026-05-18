@@ -1,4 +1,4 @@
-﻿namespace EstanciasCore.Areas.Administracion.ViewModels
+namespace EstanciasCore.Areas.Administracion.ViewModels
 {
     public class UserDTViewModel
     {
@@ -10,6 +10,7 @@
         public string Empresa { get; set; }
         public bool Administrador { get; set; }
         public string AdministradorTexto { get; set; }
+        public string Categoria { get; set; }
 
     }
 }

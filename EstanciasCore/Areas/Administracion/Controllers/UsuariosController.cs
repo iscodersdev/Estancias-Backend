@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EstanciasCore.Areas.Administracion.ViewModels;
@@ -14,6 +14,7 @@ using DAL.DTOs;
 using DAL.DTOs.Servicios;
 using EstanciasCore.Services;
 using DAL.DTOs.Servicios.DatosTarjeta;
+using Microsoft.EntityFrameworkCore;
 
 namespace EstanciasCore.Controllers
 {
@@ -57,7 +58,7 @@ namespace EstanciasCore.Controllers
                     Administrador = usu.Administradores,
                     AdministradorTexto = usu.Administradores==true ? "SI" : "NO",
                     NroDocumento =(usu.Personas!=null) ? usu.Personas.NroDocumento : " ",
-
+                    Categoria = usu.UsuariosCategorias != null ? usu.UsuariosCategorias.Nombre : "Sin Categoría"
                 };
 
             return DataTable<UserDTViewModel>(query.AsQueryable<UserDTViewModel>());
@@ -722,6 +723,70 @@ namespace EstanciasCore.Controllers
                 AddPageAlerts(PageAlertType.Error, "Ha ocurrido un error al actualizar el usuario, intentelo nuevamente mas tarde.");
                 return RedirectToAction(nameof(Index));
             }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> ChangeCategory(string Id)
+        {
+            var usuario = await _context.Usuarios
+                .Include(u => u.UsuariosCategorias)
+                .FirstOrDefaultAsync(u => u.Id == Id);
+
+            if (usuario == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.Categorias = _context.UsuariosCategorias
+                .Where(x => x.Activo)
+                .OrderBy(x => x.Orden)
+                .Select(x => new SelectListItem
+                {
+                    Text = x.Nombre,
+                    Value = x.Id.ToString(),
+                    Selected = usuario.UsuariosCategorias != null && usuario.UsuariosCategorias.Id == x.Id
+                }).ToList();
+
+            return PartialView(usuario);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ChangeCategory(string userId, int? categoryId)
+        {
+            try
+            {
+                var usuario = await _context.Usuarios
+                    .Include(u => u.UsuariosCategorias)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (usuario != null)
+                {
+                    if (categoryId.HasValue)
+                    {
+                        var categoria = await _context.UsuariosCategorias.FindAsync(categoryId.Value);
+                        usuario.UsuariosCategorias = categoria;
+                    }
+                    else
+                    {
+                        usuario.UsuariosCategorias = null;
+                    }
+
+                    _context.Usuarios.Update(usuario);
+                    await _context.SaveChangesAsync();
+                    AddPageAlerts(PageAlertType.Success, "Se actualizó la categoría del usuario " + usuario.UserName + " correctamente.");
+                }
+                else
+                {
+                    AddPageAlerts(PageAlertType.Error, "No se encontró el usuario.");
+                }
+            }
+            catch (Exception ex)
+            {
+                AddPageAlerts(PageAlertType.Error, "Hubo un error al cambiar la categoría de usuario.");
+            }
+
+            return RedirectToAction("Index");
         }
 
 
