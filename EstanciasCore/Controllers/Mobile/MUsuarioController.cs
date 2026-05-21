@@ -1879,8 +1879,8 @@ namespace EstanciasCore.Controllers
                     Sucursal.address = sucu.address;
                     Sucursal.group = sucu.group;
                     Sucursal.phone = sucu.phone;
-                    Sucursal.latitude = Convert.ToDouble(sucu.latitude);
-                    Sucursal.longitude = Convert.ToDouble(sucu.longitude);
+                    Sucursal.latitude = sucu.latitude;
+                    Sucursal.longitude = sucu.longitude;
                     lista.Add(Sucursal);
                 }
                 sucursalesDTO.Sucursales = lista;
