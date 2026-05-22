@@ -14,5 +14,4 @@ namespace DAL.DTOs
         public string TextoNotificacion { get; set; }
         public IFormFile File { get; set; }
     }
-
 }
