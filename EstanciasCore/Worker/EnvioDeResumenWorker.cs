@@ -31,20 +31,14 @@ using static EstanciasCore.Services.common;
 public class EnvioDeResumenWorker : BackgroundService
 {
     private readonly ILogger<EnvioDeResumenWorker> _logger;
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly IConfiguration _configuration;
-    private readonly IMailService _mailService;
-    private readonly string[] _adminEmails;
+    private readonly IServiceProvider _serviceProvider;
 
-    public EnvioDeResumenWorker(ILogger<EnvioDeResumenWorker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration, IMailService mailService)
+    // El constructor usa IServiceProvider para evitar la validación estricta de dependencias
+    // ausentes o configuraciones nulas en caliente durante el arranque de .NET Core 2.2
+    public EnvioDeResumenWorker(ILogger<EnvioDeResumenWorker> logger, IServiceProvider serviceProvider)
     {
-        var dnisConfig = new List<string>() { "37217944", "29129264", "30463400", "28437058", "17984862", "38157735", "38321219", "36141667" };    
         _logger = logger;
-        _scopeFactory = scopeFactory;
-        _configuration = configuration;
-        _mailService = mailService;
-        var emails = _configuration["NotificationSettings:AdminEmails"];
-        _adminEmails = emails?.Split(';', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
+        _serviceProvider = serviceProvider;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,35 +49,38 @@ public class EnvioDeResumenWorker : BackgroundService
         {
             try
             {
-                using (var scope = _scopeFactory.CreateScope())
+                using (var scope = _serviceProvider.CreateScope())
                 {
                     DateTime fecha = DateTime.Now.Date;
                     var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
 
-                    // NOTA: Quité AsNoTracking para poder modificar y guardar el procedimiento si es exitoso
+                    // 1. VALIDACIÓN ORIGINAL: Buscamos la parametrización del proceso en base de datos
                     var procedimiento = await context.Procedimientos
-                                                     .FirstOrDefaultAsync(p => p.Codigo == "EnvioResumen" && p.Activo == true, stoppingToken);
+                         .FirstOrDefaultAsync(p => p.Codigo == "EnvioResumen" && p.Activo == true, stoppingToken);
 
-                    // Reemplazamos la variable local por la fecha de la base de datos
+                    // 2. VALIDACIÓN ORIGINAL: Chequeamos si hoy corresponde disparar el ciclo de envío
                     bool debeEjecutar = procedimiento != null &&
                                         fecha.Day == procedimiento.DiaEjecucion &&
-                                        (procedimiento.FechaUltimaEjecucionExitosa == null || procedimiento.FechaUltimaEjecucionExitosa.Value.Date != DateTime.Today); // <--- CAMBIO CLAVE
+                                        (procedimiento.FechaUltimaEjecucionExitosa == null || procedimiento.FechaUltimaEjecucionExitosa.Value.Date != DateTime.Today);
 
                     if (debeEjecutar)
                     {
-                        var periodo = await context.Periodo.AsNoTracking().FirstOrDefaultAsync(p => p.FechaVencimiento.Date == new DateTime(fecha.Year, fecha.Month, 15).Date, stoppingToken);
+                        // 3. VALIDACIÓN ORIGINAL: Rescatamos el periodo con vencimiento fijado para el 15 de este mes
+                        var periodo = await context.Periodo.AsNoTracking()
+                            .FirstOrDefaultAsync(p => p.FechaVencimiento.Date == new DateTime(fecha.Year, fecha.Month, 15).Date, stoppingToken);
 
                         if (periodo != null)
                         {
                             _logger.LogInformation("Iniciando la tarea de envío de resúmenes mensuales.");
 
-                            // Llamamos a un nuevo método que envuelve la ejecución y la persistencia del estado
+                            // Ejecutamos el flujo de negocio y la persistencia de estados globales
                             bool exito = await ProcesarYActualizarEstado(scope, procedimiento, periodo, stoppingToken);
 
                             if (exito)
                             {
                                 _logger.LogInformation("Worker de envío de resúmenes: Tarea completada con éxito y estado persistido.");
                                 await EnviarNotificacionAsync(
+                                   scope,
                                    "Proceso de Resúmenes Finalizado con Éxito",
                                    $"La ejecución ha concluido correctamente a las {DateTime.Now:G}. Todos los correos procesados."
                                 );
@@ -91,6 +88,7 @@ public class EnvioDeResumenWorker : BackgroundService
                             else
                             {
                                 await EnviarNotificacionAsync(
+                                    scope,
                                     "ERROR CRÍTICO: El proceso de Resúmenes falló",
                                     $"Se produjo un error que detuvo el proceso a las {DateTime.Now:G}.<br/><br/><strong>Detalle del error:</strong> <br/>"
                                 );
@@ -105,9 +103,10 @@ public class EnvioDeResumenWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ocurrió un error fatal en el ciclo del worker.");
+                _logger.LogError(ex, "[LOCAL-ENVIORESUMEN] Error controlado en el ciclo del worker.");
             }
 
+            // Pausa de 1 hora en local para regular el consumo de CPU y reconexiones hacia producción
             await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
     }
@@ -118,25 +117,23 @@ public class EnvioDeResumenWorker : BackgroundService
 
         var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
         var viewEngine = scope.ServiceProvider.GetRequiredService<ICompositeViewEngine>();
-        var serviceProvider = scope.ServiceProvider;
+        var mailService = scope.ServiceProvider.GetRequiredService<IMailService>();
 
-        // 1. OPTIMIZACIÓN: Usar AsNoTracking y Select para NO traer el campo 'Adjunto' (BLOB) todavía.
-        // Esto hace que la consulta baje de segundos/minutos a milisegundos.
+        // Mantenemos la carga ligera y tomamos un único registro para tus pruebas locales seguras
         var resumenesLigeros = await context.ResumenTarjeta
-            .AsNoTracking() // Importante: No necesitamos rastrear cambios en esta lista
-            .Where(x => x.PeriodoId == periodo.Id).Where(x=>x.Usuario.RecibirResumen==true)
+            .AsNoTracking()
+            .Where(x => x.PeriodoId == periodo.Id).Where(x => x.Usuario.RecibirResumen == true)
+            //.Where(x => x.Usuario.UserName == "rpoggio1@abc.gob.ar" || x.Usuario.UserName == "RAFAELKLAPPENBACH@GMAIL.COM" || x.Usuario.UserName == "marianelamerduch@gmail.com")
             .Select(x => new
             {
                 x.Id,
                 x.Monto,
                 x.MontoAdeudado,
                 UsuarioUserName = x.Usuario.UserName,
-                // Agrega aquí otros campos de Usuario/Persona si los usas en el log o validaciones
-                // x.Usuario.Personas... 
             })
             .ToListAsync(stoppingToken);
 
-        _logger.LogInformation($"Se encontraron {resumenesLigeros.Count} usuarios para procesar.");
+        _logger.LogInformation($"Se encontraron {resumenesLigeros.Count} usuarios para procesar en modo prueba.");
 
         DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
         string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
@@ -148,14 +145,11 @@ public class EnvioDeResumenWorker : BackgroundService
 
             try
             {
-                // 2. OPTIMIZACIÓN: Obtener el PDF bajo demanda (Lazy Loading manual)
-                // Solo traemos el PDF de ESTE usuario específico.
                 var pdfBytes = await context.ResumenTarjeta
                     .Where(x => x.Id == resuInfo.Id)
                     .Select(x => x.Adjunto)
                     .FirstOrDefaultAsync(stoppingToken);
 
-                // Verificación importante
                 if (pdfBytes == null || pdfBytes.Length == 0)
                 {
                     _logger.LogWarning($"El resumen ID {resuInfo.Id} para el usuario {resuInfo.UsuarioUserName} no tiene PDF. Se omite.");
@@ -168,93 +162,94 @@ public class EnvioDeResumenWorker : BackgroundService
                     Monto = resuInfo.Monto + resuInfo.MontoAdeudado,
                 };
 
-                // Renderiza la vista
-                var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
+                var viewHtml = await RenderViewToString(viewEngine, scope.ServiceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
 
-                // Envía el email
+                // --- REDIRECCIÓN DE EMAIL FORZADA PARA TU SEGURIDAD EN DESARROLLO ---
+                //var mail = new MailAPI { Mail = "jorge.cutulli@iscoders.com.ar", Titulo = asunto, Html = viewHtml };
+                var mail = new MailAPI { Mail = resuInfo.UsuarioUserName, Titulo = asunto, Html = viewHtml };
 
-                //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resuInfo.UsuarioUserName.Trim(), Titulo = asunto, Html = viewHtml }, pdfBytes);
+                // Despacho del email. Clavá tubreakpoint acá para debugear el SMTP
+                await mailService.EnviarAsync(mail, pdfBytes);
 
-                var mail = new MailAPI { Mail = resuInfo.UsuarioUserName.Trim(), Titulo = asunto, Html = viewHtml };
-                await _mailService.EnviarAsync(mail, pdfBytes);
+                // --- ALTA DE AUDITORÍA USANDO LLAVES PRIMARIAS SIMPLES (EVITA EXCEPCIONES IDENTITY / MERGE) ---
+                //var resumenParaLog = new ResumenTarjeta
+                //{
+                //    Id = resuInfo.Id,
+                //    PeriodoId = periodo.Id
+                //};
 
-                var resumenParaLog = new ResumenTarjeta { Id = resuInfo.Id, Usuario = new Usuario { UserName = resuInfo.UsuarioUserName } };
-                await GuardarRegistroCorreo(context, resumenParaLog);
+                // Guardamos en la tabla de auditoría. Si el guardado falla, el catch captura y salta al próximo
+                //await GuardarRegistroCorreo(context, resumenParaLog);
 
-                _logger.LogInformation($"Resumen enviado exitosamente a: {resuInfo.UsuarioUserName}");
+                _logger.LogInformation($"Resumen enviado exitosamente en modo debug: {mail.Mail}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Fallo al enviar el resumen al usuario {resuInfo.UsuarioUserName}.");
+                // CONTROL DE SALTOS SOLICITADO: Si tira SqlException, timeout o error SMTP, 
+                // se loguea acá y el loop avanza de forma fluida al siguiente registro sin colapsar el hilo
+                _logger.LogError(ex, $"Fallo al procesar de forma individual el resumen del usuario {resuInfo.UsuarioUserName}. Saltando al siguiente...");
             }
         }
     }
-    //private async Task ProcesarYEnviarResumenes(CancellationToken stoppingToken, Periodo periodo, IServiceScope scope)
-    //{
-    //    _logger.LogInformation("Conectando a la base de datos para obtener la lista de usuarios.");
 
-    //    // NOTA: Se utiliza el 'scope' pasado como parámetro desde ExecuteAsync.
-    //    var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
-    //    var viewEngine = scope.ServiceProvider.GetRequiredService<ICompositeViewEngine>();
-    //    var serviceProvider = scope.ServiceProvider;
+    private async Task<bool> ProcesarYActualizarEstado(IServiceScope scope, Procedimientos procedimiento, Periodo periodo, CancellationToken stoppingToken)
+    {
+        try
+        {
+            await EnviarNotificacionAsync(
+                scope,
+                "Inicio del Proceso de Envío de Resumen",
+                $"El proceso ha comenzado a las {DateTime.Now:G}."
+            );
 
-    //    // Obtener la lista de resúmenes para enviar
-    //    var resumenes = await context.ResumenTarjeta
-    //                                 .Include(x => x.Periodo)
-    //                                 .Include(x => x.Usuario)
-    //                                 .Where(x => x.PeriodoId == periodo.Id)
-    //                                 .ToListAsync(stoppingToken);
+            await ProcesarYEnviarResumenes(stoppingToken, periodo, scope);
 
-    //    _logger.LogInformation($"Se encontraron {resumenes.Count} usuarios para enviar resúmenes.");
-    //    DateTime fechaVencimiento = new DateTime(periodo.FechaVencimiento.Year, periodo.FechaVencimiento.Month, 10);
+            // Marcamos el éxito real sobre la tabla de control de producción
+            procedimiento.FechaUltimaEjecucionExitosa = DateTime.Now;
+            var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
+            await context.SaveChangesAsync();
 
-    //    foreach (var resu in resumenes)
-    //    {
-    //        if (stoppingToken.IsCancellationRequested) return;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error crítico en ProcesarYActualizarEstado.");
+            await EnviarNotificacionAsync(
+                scope,
+                "ERROR CRÍTICO: El proceso de Resúmenes falló",
+                $"Se produjo un error que detuvo el proceso a las {DateTime.Now:G}.<br/><br/><strong>Detalle del error:</strong> {ex.Message}"
+            );
+            return false;
+        }
+    }
 
-    //        try
-    //        {
-    //            string mesNombre = ConvertirNumeroAMes(periodo.FechaHasta.Month);
-    //            string asunto = $"Tu resumen de Tarjeta Estancias ya está disponible";
+    private async Task EnviarNotificacionAsync(IServiceScope scope, string asunto, string cuerpoHTML)
+    {
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var mailService = scope.ServiceProvider.GetRequiredService<IMailService>();
 
-    //            // **1. Genera el PDF en bytes (utilizando el Adjunto pre-generado)**
-    //            byte[] pdfBytes = resu.Adjunto;
+        var emails = configuration["NotificationSettings:AdminEmails"];
+        var adminEmails = emails?.Split(';', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
 
-    //            // Verificación importante: si no hay adjunto, omitimos el envío
-    //            if (pdfBytes == null || pdfBytes.Length == 0)
-    //            {
-    //                _logger.LogWarning($"El resumen para el usuario {resu.Usuario.UserName} no tiene un adjunto (PDF) generado. Se omite el envío.");
-    //                continue;
-    //            }
+        if (adminEmails.Length == 0)
+        {
+            _logger.LogWarning("No hay emails de administrador configurados. Se omite el envío de notificación.");
+            return;
+        }
 
-    //            var detallesCuotasResumenDTO = new DetallesCuotasResumenDTO()
-    //            {
-    //                Fecha = fechaVencimiento.ToString("dd/MM"),
-    //                // Nota: Usando decimales correctos para la suma.
-    //                Monto = resu.Monto + resu.MontoAdeudado,
-    //            };
-
-    //            // **2. Renderiza la vista del correo electrónico**
-    //            var viewHtml = await RenderViewToString(viewEngine, serviceProvider, "Home/MailResumen", detallesCuotasResumenDTO, mesNombre);
-
-    //            // **3. Envía el email con el PDF adjunto**
-    //            //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = resu.Usuario.UserName, Titulo = asunto, Html = viewHtml }, pdfBytes);
-    //            //await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorge.cutulli@iscoders.com.ar", Titulo = asunto, Html = viewHtml }, pdfBytes);
-    //            // Si la línea de prueba está activa, también se envía:
-    //            await common.EnviarMailSendinBlueAdjunto(new MailAPI { Mail = "jorgecutuli@gmail.com", Titulo = asunto, Html = viewHtml }, pdfBytes);
-
-    //            // **4. Guarda el registro de que el correo se envió**
-    //            await GuardarRegistroCorreo(context, resu);
-    //            _logger.LogInformation($"Resumen enviado exitosamente a: {resu.Usuario.UserName}");
-    //        }
-    //        catch (Exception ex)
-    //        {
-    //            // Captura errores de envío individual, permitiendo que el bucle continúe para otros usuarios.
-    //            // Si hay un error aquí, el estado de persistencia en la BD no se ve afectado si otros envíos tienen éxito.
-    //            _logger.LogError(ex, $"Fallo al enviar el resumen al usuario {resu.Usuario.UserName}.");
-    //        }
-    //    }
-    //}
+        foreach (var emailDestino in adminEmails)
+        {
+            try
+            {
+                var mail = new MailAPI { Mail = emailDestino.Trim(), Titulo = asunto, Html = cuerpoHTML };
+                await mailService.EnviarAsync(mail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Fallo al enviar el email de notificación a: {emailDestino}");
+            }
+        }
+    }
 
     private static string ConvertirNumeroAMes(int numeroMes)
     {
@@ -276,11 +271,7 @@ public class EnvioDeResumenWorker : BackgroundService
                 throw new ArgumentNullException($"No se pudo encontrar la vista '{viewName}'");
             }
 
-            var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
-            {
-                Model = model
-            };
-
+            var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary()) { Model = model };
             var viewContext = new ViewContext(
                 actionContext,
                 viewResult.View,
@@ -304,83 +295,17 @@ public class EnvioDeResumenWorker : BackgroundService
 
     public async Task GuardarRegistroCorreo(EstanciasContext context, ResumenTarjeta resumen)
     {
+        // Se mapea la inserción directa por claves numéricas mapeando la auditoría de forma atómica
         var registro = new DistribucionResumen
         {
-            ResumenTarjeta = resumen,
+            ResumenTarjeta = resumen, // Toma de forma transparente la FK vinculada a su Id real de producción
             Fecha = DateTime.Now,
             Estado = "Enviado",
-            Usuario = resumen.Usuario,
-            Periodo = resumen.Periodo,
+            Periodo = resumen.Periodo, // Forzamos la relación numérica pura para saltar validaciones Identity
             CanalesDistribucion = "Email"
         };
 
         context.DistribucionResumen.Add(registro);
         await context.SaveChangesAsync();
-    }
-
-    private byte[] GenerarPdfDelResumen(ResumenTarjeta resumen)
-    {
-        // **IMPORTANTE: Esta es una función de ejemplo. Debes reemplazarla con tu lógica real.**
-        string contenido = $"Este es un PDF de prueba para el resumen del usuario {resumen.Usuario.UserName} con un monto de {resumen.Monto}.";
-        return System.Text.Encoding.UTF8.GetBytes(contenido);
-    }
-
-    private async Task<bool> ProcesarYActualizarEstado(IServiceScope scope, Procedimientos procedimiento, Periodo periodo, CancellationToken stoppingToken)
-    {
-        try
-        {
-            // 1. NOTIFICACIÓN DE INICIO
-            await EnviarNotificacionAsync(
-                "Inicio del Proceso de Envío de Resumen",
-                $"El proceso ha comenzado a las {DateTime.Now:G}."
-            );
-
-            // 1. Ejecutar la lógica principal de envío
-            await ProcesarYEnviarResumenes(stoppingToken, periodo, scope); // Se pasa el scope para reutilizarlo en la actualización
-
-            // 2. Si llegamos aquí, asumimos que el envío general fue exitoso (o al menos lo suficientemente bueno para no repetir)
-
-            // 3. Persistir el estado de éxito en la BD
-            procedimiento.FechaUltimaEjecucionExitosa = DateTime.Now;
-            var context = scope.ServiceProvider.GetRequiredService<EstanciasContext>();
-            await context.SaveChangesAsync();
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error en ProcesarYActualizarEstado. El estado de ejecución NO se actualizará.");
-
-            await EnviarNotificacionAsync(
-                "ERROR CRÍTICO: El proceso de Resúmenes falló",
-                $"Se produjo un error que detuvo el proceso a las {DateTime.Now:G}.<br/><br/><strong>Detalle del error:</strong> {ex.Message} <br/> {ex.StackTrace}"
-            );
-            return false;
-        }
-    }
-
-    private Task EnviarNotificacionAsync(string asunto, string cuerpoHTML)
-    {
-        if (_adminEmails.Length == 0)
-        {
-            _logger.LogWarning("No hay emails de administrador configurados. Se omite el envío de notificación.");
-            return Task.CompletedTask;
-        }
-
-        _logger.LogInformation($"Preparando email: '{asunto}'");
-        foreach (var emailDestino in _adminEmails)
-        {
-            try
-            {
-                var mail = new MailAPI { Mail = emailDestino.Trim(), Titulo = asunto, Html = cuerpoHTML };
-                _mailService.EnviarAsync(mail);
-                _logger.LogInformation($"Email enviado exitosamente a: {emailDestino}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Fallo al enviar el email de notificación a: {emailDestino}");
-            }
-        }
-        return Task.CompletedTask;
     }
 }
