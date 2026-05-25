@@ -427,6 +427,7 @@ namespace EstanciasCore.Endpoints
             }
         }
 
+
         [HttpPost("enviar")]
         public async Task<IActionResult> EnvioDeNotificacion([FromForm] EnvioNotificacionDTO notificacion)
         {

@@ -39,4 +39,5 @@ namespace DAL.DTOs
 
         public string NombreCompleto { get; set; }
     }
+
 }
