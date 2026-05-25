@@ -3,6 +3,7 @@ using DAL.DTOs;
 using DAL.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,172 +20,220 @@ namespace EstanciasCore.Endpoints
             _context = context;
         }
 
+        // GET: endpoint/categorias
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var categorias = await _context.Categorias
-                .Select(c => new CategoriasDTO
-                {
-                    Id = c.Id,
-                    Nombre = c.Nombre,
-                    Activo = c.Activo
-                })
-                .ToListAsync();
-
-            return Ok(new
+            try
             {
-                ok = true,
-                data = categorias
-            });
+                var categorias = await _context.Categorias
+                    .Select(c => new CategoriaDTO
+                    {
+                        Id = c.Id,
+                        Nombre = c.Nombre,
+                        Activo = c.Activo
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    Status = 200,
+                    Mensaje = "Categorías obtenidas correctamente.",
+                    Categorias = categorias
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    Status = 500,
+                    Mensaje = "Hubo un error al obtener las Categorías. Intentelo nuevamente mas tarde."
+                });
+            }
         }
 
+        // GET: endpoint/categorias/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var categoria = await _context.Categorias
-                .Where(c => c.Id == id)
-                .Select(c => new CategoriasDTO
-                {
-                    Id = c.Id,
-                    Nombre = c.Nombre,
-                    Activo = c.Activo
-                })
-                .FirstOrDefaultAsync();
-
-            if (categoria == null)
+            try
             {
-                return NotFound(new
+                var categoria = await _context.Categorias
+                    .Where(c => c.Id == id)
+                    .Select(c => new CategoriaDTO
+                    {
+                        Id = c.Id,
+                        Nombre = c.Nombre,
+                        Activo = c.Activo
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (categoria == null)
                 {
-                    ok = false,
-                    message = "No se encontró la categoría."
+                    return NotFound(new
+                    {
+                        Status = 404,
+                        Mensaje = "No se encontró la Categoría solicitada."
+                    });
+                }
+
+                return Ok(new
+                {
+                    Status = 200,
+                    Mensaje = "Categoría obtenida correctamente.",
+                    Categoria = categoria
                 });
             }
-
-            return Ok(new
+            catch (Exception)
             {
-                ok = true,
-                data = categoria
-            });
+                return StatusCode(500, new
+                {
+                    Status = 500,
+                    Mensaje = "Hubo un error al obtener la Categoría. Intentelo nuevamente mas tarde."
+                });
+            }
         }
 
+        // POST: endpoint/categorias
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CategoriaCreateRequest request)
+        public async Task<IActionResult> Create([FromBody] CategoriaDTO dto)
         {
-            if (request == null)
+            ModelState.Remove("Id");
+
+            if (!ModelState.IsValid)
             {
                 return BadRequest(new
                 {
-                    ok = false,
-                    message = "Los datos de la categoría son obligatorios."
+                    Status = 400,
+                    Mensaje = "Los datos enviados no son válidos.",
+                    Errores = ModelState
                 });
             }
 
-            if (string.IsNullOrWhiteSpace(request.Nombre))
+            try
             {
-                return BadRequest(new
+                var categoria = new Categorias
                 {
-                    ok = false,
-                    message = "El nombre de la categoría es obligatorio."
+                    Nombre = dto.Nombre,
+                    Activo = dto.Activo
+                };
+
+                await _context.Categorias.AddAsync(categoria);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Status = 200,
+                    Mensaje = "Se creó correctamente la Categoría " + categoria.Nombre + ".",
+                    Categoria = new CategoriaDTO
+                    {
+                        Id = categoria.Id,
+                        Nombre = categoria.Nombre,
+                        Activo = categoria.Activo
+                    }
                 });
             }
-
-            var categoria = new Categorias
+            catch (Exception)
             {
-                Nombre = request.Nombre,
-                Activo = request.Activo
-            };
-
-            await _context.Categorias.AddAsync(categoria);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                ok = true,
-                message = "Categoría creada correctamente.",
-                data = new CategoriasDTO
+                return StatusCode(500, new
                 {
-                    Id = categoria.Id,
-                    Nombre = categoria.Nombre,
-                    Activo = categoria.Activo
-                }
-            });
+                    Status = 500,
+                    Mensaje = "Hubo un error al crear la Categoría. Intentelo nuevamente mas tarde."
+                });
+            }
         }
 
+        // PUT: endpoint/categorias/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] CategoriaUpdateRequest request)
+        public async Task<IActionResult> Update(int id, [FromBody] CategoriaDTO dto)
         {
-            if (request == null)
+            if (!ModelState.IsValid)
             {
                 return BadRequest(new
                 {
-                    ok = false,
-                    message = "Los datos de la categoría son obligatorios."
+                    Status = 400,
+                    Mensaje = "Los datos enviados no son válidos.",
+                    Errores = ModelState
                 });
             }
 
-            if (string.IsNullOrWhiteSpace(request.Nombre))
+            try
             {
-                return BadRequest(new
+                var categoria = await _context.Categorias.FindAsync(id);
+
+                if (categoria == null)
                 {
-                    ok = false,
-                    message = "El nombre de la categoría es obligatorio."
-                });
-            }
-
-            var categoria = await _context.Categorias
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (categoria == null)
-            {
-                return NotFound(new
-                {
-                    ok = false,
-                    message = "No se encontró la categoría."
-                });
-            }
-
-            categoria.Nombre = request.Nombre;
-            categoria.Activo = request.Activo;
-
-            _context.Categorias.Update(categoria);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                ok = true,
-                message = "Categoría actualizada correctamente.",
-                data = new CategoriasDTO
-                {
-                    Id = categoria.Id,
-                    Nombre = categoria.Nombre,
-                    Activo = categoria.Activo
+                    return NotFound(new
+                    {
+                        Status = 404,
+                        Mensaje = "No se encontró la Categoría solicitada."
+                    });
                 }
-            });
+
+                categoria.Nombre = dto.Nombre;
+                categoria.Activo = dto.Activo;
+
+                _context.Categorias.Update(categoria);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Status = 200,
+                    Mensaje = "Se editó correctamente la Categoría " + categoria.Nombre + ".",
+                    Categoria = new CategoriaDTO
+                    {
+                        Id = categoria.Id,
+                        Nombre = categoria.Nombre,
+                        Activo = categoria.Activo
+                    }
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    Status = 500,
+                    Mensaje = "Hubo un error al editar la Categoría. Intentelo nuevamente mas tarde."
+                });
+            }
         }
 
+        // DELETE: endpoint/categorias/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var categoria = await _context.Categorias
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (categoria == null)
+            try
             {
-                return NotFound(new
+                var categoria = await _context.Categorias
+                    .Where(c => c.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (categoria == null)
                 {
-                    ok = false,
-                    message = "No se encontró la categoría."
+                    return NotFound(new
+                    {
+                        Status = 404,
+                        Mensaje = "No se encontró la Categoría solicitada."
+                    });
+                }
+
+                _context.Categorias.Remove(categoria);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Status = 200,
+                    Mensaje = "Se eliminó correctamente la Categoría."
                 });
             }
-
-            _context.Categorias.Remove(categoria);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
+            catch (Exception)
             {
-                ok = true,
-                message = "Categoría eliminada correctamente."
-            });
+                return StatusCode(500, new
+                {
+                    Status = 500,
+                    Mensaje = "Hubo un error al eliminar la Categoría."
+                });
+            }
         }
     }
 }
