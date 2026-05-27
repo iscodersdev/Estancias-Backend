@@ -4,10 +4,10 @@ using DAL.DTOs.Reportes;
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
-using EstanciasCore.Controllers; 
+using EstanciasCore.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -33,11 +33,11 @@ namespace EstanciasCore.Areas.Reportes.Controllers
 
         public IActionResult Index()
         {
-            breadcumb.Add(new Commons.Models.Message() { DisplayName = "Pago Tarjeta Reportes" }); 
+            breadcumb.Add(new Commons.Models.Message() { DisplayName = "Pago Tarjeta Reportes" });
             ViewBag.Breadcrumb = breadcumb;
             return View();
         }
-                [HttpGet]
+        [HttpGet]
         public IActionResult _Filtros()
         {
             return PartialView();
@@ -135,10 +135,10 @@ namespace EstanciasCore.Areas.Reportes.Controllers
                 query = query.Where(p => p.FechaComprobante.HasValue && p.FechaComprobante.Value.Date >= fechaDesde.Date);
             if (DateTime.TryParse(filtros.FechaHasta, out DateTime fechaHasta))
                 query = query.Where(p => p.FechaComprobante.HasValue && p.FechaComprobante.Value.Date <= fechaHasta.Date);
-            if (filtros.EstadoId.HasValue)
-                query = query.Where(p => (int)p.EstadoPago == filtros.EstadoId.Value);
-            if (filtros.PersonaId.HasValue && filtros.PersonaId > 0)
-                query = query.Where(p => p.Persona.Id == filtros.PersonaId.Value);
+            if (filtros.EstadoId > 0)
+                query = query.Where(p => (int)p.EstadoPago == filtros.EstadoId);
+            if (filtros.PersonaId > 0)
+                query = query.Where(p => p.Persona.Id == filtros.PersonaId);
             if (!string.IsNullOrEmpty(filtros.Monto) && decimal.TryParse(filtros.Monto, out decimal montoDecimal))
                 query = query.Where(p => p.MontoAdeudado == montoDecimal || p.MontoInformado == montoDecimal);
 

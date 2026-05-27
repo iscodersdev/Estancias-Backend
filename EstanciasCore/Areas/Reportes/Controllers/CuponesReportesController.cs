@@ -4,10 +4,10 @@ using DAL.DTOs.Reportes;
 using DAL.Mobile;
 using DAL.Models;
 using DAL.Models.Core;
-using EstanciasCore.Controllers; 
+using EstanciasCore.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -33,11 +33,11 @@ namespace EstanciasCore.Areas.Reportes.Controllers
 
         public IActionResult Index()
         {
-            breadcumb.Add(new Commons.Models.Message() { DisplayName = "Cupones Reportes" }); 
+            breadcumb.Add(new Commons.Models.Message() { DisplayName = "Cupones Reportes" });
             ViewBag.Breadcrumb = breadcumb;
             return View();
         }
-                [HttpGet]
+        [HttpGet]
         public IActionResult _Filtros()
         {
             return PartialView();
@@ -104,8 +104,8 @@ namespace EstanciasCore.Areas.Reportes.Controllers
                     string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "error_log_cupones.txt");
                     System.IO.File.WriteAllText(path, ex.ToString());
                 }
-                catch {}
-                
+                catch { }
+
                 string fullMsg = ex.Message;
                 if (ex.InnerException != null)
                 {
@@ -171,8 +171,8 @@ namespace EstanciasCore.Areas.Reportes.Controllers
             if (DateTime.TryParse(filtros.FechaHasta, out DateTime fechaHasta))
                 query = query.Where(p => p.Fecha.Date <= fechaHasta.Date);
 
-            if (filtros.PersonaId.HasValue && filtros.PersonaId > 0)
-                query = query.Where(p => p.Cliente.Persona.Id == filtros.PersonaId.Value);
+            if (filtros.PersonaId > 0)
+                query = query.Where(p => p.Cliente.Persona.Id == filtros.PersonaId);
 
             return query;
         }
