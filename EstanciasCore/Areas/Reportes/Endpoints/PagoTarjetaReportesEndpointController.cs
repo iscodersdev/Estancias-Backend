@@ -49,12 +49,12 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
         [HttpGet("filtros")]
         public IActionResult Filtros()
         {
-            var hoy = DateTime.Now.ToString("yyyy-MM-dd");
+            //var hoy = DateTime.Now.ToString("yyyy-MM-dd");
 
             return Ok(new FiltroPagosViewModel
             {
-                FechaDesde = hoy,
-                FechaHasta = hoy,
+                FechaDesde = "",
+                FechaHasta = "",
                 EstadoId = 0,
                 PersonaId = 0,
                 NombrePersona = "",
