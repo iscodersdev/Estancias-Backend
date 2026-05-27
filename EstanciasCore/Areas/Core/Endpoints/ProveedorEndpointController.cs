@@ -1,0 +1,842 @@
+﻿using DAL.Data;
+using DAL.DTOs;
+using DAL.Models;
+using DAL.Models.Core;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EstanciasCore.Areas.Core.Endpoints
+{
+    [Area("Core")]
+    [ApiController]
+    [Route("endpoint/proveedor")]
+    public class ProveedorEndpointController : ControllerBase
+    {
+        private readonly EstanciasContext _context;
+
+        public ProveedorEndpointController(EstanciasContext context)
+        {
+            _context = context;
+        }
+
+        // GET: endpoint/proveedor
+        [HttpGet]
+        public IActionResult GetAll(string buscar = "", int page = 1, int pageSize = 10)
+        {
+            try
+            {
+                if (page < 1)
+                {
+                    page = 1;
+                }
+
+                if (pageSize < 1)
+                {
+                    pageSize = 10;
+                }
+
+                var query = _context.Proveedores
+                    .Where(x => x.Activo)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(buscar))
+                {
+                    string texto = buscar.Trim().ToLower();
+
+                    query = query.Where(p =>
+                        (p.Nombre != null && p.Nombre.ToLower().Contains(texto)) ||
+                        p.CUIT.ToString().Contains(texto) ||
+                        (p.RazonSocial != null && p.RazonSocial.ToLower().Contains(texto)) ||
+                        (p.Empresa != null && p.Empresa.RazonSocial != null && p.Empresa.RazonSocial.ToLower().Contains(texto))
+                    );
+                }
+
+                int total = query.Count();
+
+                List<ListProveedorDTO> proveedores = query
+                    .OrderBy(p => p.Nombre)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(p => new ListProveedorDTO
+                    {
+                        Id = p.Id,
+                        NombreCompleto = p.Nombre != null ? p.Nombre.ToUpper() : "",
+                        CUIT = p.CUIT.ToString(),
+                        RazonSocial = p.RazonSocial,
+                        Empresa = p.Empresa != null ? p.Empresa.RazonSocial : ""
+                    })
+                    .ToList();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Listado de proveedores obtenido correctamente.",
+                    total = total,
+                    page = page,
+                    pageSize = pageSize,
+                    data = proveedores
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al obtener el listado de proveedores."
+                });
+            }
+        }
+
+        // GET: endpoint/proveedor/create-data
+        [HttpGet("create-data")]
+        public IActionResult GetCreateData()
+        {
+            try
+            {
+                ProveedorDTO modelo = new ProveedorDTO();
+                modelo = CreateProveedorDTO(modelo);
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Datos para crear proveedor obtenidos correctamente.",
+                    data = modelo
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al obtener los datos para crear el proveedor."
+                });
+            }
+        }
+
+        // GET: endpoint/proveedor/5
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            try
+            {
+                Proveedor proveedor = await _context.Proveedores
+                    .Include(p => p.Empresa)
+                    .Include(p => p.Rubros)
+                        .ThenInclude(r => r.Rubro)
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                ProveedorDTO modelo = new ProveedorDTO();
+                modelo = CreateProveedorDTO(modelo, proveedor);
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Proveedor obtenido correctamente.",
+                    data = modelo
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al obtener el proveedor."
+                });
+            }
+        }
+
+        // POST: endpoint/proveedor
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] ProveedorDTO nuevoProveedor)
+        {
+            try
+            {
+                List<string> errores = ValidarProveedor(nuevoProveedor);
+
+                if (errores.Count > 0)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Hay errores de validación.",
+                        errores = errores,
+                        data = CreateProveedorDTO(nuevoProveedor)
+                    });
+                }
+
+                Empresas empresa = await _context.Empresas.FindAsync(nuevoProveedor.EmpresaId);
+
+                if (empresa == null)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Debe seleccionar una Empresa válida."
+                    });
+                }
+
+                Proveedor proveedor = new Proveedor
+                {
+                    Nombre = nuevoProveedor.Nombre,
+                    CUIT = nuevoProveedor.CUIT,
+                    RazonSocial = nuevoProveedor.RazonSocial,
+                    Domicilio = nuevoProveedor.Domicilio,
+                    Empresa = empresa,
+                    Activo = true
+                };
+
+                await _context.Proveedores.AddAsync(proveedor);
+
+                foreach (int r in nuevoProveedor.RubrosSeleccionados)
+                {
+                    Rubro rubro = await _context.Rubros.FindAsync(r);
+
+                    if (rubro != null)
+                    {
+                        ProveedorRubro proveedorRubro = new ProveedorRubro
+                        {
+                            Proveedor = proveedor,
+                            Rubro = rubro
+                        };
+
+                        await _context.ProveedorRubros.AddAsync(proveedorRubro);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Se cargó correctamente el Proveedor " + nuevoProveedor.Nombre + ".",
+                    id = proveedor.Id
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al cargar el Proveedor. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        // PUT: endpoint/proveedor/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] ProveedorDTO editProveedor)
+        {
+            try
+            {
+                editProveedor.ProveedorId = id;
+
+                List<string> errores = ValidarProveedor(editProveedor);
+
+                if (errores.Count > 0)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Hay errores de validación.",
+                        errores = errores,
+                        data = CreateProveedorDTO(editProveedor)
+                    });
+                }
+
+                Proveedor proveedor = await _context.Proveedores
+                    .Include(p => p.Empresa)
+                    .Include(p => p.Rubros)
+                        .ThenInclude(r => r.Rubro)
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                Empresas empresa = await _context.Empresas.FindAsync(editProveedor.EmpresaId);
+
+                if (empresa == null)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Debe seleccionar una Empresa válida."
+                    });
+                }
+
+                List<ProveedorRubro> rubrosAEliminar = proveedor.Rubros
+                    .Where(r => !editProveedor.RubrosSeleccionados.Contains(r.Rubro.Id))
+                    .ToList();
+
+                _context.ProveedorRubros.RemoveRange(rubrosAEliminar);
+
+                List<int> rubrosActuales = proveedor.Rubros
+                    .Select(r => r.Rubro.Id)
+                    .ToList();
+
+                foreach (int r in editProveedor.RubrosSeleccionados.Where(x => !rubrosActuales.Contains(x)))
+                {
+                    Rubro rubro = await _context.Rubros.FindAsync(r);
+
+                    if (rubro != null)
+                    {
+                        ProveedorRubro proveedorRubro = new ProveedorRubro
+                        {
+                            Proveedor = proveedor,
+                            Rubro = rubro
+                        };
+
+                        await _context.ProveedorRubros.AddAsync(proveedorRubro);
+                    }
+                }
+
+                proveedor.Nombre = editProveedor.Nombre;
+                proveedor.CUIT = editProveedor.CUIT;
+                proveedor.RazonSocial = editProveedor.RazonSocial;
+                proveedor.Domicilio = editProveedor.Domicilio;
+                proveedor.Empresa = empresa;
+                proveedor.Activo = true;
+
+                _context.Proveedores.Update(proveedor);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Se modificó correctamente el Proveedor."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al modificar el Proveedor. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        // DELETE: endpoint/proveedor/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                Proveedor proveedor = await _context.Proveedores.FindAsync(id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                proveedor.Activo = false;
+
+                _context.Proveedores.Update(proveedor);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Se eliminó correctamente el Proveedor " + proveedor.Nombre + "."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al eliminar el Proveedor. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        // GET: endpoint/proveedor/5/detalle
+        [HttpGet("{id}/detalle")]
+        public async Task<IActionResult> GetDetalleProveedor(int id)
+        {
+            try
+            {
+                Proveedor proveedor = await _context.Proveedores
+                    .Include(p => p.Empresa)
+                    .Include(p => p.Rubros)
+                        .ThenInclude(r => r.Rubro)
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                List<ProveedorProductoDTO> productos = ObtenerProductosProveedor(id);
+
+                ProveedorDetalleDTO data = new ProveedorDetalleDTO
+                {
+                    Id = proveedor.Id,
+                    Nombre = proveedor.Nombre,
+                    CUIT = proveedor.CUIT.ToString(),
+                    RazonSocial = proveedor.RazonSocial,
+                    Domicilio = proveedor.Domicilio,
+                    Empresa = proveedor.Empresa != null ? proveedor.Empresa.RazonSocial : "",
+                    Rubros = proveedor.Rubros != null
+                        ? proveedor.Rubros.Select(x => x.Rubro.Nombre).ToList()
+                        : new List<string>(),
+                    Productos = productos
+                };
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Detalle del proveedor obtenido correctamente.",
+                    data = data
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al acceder a la lista de Productos del Proveedor. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        // GET: endpoint/proveedor/5/productos
+        [HttpGet("{id}/productos")]
+        public IActionResult GetProductosProveedor(int id, string buscar = "", int page = 1, int pageSize = 10)
+        {
+            try
+            {
+                if (page < 1)
+                {
+                    page = 1;
+                }
+
+                if (pageSize < 1)
+                {
+                    pageSize = 10;
+                }
+
+                Proveedor proveedor = _context.Proveedores.Find(id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                List<ProveedorProductoDTO> productos = ObtenerProductosProveedor(id);
+
+                if (!string.IsNullOrWhiteSpace(buscar))
+                {
+                    string texto = buscar.Trim().ToLower();
+
+                    productos = productos
+                        .Where(p =>
+                            (p.Producto != null && p.Producto.ToLower().Contains(texto)) ||
+                            (p.Rubro != null && p.Rubro.ToLower().Contains(texto)) ||
+                            (p.Detalle != null && p.Detalle.ToLower().Contains(texto)) ||
+                            p.Precio.ToString().Contains(texto) ||
+                            p.PrecioOferta.ToString().Contains(texto)
+                        )
+                        .ToList();
+                }
+
+                int total = productos.Count;
+
+                productos = productos
+                    .OrderBy(p => p.Producto)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Productos del proveedor obtenidos correctamente.",
+                    total = total,
+                    page = page,
+                    pageSize = pageSize,
+                    data = productos
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al obtener los productos del proveedor."
+                });
+            }
+        }
+
+        // GET: endpoint/proveedor/5/productos/export-excel
+        [HttpGet("{id}/productos/export-excel")]
+        public IActionResult ExportProductosProveedorExcel(int id, string buscar = "")
+        {
+            try
+            {
+                Proveedor proveedor = _context.Proveedores.Find(id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                List<ProveedorProductoDTO> productos = ObtenerProductosProveedor(id);
+
+                if (!string.IsNullOrWhiteSpace(buscar))
+                {
+                    string texto = buscar.Trim().ToLower();
+
+                    productos = productos
+                        .Where(p =>
+                            (p.Producto != null && p.Producto.ToLower().Contains(texto)) ||
+                            (p.Rubro != null && p.Rubro.ToLower().Contains(texto)) ||
+                            (p.Detalle != null && p.Detalle.ToLower().Contains(texto)) ||
+                            p.Precio.ToString().Contains(texto) ||
+                            p.PrecioOferta.ToString().Contains(texto)
+                        )
+                        .ToList();
+                }
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.AppendLine("Producto;Rubro;Detalle;Precio;Precio Oferta;Financiable");
+
+                foreach (ProveedorProductoDTO producto in productos.OrderBy(p => p.Producto))
+                {
+                    sb.Append(EscapeCsv(producto.Producto));
+                    sb.Append(";");
+                    sb.Append(EscapeCsv(producto.Rubro));
+                    sb.Append(";");
+                    sb.Append(EscapeCsv(producto.Detalle));
+                    sb.Append(";");
+                    sb.Append(producto.Precio);
+                    sb.Append(";");
+                    sb.Append(producto.PrecioOferta);
+                    sb.Append(";");
+                    sb.Append(producto.Financiable ? "Si" : "No");
+                    sb.AppendLine();
+                }
+
+                byte[] bytes = Encoding.UTF8.GetPreamble()
+                    .Concat(Encoding.UTF8.GetBytes(sb.ToString()))
+                    .ToArray();
+
+                string fileName = "productos-proveedor-" + id + ".csv";
+
+                return File(bytes, "text/csv", fileName);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al exportar los productos del proveedor."
+                });
+            }
+        }
+
+        // GET: endpoint/proveedor/5/image
+        [HttpGet("{id}/image")]
+        public async Task<IActionResult> GetImage(int id)
+        {
+            try
+            {
+                Proveedor proveedor = await _context.Proveedores.FindAsync(id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                string fotoBase64 = "";
+
+                if (proveedor.Foto != null)
+                {
+                    fotoBase64 = Convert.ToBase64String(proveedor.Foto);
+                }
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Imagen del proveedor obtenida correctamente.",
+                    data = new
+                    {
+                        Id = proveedor.Id,
+                        Foto = fotoBase64
+                    }
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al obtener la imagen del proveedor."
+                });
+            }
+        }
+
+        // POST: endpoint/proveedor/5/image
+        [HttpPost("{id}/image")]
+        public async Task<IActionResult> UploadImage(int id, [FromForm] IFormFile FotoProveedor)
+        {
+            try
+            {
+                Proveedor proveedorEdit = await _context.Proveedores.FindAsync(id);
+
+                if (proveedorEdit == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                if (FotoProveedor != null)
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await FotoProveedor.CopyToAsync(memoryStream);
+                        proveedorEdit.Foto = memoryStream.ToArray();
+                    }
+                }
+                else
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Debe seleccionar una imagen."
+                    });
+                }
+
+                _context.Proveedores.Update(proveedorEdit);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Se cargó correctamente la Foto del Proveedor."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al cargar la Foto del Proveedor. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        private List<ProveedorProductoDTO> ObtenerProductosProveedor(int proveedorId)
+        {
+            List<Producto> productosDb = _context.Productos
+                .Include(p => p.Rubro)
+                .Where(p => p.Activo && p.Proveedor.Id == proveedorId)
+                .ToList();
+
+            List<ProveedorProductoDTO> productos = productosDb
+                .Select(p => new ProveedorProductoDTO
+                {
+                    Id = p.Id,
+                    Producto = GetStringProperty(p, "Nombre", "Producto", "Descripcion", "DescripcionProducto", "Titulo"),
+                    Rubro = p.Rubro != null ? p.Rubro.Nombre : "",
+                    Detalle = GetStringProperty(p, "Detalle", "Descripcion", "DescripcionProducto", "Observacion", "Observaciones"),
+                    Precio = p.Precio,
+                    PrecioOferta = GetDecimalProperty(p, "PrecioOferta", "PrecioPromocion", "PrecioPromocional", "Oferta"),
+                    Financiable = p.Financiable
+                })
+                .ToList();
+
+            return productos;
+        }
+
+        private ProveedorDTO CreateProveedorDTO(ProveedorDTO proveedorDto, Proveedor proveedor = null)
+        {
+            proveedorDto.Rubros = _context.Rubros
+                .Where(x => x.Activo)
+                .Select(g => new SelectListItem
+                {
+                    Text = g.Nombre,
+                    Value = g.Id.ToString()
+                })
+                .ToList();
+
+            proveedorDto.Empresas = _context.Empresas
+                .Select(g => new SelectListItem
+                {
+                    Text = g.RazonSocial,
+                    Value = g.Id.ToString()
+                })
+                .ToList();
+
+            if (proveedorDto.RubrosSeleccionados == null)
+            {
+                proveedorDto.RubrosSeleccionados = new List<int>();
+            }
+
+            if (proveedor != null)
+            {
+                proveedorDto.ProveedorId = proveedor.Id;
+                proveedorDto.Nombre = proveedor.Nombre;
+                proveedorDto.CUIT = proveedor.CUIT;
+                proveedorDto.RazonSocial = proveedor.RazonSocial;
+                proveedorDto.Domicilio = proveedor.Domicilio;
+                proveedorDto.EmpresaId = proveedor.Empresa != null ? proveedor.Empresa.Id : 0;
+                proveedorDto.RubrosSeleccionados = proveedor.Rubros != null
+                    ? proveedor.Rubros.Select(x => x.Rubro.Id).ToList()
+                    : new List<int>();
+            }
+
+            return proveedorDto;
+        }
+
+        private List<string> ValidarProveedor(ProveedorDTO proveedor)
+        {
+            List<string> errores = new List<string>();
+
+            if (proveedor.EmpresaId == 0)
+            {
+                errores.Add("Debe seleccionar una Empresa.");
+            }
+
+            if (proveedor.RubrosSeleccionados == null || proveedor.RubrosSeleccionados.Count < 1)
+            {
+                errores.Add("Debe seleccionar un Rubro.");
+            }
+
+            if (string.IsNullOrWhiteSpace(proveedor.Nombre))
+            {
+                errores.Add("Debe ingresar el Nombre del Proveedor.");
+            }
+
+            if (proveedor.CUIT == 0)
+            {
+                errores.Add("Debe ingresar el CUIT del Proveedor.");
+            }
+
+            if (string.IsNullOrWhiteSpace(proveedor.RazonSocial))
+            {
+                errores.Add("Debe ingresar la Razón Social del Proveedor.");
+            }
+
+            return errores;
+        }
+
+        private string GetStringProperty(object obj, params string[] propertyNames)
+        {
+            if (obj == null)
+            {
+                return "";
+            }
+
+            foreach (string propertyName in propertyNames)
+            {
+                var property = obj.GetType().GetProperty(propertyName);
+
+                if (property != null)
+                {
+                    object value = property.GetValue(obj, null);
+
+                    if (value != null)
+                    {
+                        return value.ToString();
+                    }
+                }
+            }
+
+            return "";
+        }
+
+        private decimal GetDecimalProperty(object obj, params string[] propertyNames)
+        {
+            if (obj == null)
+            {
+                return 0;
+            }
+
+            foreach (string propertyName in propertyNames)
+            {
+                var property = obj.GetType().GetProperty(propertyName);
+
+                if (property != null)
+                {
+                    object value = property.GetValue(obj, null);
+
+                    if (value != null)
+                    {
+                        decimal result;
+
+                        if (decimal.TryParse(value.ToString(), out result))
+                        {
+                            return result;
+                        }
+                    }
+                }
+            }
+
+            return 0;
+        }
+
+        private string EscapeCsv(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return "";
+            }
+
+            value = value.Replace("\"", "\"\"");
+
+            if (value.Contains(";") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
+            {
+                value = "\"" + value + "\"";
+            }
+
+            return value;
+        }
+    }
+}
