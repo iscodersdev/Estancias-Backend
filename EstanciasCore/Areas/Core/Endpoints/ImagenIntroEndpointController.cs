@@ -25,9 +25,9 @@ namespace EstanciasCore.Areas.Core.Endpoints
 
         [HttpGet("listar")]
         public async Task<IActionResult> Listar(
-            string buscar = "",
-            int pagina = 1,
-            int cantidad = 10)
+    [FromQuery(Name = "buscar")] string buscar = "",
+    [FromQuery(Name = "pagina")] int pagina = 1,
+    [FromQuery(Name = "cantidad")] int cantidad = 10)
         {
             try
             {
@@ -41,35 +41,37 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     cantidad = 10;
                 }
 
-                if (buscar == null)
-                {
-                    buscar = string.Empty;
-                }
-
+                buscar = Request.Query["buscar"].FirstOrDefault() ?? buscar ?? string.Empty;
                 buscar = buscar.Trim();
-
-                var usuario = await _context.Usuarios
-                    .Include(x => x.Clientes)
-                    .ThenInclude(x => x.Empresa)
-                    .FirstOrDefaultAsync(x => x.Email == User.Identity.Name);
 
                 var query = _context.ImagenIntro
                     .Include(x => x.Empresa)
                     .AsQueryable();
 
-                if (usuario == null || usuario.Clientes == null || usuario.Clientes.Empresa == null)
-                {
-                    query = query.Where(x => x.Empresa == null);
-                }
-                else
+                var emailUsuario = User.Identity != null ? User.Identity.Name : null;
+
+                var usuario = await _context.Usuarios
+                    .Include(x => x.Clientes)
+                    .ThenInclude(x => x.Empresa)
+                    .FirstOrDefaultAsync(x => x.Email == emailUsuario);
+
+                if (usuario != null && usuario.Clientes != null && usuario.Clientes.Empresa != null)
                 {
                     int empresaId = usuario.Clientes.Empresa.Id;
-                    query = query.Where(x => x.Empresa != null && x.Empresa.Id == empresaId);
+
+                    query = query.Where(x =>
+                        x.Empresa != null &&
+                        x.Empresa.Id == empresaId
+                    );
                 }
 
                 if (!string.IsNullOrWhiteSpace(buscar))
                 {
-                    query = query.Where(x => x.Titulo.Contains(buscar));
+                    string texto = buscar.ToLower();
+
+                    query = query.Where(x =>
+                        (x.Titulo ?? "").ToLower().Contains(texto)
+                    );
                 }
 
                 var totalRegistros = await query.CountAsync();
