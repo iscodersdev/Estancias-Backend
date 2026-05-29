@@ -40,7 +40,28 @@ namespace EstanciasCore.Services
         private readonly ILogger<ObtenerPuntosService> _logger;
         private readonly HttpClient _httpClient;
         private readonly DateTime FiltroFecha = new DateTime(2026, 1, 1);
-
+        private static readonly (int Id, string Nombre)[] Tiendas = new[]
+        {
+            (141, "KEVINGSTON FORMOSA"),
+            (121, "WANAMA"),
+            (92, "PORTA SANTA"),
+            (150, "GRISINO"),
+            (140, "PENGUIN"),
+            (96, "CASA CHRISTIE"),
+            (94, "LEGACY PORTAL"),
+            (180, "KEVINGSTON CENTRO"),
+            (175, "VOLKA"),
+            (183, "VOLKA SAENZ PEÑA"),
+            (176, "CATIVELLI"),
+            (991, "SANTA CARMELA"),
+            (992, "MELOCOTON"),
+            (4, "ESTANCIAS VICTORIA"),
+            (193, "LODS"),
+            (146, "SARA REY"),
+            (77, "PATO PAMPA"),
+            (880, "ASUNCION"),
+            (100, "ARIA")
+        };
 
         public ObtenerPuntosService(IConfiguration configuration, EstanciasContext context, IDatosTarjetaService datosTarjetaService, ILogger<ObtenerPuntosService> logger)
         {
@@ -92,6 +113,16 @@ namespace EstanciasCore.Services
 
                     var responseCompania = await _datosTarjetaService.ObtenerOperacionDetalles(c.Operacion);
 
+                    int companiaId = responseCompania != null ? Convert.ToInt32(responseCompania.CodigoCompania) : 0;
+
+                    // SI EL ID ESTÁ EN EL ARRAY, NO TIENE QUE SUMAR PUNTOS (Sigue de largo)
+                    if (Tiendas.Any(t => t.Id == companiaId))
+                    {
+                        _logger.LogInformation($"Compañía {companiaId} excluida. No suma puntos.");
+                        continue; // Salta al siguiente crédito sin hacer el .Add
+                    }
+
+                    // Si NO está en el array, pasa el filtro y se procesa normalmente:
                     var nuevoPuntoCliente = new PuntosObtenidosClientes
                     {
                         Usuario = user,
@@ -100,7 +131,7 @@ namespace EstanciasCore.Services
                         MontoCompra = monto,
                         FechaCompra = fechaCompra,
                         Compania = responseCompania?.Compania ?? "Desconocida",
-                        CompaniaId = Convert.ToInt32(responseCompania?.CodigoCompania),
+                        CompaniaId = companiaId,
                         PuntosObtenidos = CalcularPuntos(monto, relacionPuntos),
                         PuntosDisponibles = CalcularPuntosVencidos(monto, relacionPuntos),
                         FechaVencimiento = CalcularFechaVencimiento(fechaCompra),
