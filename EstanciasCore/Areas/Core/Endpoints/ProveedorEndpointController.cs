@@ -502,6 +502,309 @@ namespace EstanciasCore.Areas.Core.Endpoints
             }
         }
 
+        // GET: endpoint/proveedor/5/productos/create-data
+        [HttpGet("{id}/productos/create-data")]
+        public IActionResult GetCreateProductoData(int id)
+        {
+            try
+            {
+                Proveedor proveedor = _context.Proveedores
+                    .Include(p => p.Rubros)
+                        .ThenInclude(r => r.Rubro)
+                    .FirstOrDefault(p => p.Id == id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                List<SelectListItem> rubros = proveedor.Rubros != null && proveedor.Rubros.Count > 0
+                    ? proveedor.Rubros
+                        .Where(x => x.Rubro != null && x.Rubro.Activo)
+                        .Select(x => new SelectListItem
+                        {
+                            Text = x.Rubro.Nombre,
+                            Value = x.Rubro.Id.ToString()
+                        })
+                        .ToList()
+                    : _context.Rubros
+                        .Where(x => x.Activo)
+                        .Select(x => new SelectListItem
+                        {
+                            Text = x.Nombre,
+                            Value = x.Id.ToString()
+                        })
+                        .ToList();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Datos para crear producto obtenidos correctamente.",
+                    data = new
+                    {
+                        proveedorId = proveedor.Id,
+                        proveedor = proveedor.Nombre,
+                        rubros = rubros
+                    }
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al obtener los datos para crear el producto."
+                });
+            }
+        }
+
+        // POST: endpoint/proveedor/5/productos
+        [HttpPost("{id}/productos")]
+        public async Task<IActionResult> CreateProductoProveedor(int id, [FromBody] ProveedorProductoCreateDTO nuevoProducto)
+        {
+            try
+            {
+                Proveedor proveedor = await _context.Proveedores.FindAsync(id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                List<string> errores = ValidarProducto(nuevoProducto);
+
+                if (errores.Count > 0)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Hay errores de validación.",
+                        errores = errores
+                    });
+                }
+
+                Rubro rubro = await _context.Rubros.FindAsync(nuevoProducto.RubroId);
+
+                if (rubro == null)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Debe seleccionar un Rubro válido."
+                    });
+                }
+
+                Producto producto = new Producto
+                {
+                    Proveedor = proveedor,
+                    Rubro = rubro,
+                    Precio = nuevoProducto.Precio,
+                    Financiable = nuevoProducto.Financiable,
+                    Activo = true
+                };
+
+                SetStringProperty(producto, nuevoProducto.Producto, "Nombre", "Producto", "Descripcion", "DescripcionProducto", "Titulo");
+                SetStringProperty(producto, nuevoProducto.Detalle, "Detalle", "Observacion", "Observaciones");
+                SetDecimalProperty(producto, nuevoProducto.PrecioOferta, "PrecioOferta", "PrecioPromocion", "PrecioPromocional", "Oferta");
+
+                await _context.Productos.AddAsync(producto);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Se cargó correctamente el Producto.",
+                    id = producto.Id
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al cargar el Producto. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        // GET: endpoint/proveedor/5/productos/10
+        [HttpGet("{id}/productos/{productoId}")]
+        public IActionResult GetProductoProveedorById(int id, int productoId)
+        {
+            try
+            {
+                Producto producto = _context.Productos
+                    .Include(p => p.Rubro)
+                    .Include(p => p.Proveedor)
+                    .FirstOrDefault(p => p.Id == productoId && p.Proveedor.Id == id);
+
+                if (producto == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el producto solicitado."
+                    });
+                }
+
+                ProveedorProductoCreateDTO data = new ProveedorProductoCreateDTO
+                {
+                    ProductoId = producto.Id,
+                    Producto = GetStringProperty(producto, "Nombre", "Producto", "Descripcion", "DescripcionProducto", "Titulo"),
+                    Detalle = GetStringProperty(producto, "Detalle", "Observacion", "Observaciones"),
+                    Precio = producto.Precio,
+                    PrecioOferta = GetDecimalProperty(producto, "PrecioOferta", "PrecioPromocion", "PrecioPromocional", "Oferta"),
+                    Financiable = producto.Financiable,
+                    RubroId = producto.Rubro != null ? producto.Rubro.Id : 0
+                };
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Producto obtenido correctamente.",
+                    data = data
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al obtener el producto."
+                });
+            }
+        }
+
+        // PUT: endpoint/proveedor/5/productos/10
+        [HttpPut("{id}/productos/{productoId}")]
+        public async Task<IActionResult> UpdateProductoProveedor(int id, int productoId, [FromBody] ProveedorProductoCreateDTO editProducto)
+        {
+            try
+            {
+                Proveedor proveedor = await _context.Proveedores.FindAsync(id);
+
+                if (proveedor == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el proveedor solicitado."
+                    });
+                }
+
+                Producto producto = await _context.Productos
+                    .Include(p => p.Proveedor)
+                    .FirstOrDefaultAsync(p => p.Id == productoId && p.Proveedor.Id == id);
+
+                if (producto == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el producto solicitado."
+                    });
+                }
+
+                List<string> errores = ValidarProducto(editProducto);
+
+                if (errores.Count > 0)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Hay errores de validación.",
+                        errores = errores
+                    });
+                }
+
+                Rubro rubro = await _context.Rubros.FindAsync(editProducto.RubroId);
+
+                if (rubro == null)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "Debe seleccionar un Rubro válido."
+                    });
+                }
+
+                producto.Proveedor = proveedor;
+                producto.Rubro = rubro;
+                producto.Precio = editProducto.Precio;
+                producto.Financiable = editProducto.Financiable;
+                producto.Activo = true;
+
+                SetStringProperty(producto, editProducto.Producto, "Nombre", "Producto", "Descripcion", "DescripcionProducto", "Titulo");
+                SetStringProperty(producto, editProducto.Detalle, "Detalle", "Observacion", "Observaciones");
+                SetDecimalProperty(producto, editProducto.PrecioOferta, "PrecioOferta", "PrecioPromocion", "PrecioPromocional", "Oferta");
+
+                _context.Productos.Update(producto);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Se modificó correctamente el Producto."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al modificar el Producto. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        // DELETE: endpoint/proveedor/5/productos/10
+        [HttpDelete("{id}/productos/{productoId}")]
+        public async Task<IActionResult> DeleteProductoProveedor(int id, int productoId)
+        {
+            try
+            {
+                Producto producto = await _context.Productos
+                    .Include(p => p.Proveedor)
+                    .FirstOrDefaultAsync(p => p.Id == productoId && p.Proveedor.Id == id);
+
+                if (producto == null)
+                {
+                    return NotFound(new
+                    {
+                        status = 404,
+                        mensaje = "No se encontró el producto solicitado."
+                    });
+                }
+
+                producto.Activo = false;
+
+                _context.Productos.Update(producto);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    status = 200,
+                    mensaje = "Se eliminó correctamente el Producto."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Hubo un error al eliminar el Producto. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
         // GET: endpoint/proveedor/5/productos/export-excel
         [HttpGet("{id}/productos/export-excel")]
         public IActionResult ExportProductosProveedorExcel(int id, string buscar = "")
@@ -676,6 +979,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
         {
             List<Producto> productosDb = _context.Productos
                 .Include(p => p.Rubro)
+                .Include(p => p.Proveedor)
                 .Where(p => p.Activo && p.Proveedor.Id == proveedorId)
                 .ToList();
 
@@ -685,7 +989,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     Id = p.Id,
                     Producto = GetStringProperty(p, "Nombre", "Producto", "Descripcion", "DescripcionProducto", "Titulo"),
                     Rubro = p.Rubro != null ? p.Rubro.Nombre : "",
-                    Detalle = GetStringProperty(p, "Detalle", "Descripcion", "DescripcionProducto", "Observacion", "Observaciones"),
+                    Detalle = GetStringProperty(p, "Detalle", "Observacion", "Observaciones"),
                     Precio = p.Precio,
                     PrecioOferta = GetDecimalProperty(p, "PrecioOferta", "PrecioPromocion", "PrecioPromocional", "Oferta"),
                     Financiable = p.Financiable
@@ -767,6 +1071,33 @@ namespace EstanciasCore.Areas.Core.Endpoints
             return errores;
         }
 
+        private List<string> ValidarProducto(ProveedorProductoCreateDTO producto)
+        {
+            List<string> errores = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(producto.Producto))
+            {
+                errores.Add("Debe ingresar la Descripción del Producto.");
+            }
+
+            if (producto.Precio < 0)
+            {
+                errores.Add("El Precio del Producto no puede ser menor a 0.");
+            }
+
+            if (producto.PrecioOferta < 0)
+            {
+                errores.Add("El Precio de Oferta del Producto no puede ser menor a 0.");
+            }
+
+            if (producto.RubroId == 0)
+            {
+                errores.Add("Debe seleccionar un Rubro.");
+            }
+
+            return errores;
+        }
+
         private string GetStringProperty(object obj, params string[] propertyNames)
         {
             if (obj == null)
@@ -820,6 +1151,53 @@ namespace EstanciasCore.Areas.Core.Endpoints
             }
 
             return 0;
+        }
+
+        private void SetStringProperty(object obj, string value, params string[] propertyNames)
+        {
+            if (obj == null)
+            {
+                return;
+            }
+
+            foreach (string propertyName in propertyNames)
+            {
+                var property = obj.GetType().GetProperty(propertyName);
+
+                if (property != null && property.CanWrite && property.PropertyType == typeof(string))
+                {
+                    property.SetValue(obj, value);
+                    return;
+                }
+            }
+        }
+
+        private void SetDecimalProperty(object obj, decimal value, params string[] propertyNames)
+        {
+            if (obj == null)
+            {
+                return;
+            }
+
+            foreach (string propertyName in propertyNames)
+            {
+                var property = obj.GetType().GetProperty(propertyName);
+
+                if (property != null && property.CanWrite)
+                {
+                    if (property.PropertyType == typeof(decimal))
+                    {
+                        property.SetValue(obj, value);
+                        return;
+                    }
+
+                    if (property.PropertyType == typeof(decimal?))
+                    {
+                        property.SetValue(obj, value);
+                        return;
+                    }
+                }
+            }
         }
 
         private string EscapeCsv(string value)
