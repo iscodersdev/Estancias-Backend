@@ -1,0 +1,40 @@
+@using Commons.HtmlHelpers
+@model DAL.Models.Marcas
+@{
+    ViewData["Title"] = "Editar Marca: " + Model.Nombre;
+}
+<form asp-action="_Update" asp-antiforgery="true">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="Id" />
+        
+        <div class="form-group">
+            <label asp-for="Nombre" class="control-label"></label>
+            <input asp-for="Nombre" class="form-control" required />
+            <span asp-validation-for="Nombre" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Orden" class="control-label"></label>
+            <input asp-for="Orden" class="form-control" type="number" required />
+            <span asp-validation-for="Orden" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="checkbox">
+                <label>
+                    <input asp-for="Activo" /> Activo
+                </label>
+            </div>
+            <span asp-validation-for="Activo" class="text-danger"></span>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+
+</form>

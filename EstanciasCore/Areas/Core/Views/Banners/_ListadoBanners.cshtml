@@ -1,4 +1,4 @@
-﻿@using DAL.Models
+@using DAL.Models
 @model Commons.Models.Page<DAL.Models.Banners>
 
 <box-header title="Listado">
@@ -27,6 +27,9 @@
                     Orden
                 </th>
                 <th>
+                    Marca
+                </th>
+                <th>
                     Link Externo
                 </th>
             </tr>
@@ -53,6 +56,16 @@
                 </td>
                  <td>
                      @Html.DisplayFor(modelItem => item.Orden)
+                 </td>
+                 <td>
+                     @if (item.Marcas != null)
+                     {
+                         @item.Marcas.Nombre
+                     }
+                     else
+                     {
+                         <span class="text-muted">Sin Marca</span>
+                     }
                  </td>
                  <td>
                         @if (item.LinkExterno)

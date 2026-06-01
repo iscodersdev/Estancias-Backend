@@ -1,4 +1,4 @@
-﻿@using Commons.HtmlHelpers
+@using Commons.HtmlHelpers
 @model DAL.Models.Banners
 @{
     ViewData["Title"] = "Crear Promociones";
@@ -66,6 +66,16 @@
                 <textarea asp-for="Texto" rows="10" class="form-control" style="text-wrap:normal" type="text" placeholder="Describa el Texto de la Promoción"></textarea>
                 <span asp-validation-for="Texto" class="text-danger"></span>
             </div>
+            <div class="form-group">
+                <label class="control-label">Marca</label>
+                <select id="marcaSelectCreate" name="MarcasId" class="form-control" asp-items="@ViewBag.Marcas">
+                    <option value="">-- Sin Marca --</option>
+                </select>
+            </div>
+            <div class="form-group" id="marcaPreviewDivCreate" style="display:none; text-align: center; margin-bottom: 15px;">
+                <label class="control-label" style="display:block;">Logo de la Marca</label>
+                <img id="marcaPreviewImgCreate" src="" style="max-height: 80px; max-width: 160px; border: 1px solid #ddd; padding: 5px; border-radius: 4px;" />
+            </div>
             <div class="form-group" hidden>
                 <label asp-for="Publico" class="control-label"></label>
                 <input asp-for="Publico" type="checkbox" class="form-control" />
@@ -94,6 +104,17 @@
                 $('#fechaHastaDivCreate').show();
             } else {
                 $('#fechaHastaDivCreate').hide();
+            }
+        });
+        $('#marcaSelectCreate').change(function () {
+            var brandId = $(this).val();
+            if (brandId) {
+                var imgUrl = '/Core/Marcas/GetImagen/' + brandId;
+                $('#marcaPreviewImgCreate').attr('src', imgUrl);
+                $('#marcaPreviewDivCreate').show();
+            } else {
+                $('#marcaPreviewDivCreate').hide();
+                $('#marcaPreviewImgCreate').attr('src', '');
             }
         });
     });

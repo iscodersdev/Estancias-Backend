@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Commons.Identity;
 using DAL.Models;
 using DAL.Models.Core;
@@ -42,6 +42,7 @@ namespace DAL.Data
         public DbSet<UAT> UAT { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Persona> Personas { get; set; }
+        public DbSet<Marcas> Marcas { get; set; }
 
         //MOBILE
         public DbSet<Invitaciones> Invitaciones { get; set; }

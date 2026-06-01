@@ -1,4 +1,4 @@
-﻿@using Commons.HtmlHelpers
+@using Commons.HtmlHelpers
 @model DAL.Models.Banners
 @{
     ViewData["Title"] = "Editar Banner: " + Model.Titulo;
@@ -72,6 +72,16 @@
                             <select asp-items="@ViewBag.Colores" name="colorId" class="form-control"></select>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="control-label">Marca</label>
+                        <select id="marcaSelectUpdate" name="MarcasId" class="form-control" asp-items="@ViewBag.Marcas">
+                            <option value="">-- Sin Marca --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="marcaPreviewDivUpdate" style="display:none; text-align: center; margin-bottom: 15px;">
+                        <label class="control-label" style="display:block;">Logo de la Marca</label>
+                        <img id="marcaPreviewImgUpdate" src="" style="max-height: 80px; max-width: 160px; border: 1px solid #ddd; padding: 5px; border-radius: 4px;" />
+                    </div>
                     <div class="form-group" hidden>
                         <label asp-for="Publico" class="control-label"></label>
                         <input asp-for="Publico" type="checkbox" class="form-control" />
@@ -112,6 +122,19 @@
             $('#fechaHastaDiv').show();
         }
 
-    });
+        function updateMarcaPreview() {
+            var brandId = $('#marcaSelectUpdate').val();
+            if (brandId) {
+                var imgUrl = '/Core/Marcas/GetImagen/' + brandId;
+                $('#marcaPreviewImgUpdate').attr('src', imgUrl);
+                $('#marcaPreviewDivUpdate').show();
+            } else {
+                $('#marcaPreviewDivUpdate').hide();
+                $('#marcaPreviewImgUpdate').attr('src', '');
+            }
+        }
 
+        $('#marcaSelectUpdate').change(updateMarcaPreview);
+        updateMarcaPreview();
+    });
 </script>

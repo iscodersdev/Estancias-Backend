@@ -31,6 +31,7 @@ namespace DAL.Models
         public virtual Colores Color { get; set; }
         public int Orden { get; set; }
         public bool LinkExterno { get; set; }
+        public virtual Marcas Marcas { get; set; }
     }
 
 }

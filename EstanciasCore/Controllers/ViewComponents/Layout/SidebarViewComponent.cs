@@ -1,4 +1,4 @@
-﻿using Castle.Core.Internal;
+using Castle.Core.Internal;
 using Commons.Extensions;
 using Commons.Helpers;
 using Commons.Identity.Extensions;
@@ -60,11 +60,12 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                     //MenuHelpers.AddModule("Inversores", "/Core/Inversores/"),
                     MenuHelpers.AddModule("Leyendas", "/Core/LeyendaTipoMovimiento/"),
                     MenuHelpers.AddModule("Categoria de Usuarios", "/Core/UsuarioCategorias"),
+                    MenuHelpers.AddModule("Marcas", "/Core/Marcas/")
                 };
                 datos.TreeChild.Add(generales);
                 especificos.TreeChild = new List<SidebarMenu>()
                 {
-                    MenuHelpers.AddModule("Proveedor - Rubros", "/Core/Rubro/")                    
+                    MenuHelpers.AddModule("Proveedor - Rubros", "/Core/Rubro/"),
                 };
                 datos.TreeChild.Add(especificos);
 
@@ -217,6 +218,9 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
 
                 if (HttpContext.UserHasRoute("/Core/Rubro/Index"))
                     especificos.TreeChild.Add(MenuHelpers.AddModule("Proveedor - Rubros", "/Core/Rubro/"));
+
+                if (HttpContext.UserHasRoute("/Core/Marcas/Index"))
+                    especificos.TreeChild.Add(MenuHelpers.AddModule("Marcas", "/Core/Marcas/"));
 
 
                 if (especificos.TreeChild.Count != 0)

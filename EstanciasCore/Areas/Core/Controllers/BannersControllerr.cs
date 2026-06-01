@@ -1,4 +1,4 @@
-﻿using Commons.Models;
+using Commons.Models;
 using Microsoft.AspNetCore.Mvc;
 using DAL.Data;
 using DAL.Models;
@@ -12,6 +12,8 @@ using Newtonsoft.Json;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace EstanciasCore.Controllers
 {
@@ -31,6 +33,11 @@ namespace EstanciasCore.Controllers
         }
         public ActionResult Create()
         {
+            ViewBag.Marcas = _context.Marcas
+                                .Where(x => x.Activo)
+                                .OrderBy(x => x.Orden)
+                                .Select(x => new SelectListItem { Text = x.Nombre, Value = x.Id.ToString() })
+                                .ToList();
             return PartialView();
         }
         public IActionResult ObtenerBanners(Page<Banners> page)
@@ -39,20 +46,21 @@ namespace EstanciasCore.Controllers
             var usuario = _context.Usuarios.FirstOrDefault(x => x.Email == User.Identity.Name);
             if(usuario== null || usuario.Clientes?.Empresa == null)
             {
-                page.SelectPage("/Banners/ObtenerBanners", _context.Banners, x => x.Empresa == null && (x.Titulo.Contains(page.SearchText) || x.Texto.Contains(page.SearchText)));
+                page.SelectPage("/Banners/ObtenerBanners", 
+                    _context.Banners.Include(x => x.Marcas).Where(x => x.Empresa == null && (x.Titulo.Contains(page.SearchText) || x.Texto.Contains(page.SearchText)))
+                );
             }
             else
             {
                 page.SelectPage("/Banners/ObtenerBanners",
-                    _context.Banners,
-                    x => x.Empresa.Id == usuario.Clientes.Empresa.Id && (x.Titulo.Contains(page.SearchText) || x.Texto.Contains(page.SearchText))
-                    );
+                    _context.Banners.Include(x => x.Marcas).Where(x => x.Empresa.Id == usuario.Clientes.Empresa.Id && (x.Titulo.Contains(page.SearchText) || x.Texto.Contains(page.SearchText)))
+                );
             }
             return PartialView("_ListadoBanners", page);
         }
 
         [HttpPost]
-        public async System.Threading.Tasks.Task<ActionResult> Create(Banners banner, int colorId, int BannersFijo, string TieneFechaVencimiento)
+        public async System.Threading.Tasks.Task<ActionResult> Create(Banners banner, int colorId, int BannersFijo, string TieneFechaVencimiento, int? MarcasId)
         {
             try
             {
@@ -70,6 +78,10 @@ namespace EstanciasCore.Controllers
                 if (TieneFechaVencimiento=="on")
                 {
                     banner.Vencimiento = true;
+                }
+                if (MarcasId.HasValue && MarcasId.Value > 0)
+                {
+                    banner.Marcas = await _context.Marcas.FindAsync(MarcasId.Value);
                 }
                 banner.EsVideo=false;
                 _context.Banners.Add(banner);
@@ -100,13 +112,24 @@ namespace EstanciasCore.Controllers
 
         public ActionResult Update(int id)
         {
-            return PartialView(_context.Banners.Where(s => s.Id == id).First());
+            var banner = _context.Banners.Include(x => x.Marcas).Where(s => s.Id == id).First();
+            ViewBag.Marcas = _context.Marcas
+                                .Where(x => x.Activo)
+                                .OrderBy(x => x.Orden)
+                                .Select(x => new SelectListItem
+                                {
+                                    Text = x.Nombre,
+                                    Value = x.Id.ToString(),
+                                    Selected = banner.Marcas != null && banner.Marcas.Id == x.Id
+                                })
+                                .ToList();
+            return PartialView(banner);
         }
 
         [HttpPost]
-        public async System.Threading.Tasks.Task<ActionResult> Update(Banners banner, int colorId, int BannerFijo, string TieneFechaVencimiento)
+        public async System.Threading.Tasks.Task<ActionResult> Update(Banners banner, int colorId, int BannerFijo, string TieneFechaVencimiento, int? MarcasId)
         {
-			Banners d = _context.Banners.Where(s => s.Id == banner.Id).First();
+			Banners d = _context.Banners.Include(x => x.Marcas).Where(s => s.Id == banner.Id).First();
             d.Titulo = banner.Titulo;
             d.Subtitulo = banner.Subtitulo == null ? " " : banner.Subtitulo;
             d.Texto = banner.Texto==null?" ": banner.Texto;
@@ -136,6 +159,16 @@ namespace EstanciasCore.Controllers
                 d.FechaHasta = null;
                 d.Vencimiento = false;
             }
+
+            if (MarcasId.HasValue && MarcasId.Value > 0)
+            {
+                d.Marcas = await _context.Marcas.FindAsync(MarcasId.Value);
+            }
+            else
+            {
+                d.Marcas = null;
+            }
+
             _context.SaveChanges();
             return RedirectToAction("Index", "Banners");
         }

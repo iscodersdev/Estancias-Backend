@@ -24,19 +24,11 @@ namespace DAL.Models
         public long Puntos { get; set; }
         public DateTime Fecha { get; set; }
         public DateTime FechaVencimiento { get; set; }
-        public int DiasDeVencimiento
-        {
-            get
-            {
-                TimeSpan diferencia = FechaVencimiento.Date - Fecha.Date;
-                int dias = diferencia.Days;
-
-                return dias;
-            }
-        }
+        public int DiasDeVencimiento { get; set; }
         public bool Activo { get; set; }
         [Display(Name = "Categoría")]
         public virtual Categorias Categoria { get; set; }
+        public virtual Marcas Marcas { get; set; }
     }
 
     public class RelacionPuntos
@@ -44,6 +36,7 @@ namespace DAL.Models
         public int Id { get; set; }
         public decimal Monto { get; set; }
         public long Puntos { get; set; }
+        public byte[] Imagen { get; set; }
         public DateTime Fecha { get; set; }
         public bool Activo { get; set; }
     }

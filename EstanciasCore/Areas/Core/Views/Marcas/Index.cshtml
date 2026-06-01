@@ -1,0 +1,84 @@
+@{
+    ViewData["Title"] = "Marcas";
+}
+
+@model IEnumerable<DAL.Models.Marcas>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Marcas</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaMarca()" class="btn btn-info btn-sm" title="Nueva Marca">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoMarcas" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Imagen
+                    </th>
+                    <th>
+                        Nombre
+                    </th>
+                    <th>
+                        Orden
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td style="text-align: center; vertical-align: middle;">
+                            @if (item.Imagen != null)
+                            {
+                                <img src="data:image/jpeg;base64,@(Convert.ToBase64String(item.Imagen))" style="max-height: 40px; max-width: 80px;" />
+                            }
+                            else
+                            {
+                                <span class="text-muted"><i class="fa fa-picture-o"></i></span>
+                            }
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Nombre)
+                        </td>
+                        <td style="text-align: center;">
+                            @Html.DisplayFor(modelItem => item.Orden)
+                        </td>
+                        <td>
+                            <a onclick="editMarca(@item.Id)" title="Editar Marca" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                            <a onclick="imgMarca(@item.Id)" title="Cargar Imagen de la Marca" class="btn btn-warning btn-xs"><i class="fa fa-file-image-o"></i></a>
+                            <a title="Borrar Marca" asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Está seguro de borrar la Marca @item.Nombre?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Nueva Marca" callback-modal="true" function="nuevaMarca" load-url="/Core/Marcas/_Create/" size="Medium"></modal>
+<modal title="Edición de Marca" callback-modal="true" function="editMarca" load-url="/Core/Marcas/_Update/" size="Medium"></modal>
+<modal title="Cargar Imagen de Marca" callback-modal="true" function="imgMarca" load-url="/Core/Marcas/_Image/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoMarcas').DataTable({
+            "columnDefs": [
+                { "width": "15%", "targets": 0, "orderable": false, "searchable": false, class: "text-center" },
+                { "width": "55%", "targets": 1 },
+                { "width": "15%", "targets": 2, class: "text-center" },
+                { "width": "15%", "targets": 3, "orderable": false, "searchable": false, class: "text-center" }
+            ],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

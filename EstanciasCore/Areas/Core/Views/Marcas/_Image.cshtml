@@ -1,0 +1,58 @@
+@using Commons.HtmlHelpers
+@model DAL.Models.Marcas
+@{
+    ViewData["Title"] = "Cargar Imagen de la Marca";
+}
+
+<form asp-action="_Image" enctype="multipart/form-data">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="control-label">Seleccione una Imagen para la Marca:</label>
+                    <input class="preview" type="file" name="FotoMarca" data-div="FotoMarcaUpdate" required />
+                    <span id="alertaFondoMarca" class="text-danger"></span>
+                </div>
+                <div class="col-md-6" style="text-align: center;">
+                    <div id="FotoMarcaUpdate">
+                        @if (@ViewBag.Foto != null)
+                        {
+                            <img src="data:image/jpeg;base64,@ViewBag.Foto" style="max-height:80px; max-width:160px;" />
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+
+</form>
+
+<script>
+    $(function () {
+        $(".preview").on("change", function (e) {
+            if (e.target.files && e.target.files[0]) {
+                let reader = new FileReader();
+                reader.readAsDataURL(e.target.files[0]);
+                reader.onload = function () {
+                    let targetId = $(e.target).data("div");
+                    let preview = document.getElementById(targetId);
+                    let image = document.createElement('img');
+                    image.style.maxHeight = "80px";
+                    image.style.maxWidth = "160px";
+                    image.src = reader.result;
+                    preview.innerHTML = '';
+                    preview.append(image);
+                };
+            }
+        });
+    });
+</script>
