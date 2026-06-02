@@ -2,6 +2,7 @@
 using DAL.DTOs;
 using DAL.Models;
 using DAL.Models.Core;
+using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -16,6 +17,7 @@ using System.Threading.Tasks;
 namespace EstanciasCore.Areas.Core.Endpoints
 {
     [Area("Core")]
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [ApiController]
     [Route("endpoint/proveedor")]
     public class ProveedorEndpointController : ControllerBase
