@@ -60,7 +60,6 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                     //MenuHelpers.AddModule("Inversores", "/Core/Inversores/"),
                     MenuHelpers.AddModule("Leyendas", "/Core/LeyendaTipoMovimiento/"),
                     MenuHelpers.AddModule("Categoria de Usuarios", "/Core/UsuarioCategorias"),
-                    MenuHelpers.AddModule("Marcas", "/Core/Marcas/")
                 };
                 datos.TreeChild.Add(generales);
                 especificos.TreeChild = new List<SidebarMenu>()
@@ -93,15 +92,15 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
 					MenuHelpers.AddModule("Histórico de Pagos Tarjeta", "/Core/PagoTarjetaHistorico"),
                     notificaciones,
                     puntosycupones,
-                    MenuHelpers.AddModule("Datos Empresa", "/Core/DatosEmpresa/"),
+                    //MenuHelpers.AddModule("Datos Empresa", "/Core/DatosEmpresa/"),
                     MenuHelpers.AddModule("Vendedores", "/Core/Vendedores/"),
                     MenuHelpers.AddModule("Novedades", "/Core/Novedades"),
                     MenuHelpers.AddModule("Promociones", "/Core/Promociones"),
                     MenuHelpers.AddModule("Banners", "/Core/Banners"),
                     MenuHelpers.AddModule("Proveedor", "/Core/Proveedor"),
                     MenuHelpers.AddModule("Imagen de Intro", "/Core/ImagenIntro"),
-
                     MenuHelpers.AddModule("Catálogo", "/Core/Catalogo"),
+                    MenuHelpers.AddModule("Marcas", "/Core/Marcas/")
             };
                 //reportes.TreeChild = new List<SidebarMenu>()
                 //{
