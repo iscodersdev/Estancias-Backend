@@ -1,4 +1,4 @@
-﻿@model Commons.Models.Page<DAL.Models.Premios>
+@model Commons.Models.Page<DAL.Models.Premios>
 
 <div class="box box-info">
     <div class="box-header with-border filtro-grilla">
@@ -30,6 +30,12 @@
                     </th>
                     <th>
                         Categoría
+                    </th>
+                    <th>
+                        Marca
+                    </th>
+                    <th>
+                        Días de Venc.
                     </th>
                     <th>
                         Fecha
@@ -65,6 +71,12 @@
                             @Html.DisplayFor(modelItem => item.Categoria.Nombre)
                         </td>
                         <td>
+                            @Html.DisplayFor(modelItem => item.Marcas.Nombre)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.DiasDeVencimiento)
+                        </td>
+                        <td>
                             @Html.DisplayFor(modelItem => item.Fecha)
                         </td>
                         <td>
@@ -90,7 +102,7 @@
 <script>
     $(document).ready(function () {
         $('#listadoPremios').DataTable({
-            "columnDefs": [{ "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": 7 }],
+            "columnDefs": [{ "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": -1 }],
             "language": {
                 'url': '@Url.Content("~/lib/arg.json")'
             }

@@ -203,7 +203,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 var usuario = TraeUsuarioUAT(request.UAT);
                 if (usuario == null)
                     return new ListCuponesClienteDTO { Status = 500, UAT = request.UAT, Mensaje = $"no existe UAT de Usuario" };
-
+                var hoy = DateTime.Today;
                 var cupones = await _context.HistorialCanje.Select(x => new CuponesClienteDTO()
                 {
                     Id = x.Id,
@@ -213,7 +213,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                     CategoriaNombre = x.Premio.Categoria.Nombre,
                     Codigo = x.CodigoCupon,
                     Fecha = x.Fecha,
-                    DiasRestantesVencimiento = (x.FechaVencimientoCupon.Date - DateTime.Now.Date).Days,
+                    //DiasRestantesVencimiento = (x.FechaVencimientoCupon.Date - DateTime.Now.Date).Days,
+                    DiasRestantesVencimiento = EF.Functions.DateDiffDay(hoy, x.Fecha.AddDays(x.Premio.DiasDeVencimiento)),
                     FechaVencimiento = x.FechaVencimientoCupon,
                     Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Premio.Id).Select(f => f.Foto).FirstOrDefault()
                 }).ToListAsync();

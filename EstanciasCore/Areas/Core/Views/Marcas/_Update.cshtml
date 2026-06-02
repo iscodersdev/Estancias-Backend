@@ -17,6 +17,24 @@
         </div>
 
         <div class="form-group">
+            <label asp-for="NomAliasbre" class="control-label">Alias</label>
+            <input asp-for="NomAliasbre" class="form-control" />
+            <span asp-validation-for="NomAliasbre" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="CBU" class="control-label"></label>
+            <input asp-for="CBU" class="form-control" />
+            <span asp-validation-for="CBU" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="WhatsApp" class="control-label"></label>
+            <input asp-for="WhatsApp" class="form-control" />
+            <span asp-validation-for="WhatsApp" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
             <label asp-for="Orden" class="control-label"></label>
             <input asp-for="Orden" class="form-control" type="number" required />
             <span asp-validation-for="Orden" class="text-danger"></span>

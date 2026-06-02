@@ -36,7 +36,7 @@ namespace EstanciasCore.Areas.Core.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> _Create([Bind("Nombre, Orden")] Marcas nuevaMarca)
+        public async Task<ActionResult> _Create([Bind("Nombre, Orden, NomAliasbre, CBU, WhatsApp")] Marcas nuevaMarca)
         {
             try
             {
@@ -90,6 +90,9 @@ namespace EstanciasCore.Areas.Core.Controllers
                     marcaExistente.Nombre = editarMarca.Nombre;
                     marcaExistente.Orden = editarMarca.Orden;
                     marcaExistente.Activo = editarMarca.Activo;
+                    marcaExistente.NomAliasbre = editarMarca.NomAliasbre;
+                    marcaExistente.CBU = editarMarca.CBU;
+                    marcaExistente.WhatsApp = editarMarca.WhatsApp;
 
                     _context.Marcas.Update(marcaExistente);
                     await _context.SaveChangesAsync();
