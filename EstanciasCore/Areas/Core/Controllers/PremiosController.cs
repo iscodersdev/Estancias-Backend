@@ -43,6 +43,7 @@ namespace EstanciasCore.Controllers
         public IActionResult _Create()
         {
             ViewBag.Categorias = _context.Categorias.Select(g => new SelectListItem() { Text = g.Nombre, Value = g.Id.ToString() });
+            ViewBag.Marcas = _context.Marcas.Select(g => new SelectListItem() { Text = g.Nombre, Value = g.Id.ToString() });
             return PartialView();
         }
 
@@ -57,6 +58,8 @@ namespace EstanciasCore.Controllers
                 {
                     Categorias categoria = _context.Categorias.Where(x=>x.Id==premio.Categoria.Id).FirstOrDefault();
                     premio.Categoria=categoria;
+                    Marcas marca = _context.Marcas.Where(x=>x.Id==premio.Marcas.Id).FirstOrDefault();
+                    premio.Marcas=marca;
                     premio.StockActual=premio.Stock;
                     premio.Fecha=DateTime.Now;
                     premio.Activo=true;
@@ -82,6 +85,7 @@ namespace EstanciasCore.Controllers
         {
 
             ViewBag.Categorias = _context.Categorias.Select(g => new SelectListItem() { Text = g.Nombre, Value = g.Id.ToString() });
+            ViewBag.Marcas = _context.Marcas.Select(g => new SelectListItem() { Text = g.Nombre, Value = g.Id.ToString() });
             Premios premio = await _context.Premios.FindAsync(Id);
             return PartialView(premio);
         }
@@ -96,13 +100,17 @@ namespace EstanciasCore.Controllers
                 try
                 {
                     var categoria = _context.Categorias.Where(x => x.Id == premio.Categoria.Id).FirstOrDefault();
+                    var marca = _context.Marcas.Where(x => x.Id == premio.Marcas.Id).FirstOrDefault();
                     var premioDB = _context.Premios.Where(x => x.Id == premio.Id).FirstOrDefault();
+                    premioDB.Categoria = categoria;
+                    premioDB.Marcas = marca;
                     premioDB.Nombre = premio.Nombre;
                     premioDB.Descripcion = premio.Descripcion;
                     premioDB.Stock = premio.Stock;
                     premioDB.Puntos = premio.Puntos;
                     premioDB.TerminosCondiciones = premio.TerminosCondiciones;
                     premioDB.FechaVencimiento = premio.FechaVencimiento;
+                    premioDB.DiasDeVencimiento = premio.DiasDeVencimiento;
                     _context.Premios.Update(premioDB);
                     await _context.SaveChangesAsync();
                     AddPageAlerts(PageAlertType.Success, "Se editó correctamente el Premio " + premio.Nombre + ".");

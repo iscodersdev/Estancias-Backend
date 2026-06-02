@@ -1,4 +1,4 @@
-﻿@model DAL.Models.Premios
+@model DAL.Models.Premios
 @{
     ViewData["Title"] = "Nuevo Premio";
 }
@@ -40,6 +40,16 @@
             <label asp-for="Categoria" class="control-label"></label>
             <select asp-items="@ViewBag.Categorias" asp-for="Categoria.Id" class="form-control" searchable="true"></select>
             <span asp-validation-for="Categoria" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Marcas" class="control-label">Marca</label>
+            <select asp-items="@ViewBag.Marcas" asp-for="Marcas.Id" class="form-control" searchable="true"></select>
+            <span asp-validation-for="Marcas" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="DiasDeVencimiento" class="control-label">Días de Vencimiento</label>
+            <input asp-for="DiasDeVencimiento" type="number" class="form-control" />
+            <span asp-validation-for="DiasDeVencimiento" class="text-danger"></span>
         </div>
     </div>
     <div class="box-footer">

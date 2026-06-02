@@ -120,7 +120,7 @@ namespace EstanciasCore.Controllers
                                 {
                                     Text = x.Nombre,
                                     Value = x.Id.ToString(),
-                                    Selected = banner.Marcas != null && banner.Marcas.Id == x.Id
+                                    //Selected = banner.Marcas != null && banner.Marcas.Id == x.Id
                                 })
                                 .ToList();
             return PartialView(banner);
