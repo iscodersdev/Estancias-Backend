@@ -1,6 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs;
 using DAL.Models;
+using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [Route("endpoint/relacion-puntos")]
     [ApiController]
     public class RelacionPuntosEndpointController : ControllerBase

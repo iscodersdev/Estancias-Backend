@@ -2,6 +2,7 @@
 using DAL.DTOs.Reportes;
 using DAL.Mobile;
 using DAL.Models;
+using EstanciasCore.API.Filters;
 using EstanciasCore.Interface;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
@@ -15,6 +16,7 @@ using System.Threading.Tasks;
 namespace EstanciasCore.Areas.Reportes.Endpoints
 {
     [Area("Reportes")]
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [ApiController]
     [Route("reportes/endpoint/resumen-deuda")]
     public class ResumenDeudaEndpointController : ControllerBase

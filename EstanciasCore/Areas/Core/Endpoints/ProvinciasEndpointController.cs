@@ -2,6 +2,7 @@
 using DAL.Data;
 using DAL.DTOs;
 using DAL.Models;
+using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [ApiController]
     [Route("endpoint/provincias")]
     public class ProvinciasEndpointController : ControllerBase

@@ -1,6 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs;
 using DAL.Models;
+using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [Route("endpoint/tipos-clientes")]
     [ApiController]
     public class TiposClientesEndpointController : ControllerBase

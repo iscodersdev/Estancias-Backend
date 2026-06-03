@@ -2,8 +2,8 @@
 using DAL.DTOs;
 using DAL.Models;
 using DAL.Models.Core;
+using EstanciasCore.API.Filters;
 using EstanciasCore.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -15,9 +15,9 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [Route("endpoint/notificaciones")]
     [ApiController]
-    [AllowAnonymous]
     public class NotificacionesEndpointController : ControllerBase
     {
         private readonly EstanciasContext _context;

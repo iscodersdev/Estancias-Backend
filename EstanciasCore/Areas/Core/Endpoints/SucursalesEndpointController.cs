@@ -1,7 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs;
 using DAL.Models;
-using Microsoft.AspNetCore.Authorization;
+using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
-    [AllowAnonymous]
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [Route("endpoint/sucursales")]
     [ApiController]
     public class SucursalesEndpointController : ControllerBase

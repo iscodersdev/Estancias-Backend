@@ -1,5 +1,6 @@
 ﻿using DAL.Data;
 using DAL.DTOs;
+using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [ApiController]
     [Route("endpoint/datos-empresa")]
     public class DatosEmpresaEndpointController : ControllerBase

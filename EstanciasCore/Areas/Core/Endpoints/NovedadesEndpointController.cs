@@ -1,6 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs;
 using DAL.Models;
+using EstanciasCore.API.Filters;
 using EstanciasCore.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [ApiController]
     [Route("endpoint/novedades")]
     public class NovedadesEndpointController : ControllerBase

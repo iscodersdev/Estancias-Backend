@@ -1,6 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs;
 using DAL.Models;
+using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,7 @@ using System.Threading.Tasks;
 namespace EstanciasCore.Areas.Core.Endpoints
 {
     [Area("Core")]
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [Route("endpoint/promociones")]
     [ApiController]
     public class PromocionesEndpointController : ControllerBase

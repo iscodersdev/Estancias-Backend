@@ -2,6 +2,7 @@
 using DAL.DTOs;
 using DAL.Models;
 using DAL.Models.Core;
+using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
+    [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
     [Route("endpoint/pago-tarjeta-historico")]
     [ApiController]
     public class PagoTarjetaHistoricoEndpointController : ControllerBase
