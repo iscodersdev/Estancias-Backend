@@ -77,7 +77,7 @@ namespace EstanciasCore.Areas.Core.Controllers
                 
                 // Generated auto-values
                 IdOperacion = Guid.NewGuid().ToString("N").Substring(0, 10).ToUpper(), // Mock operation ID
-                Compania = string.IsNullOrEmpty(Motivo) ? "Carga Manual" : $"Carga Manual: {Motivo}",
+                Compania = string.IsNullOrEmpty(Motivo) ? "Carga Manual" : Motivo,
                 CompaniaId = 0,
                 FechaCompra = DateTime.Now,
                 FechaProcesada = DateTime.Now,
