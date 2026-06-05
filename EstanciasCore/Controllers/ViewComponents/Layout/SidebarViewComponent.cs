@@ -79,6 +79,7 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                 {
                     MenuHelpers.AddModule("Validar Cupón", "/Core/Cupon"),
                     MenuHelpers.AddModule("Cupones", "/Core/Premios"),
+                    MenuHelpers.AddModule("Puntos Clientes", "/Core/PuntosObtenidosClientes"),
                     MenuHelpers.AddModule("Categorias de Cupones", "/Core/Categorias"),
                     MenuHelpers.AddModule("Relación Puntos", "/Core/RelacionPuntos/"),
                 };
@@ -267,6 +268,7 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                     if(HttpContext.UserHasRoute("/Core/Premio/Index"))
                     {
                         puntosycupones.TreeChild.Add(MenuHelpers.AddModule("Cupones", "/Core/Premios"));
+                        puntosycupones.TreeChild.Add(MenuHelpers.AddModule("Puntos Clientes", "/Core/PuntosObtenidosClientes"));
                         puntosycupones.TreeChild.Add(MenuHelpers.AddModule("Categorias de Cupones", "/Core/Categorias"));
                         puntosycupones.TreeChild.Add(MenuHelpers.AddModule("Relación Puntos", "/Core/RelacionPuntos/"));                       
                     };

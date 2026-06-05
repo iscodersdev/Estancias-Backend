@@ -30,6 +30,7 @@ namespace DAL.DTOs
         public int Stock { get; set; }
         public int StockActual { get; set; }
         public long Puntos { get; set; }
+        public string Marca { get; set; }
         public DateTime Fecha { get; set; }
         public bool Activo { get; set; }
         public int CategoriaId { get; set; }
@@ -57,6 +58,7 @@ namespace DAL.DTOs
         public string Nombre { get; set; }
         public string Descripcion { get; set; }
         public string Codigo { get; set; }
+        public string Marca { get; set; }
         public DateTime Fecha { get; set; }
         public bool Activo { get; set; }
         public string CategoriaNombre { get; set; }

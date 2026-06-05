@@ -70,7 +70,9 @@ namespace EstanciasCore.API.Controllers.Billetera
                     DiasDeVencimiento = x.DiasDeVencimiento.ToString(),
                     TerminosCondiciones = x.TerminosCondiciones,
                     Fecha = x.Fecha,
-                    Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Id).Select(f => f.Foto).FirstOrDefault()
+                    Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Id).Select(f => f.Foto).FirstOrDefault(),
+                    Marca = x.Marcas.Nombre
+                    
                 }).ToListAsync();
 
                 request.UAT = request.UAT;
@@ -123,7 +125,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 await _obtenerPuntosService.ActualizarLotesVencidos(usuario);
 
                 var lotesDisponibles = await _context.PuntosObtenidosClientes
-                    .Where(x => x.Usuario.Id == usuario.Id && x.PuntosDisponibles > 0 && x.FechaVencimiento > hoy)
+                    .Where(x => x.Usuario.Id == usuario.Id && x.PuntosDisponibles != 0 && x.FechaVencimiento > hoy)
                     .OrderBy(x => x.FechaVencimiento) 
                     .ToListAsync();
 
@@ -216,7 +218,8 @@ namespace EstanciasCore.API.Controllers.Billetera
                     //DiasRestantesVencimiento = (x.FechaVencimientoCupon.Date - DateTime.Now.Date).Days,
                     DiasRestantesVencimiento = EF.Functions.DateDiffDay(hoy, x.Fecha.AddDays(x.Premio.DiasDeVencimiento)),
                     FechaVencimiento = x.FechaVencimientoCupon,
-                    Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Premio.Id).Select(f => f.Foto).FirstOrDefault()
+                    Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Premio.Id).Select(f => f.Foto).FirstOrDefault(),
+                    Marca = x.Premio.Marcas.Nombre
                 }).ToListAsync();
 
                 request.UAT = request.UAT;
@@ -251,7 +254,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                 DateTime hoy = DateTime.Now;
 
                 long totalPuntosValidos = await _context.PuntosObtenidosClientes
-                    .Where(x => x.Usuario.Id == usuario.Id && x.PuntosDisponibles > 0 && x.FechaVencimiento > hoy)
+                    .Where(x => x.Usuario.Id == usuario.Id && x.PuntosDisponibles != 0 && x.FechaVencimiento > hoy)
                     .SumAsync(x => x.PuntosDisponibles);
 
                 // 5. Armar y retornar la respuesta exitosa

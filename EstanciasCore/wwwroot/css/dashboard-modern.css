@@ -1,0 +1,655 @@
+/* dashboard-modern.css */
+body {
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f8fafc;
+}
+
+.content-wrapper, .right-side {
+    background-color: #f8fafc;
+}
+
+/* Sidebar overriding */
+.main-sidebar {
+    background-color: #2b2d31 !important;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.skin-green .wrapper, .skin-green .main-sidebar, .skin-green .left-side {
+    background-color: #2b2d31;
+}
+
+.skin-green .sidebar-menu > li.header {
+    color: #94a3b8;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 15px 20px 10px 20px;
+}
+
+.skin-green .sidebar-menu > li > a {
+    color: #cbd5e1;
+    border-left: none;
+    padding: 12px 20px;
+    margin: 4px 15px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.skin-green .sidebar-menu > li:hover > a {
+    background: rgba(255,255,255,0.05);
+    color: #ffffff;
+}
+
+.skin-green .sidebar-menu > li.active > a {
+    background: #2563eb !important;
+    color: #ffffff;
+    border-left-color: transparent !important;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+/* Header overriding */
+.main-header {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+}
+
+.skin-green .main-header .navbar {
+    background-color: #ffffff;
+}
+
+    .skin-green .main-header .navbar .sidebar-toggle {
+        color: #0326a0bf;
+    }
+
+.skin-green .main-header .navbar .sidebar-toggle:hover {
+    background-color: #0326a0bf;
+}
+
+.skin-green .main-header .logo {
+    background-color: #2b2d31;
+    color: #ffffff;
+    border-bottom: 0 solid transparent;
+}
+.skin-green .main-header .logo:hover {
+    background-color: #2b2d31;
+}
+
+/* Modern Dashboard Cards */
+.modern-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.modern-alert {
+    background-color: #10b981;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modern-kpi-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 10px;
+}
+
+.modern-kpi-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.modern-kpi-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.icon-blue { background: #3b82f6; color: white; }
+.icon-orange { background: #f97316; color: white; }
+
+.trend-badge {
+    font-size: 12px;
+    font-weight: 600;
+}
+.trend-positive { color: #2563eb; }
+.trend-negative { color: #ef4444; }
+
+.modern-link {
+    color: #64748b;
+    font-size: 12px;
+    text-decoration: none;
+}
+.modern-link:hover { text-decoration: underline; }
+
+.bar-chart-placeholder {
+    height: 250px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.bar-col {
+    flex: 1;
+    background: #bfdbfe;
+    border-radius: 6px 6px 0 0;
+}
+
+.map-card {
+    height: 350px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.map-card-inner {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+}
+
+/* Modern Tables */
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    color: #334155;
+    background-color: transparent;
+}
+
+.table th,
+.table td {
+    padding: 1rem 1.2rem;
+    vertical-align: middle;
+    border-top: 1px solid #e2e8f0;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #e2e8f0;
+    border-top: none;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    background-color: #f8fafc;
+}
+
+/* Rounded corners for thead */
+.table thead tr th:first-child {
+    border-top-left-radius: 8px;
+}
+.table thead tr th:last-child {
+    border-top-right-radius: 8px;
+}
+
+.table tbody + tbody {
+    border-top: 2px solid #e2e8f0;
+}
+
+.table-hover tbody tr:hover {
+    color: #0f172a;
+    background-color: #f1f5f9;
+    transition: background-color 0.2s ease;
+}
+
+.table-bordered {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #e2e8f0;
+}
+
+.table-bordered thead th,
+.table-bordered thead td {
+    border-bottom-width: 2px;
+}
+
+/* If a table is inside a modern-card, make it fit better */
+.modern-card .table-responsive {
+    margin: -20px;
+    width: calc(100% + 40px);
+}
+.modern-card .table {
+    margin-bottom: 0;
+}
+.modern-card .table thead th {
+    background-color: #f1f5f9;
+}
+
+/* Modern Inputs & Form Controls */
+.form-control,
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="search"],
+select, textarea {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    color: #334155;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.form-control:focus,
+input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, input[type="number"]:focus, input[type="search"]:focus,
+select:focus, textarea:focus {
+    border-color: #3b82f6;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* Modern Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    border: 1px solid transparent;
+    padding: 0.5rem 1rem;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn i {
+    margin-right: 6px;
+}
+.btn.btn-sm i, .btn.btn-xs i {
+    margin-right: 0;
+}
+
+.btn-primary, .btn-info {
+    color: #fff;
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+.btn-primary:hover, .btn-info:hover {
+    background-color: #1d4ed8;
+    border-color: #1e40af;
+    color: #fff;
+}
+
+.btn-success {
+    color: #fff;
+    background-color: #10b981;
+    border-color: #10b981;
+}
+.btn-success:hover {
+    background-color: #059669;
+    border-color: #047857;
+    color: #fff;
+}
+
+.btn-danger {
+    color: #fff;
+    background-color: #ef4444;
+    border-color: #ef4444;
+}
+.btn-danger:hover {
+    background-color: #dc2626;
+    border-color: #b91c1c;
+    color: #fff;
+}
+
+.btn-default, .btn-secondary {
+    color: #334155;
+    background-color: #ffffff;
+    border-color: #cbd5e1;
+}
+.btn-default:hover, .btn-secondary:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+/* Small Buttons in Tables (Actions) */
+.table .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 4px;
+}
+.table .btn i {
+    margin-right: 0;
+}
+
+/* Pagination Modernization */
+.pagination {
+    display: flex;
+    padding-left: 0;
+    list-style: none;
+    border-radius: 6px;
+    gap: 4px;
+}
+.pagination > li {
+    display: inline;
+}
+.pagination > li > a,
+.pagination > li > span {
+    position: relative;
+    display: block;
+    padding: 0.5rem 0.75rem;
+    margin-left: -1px;
+    line-height: 1.25;
+    color: #475569;
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px !important;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.pagination > li > a:hover,
+.pagination > li > span:hover,
+.pagination > li > a:focus,
+.pagination > li > span:focus {
+    z-index: 2;
+    color: #1d4ed8;
+    text-decoration: none;
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+}
+.pagination > .active > a,
+.pagination > .active > span,
+.pagination > .active > span:focus {
+    z-index: 3;
+    color: #fff;
+    cursor: default;
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+/* Modernize AdminLTE Boxes */
+.box {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    border-top: 1px solid #e2e8f0 !important; /* Override standard box top border */
+}
+
+/* Remove the colored top borders of AdminLTE boxes */
+.box.box-primary, .box.box-info, .box.box-danger, .box.box-warning, .box.box-success, .box.box-default {
+    border-top-color: #e2e8f0 !important; 
+    border-top-width: 1px !important;
+}
+
+.box-header {
+    color: #0f172a;
+    padding: 20px 20px 15px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.box-header.with-border {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.box-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #334155;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+}
+
+.box-title i {
+    margin-right: 8px;
+    color: #64748b;
+}
+
+.box-body {
+    padding: 20px;
+}
+
+.box-footer {
+    border-top: 1px solid #f1f5f9;
+    padding: 15px 20px;
+    background-color: #f8fafc;
+    border-radius: 0 0 12px 12px;
+}
+
+/* Modernize DataTables / Standard Table Headers which might have hard borders */
+table.dataTable thead th, table.dataTable thead td, .table thead th {
+    border-bottom: 2px solid #e2e8f0 !important;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background-color: #f8fafc;
+    padding: 12px 15px;
+}
+
+table.dataTable.no-footer {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Make table borders softer */
+.table-bordered {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.table-bordered > thead > tr > th, .table-bordered > tbody > tr > th, .table-bordered > tfoot > tr > th, .table-bordered > thead > tr > td, .table-bordered > tbody > tr > td, .table-bordered > tfoot > tr > td {
+    border: 1px solid #e2e8f0 !important;
+    vertical-align: middle;
+}
+
+/* Remove double borders */
+.table-bordered > thead > tr > th {
+    border-bottom-width: 2px !important;
+}
+
+/* Style DataTables inputs */
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    margin-left: 0.5em;
+    outline: none;
+    transition: all 0.2s;
+    font-size: 14px;
+    color: #334155;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    outline: none;
+    color: #334155;
+    background-color: #fff;
+}
+
+/* DataTables pagination specific fixes */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0 !important;
+    margin-left: 2px !important;
+    border: none !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: transparent !important;
+    border: none !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .pagination {
+    margin: 0;
+}
+
+/* Modernize Sidebar Submenus (Treeview) */
+.skin-green .sidebar-menu .treeview-menu {
+    background: rgba(0, 0, 0, 0.15); 
+    border-radius: 8px;
+    margin: 2px 15px 8px 15px;
+    padding: 8px 0;
+}
+
+.skin-green .sidebar-menu .treeview-menu > li {
+    margin: 0;
+}
+
+.skin-green .sidebar-menu .treeview-menu > li > a {
+    color: #94a3b8;
+    padding: 8px 15px;
+    margin: 2px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    display: block;
+}
+
+.skin-green .sidebar-menu .treeview-menu > li:hover > a {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.skin-green .sidebar-menu .treeview-menu > li.active > a {
+    color: #ffffff;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.skin-green .sidebar-menu .treeview-menu > li > a > i {
+    font-size: 12px;
+    width: 20px;
+    text-align: center;
+    margin-right: 6px;
+}
+
+/* Third-level menus */
+.skin-green .sidebar-menu .treeview-menu .treeview-menu {
+    background: transparent;
+    margin: 0;
+    padding: 4px 0 4px 15px;
+}
+
+.skin-green .sidebar-menu .treeview-menu .treeview-menu > li > a {
+    padding: 7px 15px;
+}
+
+/* Fix pull-right icons alignment in submenus */
+.skin-green .sidebar-menu .treeview-menu > li > a > .pull-right-container {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Center DataTables pagination */
+.dataTables_wrapper .row:last-child {
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-top: 1.5rem;
+    min-height: 40px; /* Ensure row has height for absolute children */
+}
+
+/* Remove float and relative positioning from the Bootstrap columns */
+.dataTables_wrapper .row:last-child > div {
+    float: none !important;
+    position: static !important; 
+}
+
+/* Left column (info) */
+.dataTables_wrapper .row:last-child > div:first-child {
+    position: absolute !important;
+    left: 15px;
+    width: auto !important;
+    z-index: 5;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.dataTables_wrapper .dataTables_info {
+    padding-top: 0 !important;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Right column (pagination) */
+.dataTables_wrapper .row:last-child > div:last-child {
+    width: 100% !important;
+    display: flex;
+    justify-content: center;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    margin: 0;
+    text-align: center;
+}
+
+.dataTables_wrapper .dataTables_paginate .pagination {
+    margin: 0;
+}
+
+/* Responsive adjustment for small screens */
+@media (max-width: 768px) {
+    .dataTables_wrapper .row:last-child {
+        flex-direction: column;
+        justify-content: center;
+        height: auto;
+        padding: 15px 0;
+    }
+    .dataTables_wrapper .row:last-child > div:first-child {
+        position: static !important;
+        transform: none;
+        text-align: center;
+        margin-bottom: 15px;
+        width: 100% !important;
+    }
+    .dataTables_wrapper .row:last-child > div:last-child {
+        width: 100% !important;
+    }
+}
+
