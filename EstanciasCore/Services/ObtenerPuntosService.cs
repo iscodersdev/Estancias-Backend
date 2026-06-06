@@ -1,4 +1,4 @@
-﻿using DAL.Data;
+using DAL.Data;
 using DAL.DTOs.ApiCpeCreditos;
 using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
@@ -153,6 +153,7 @@ namespace EstanciasCore.Services
         {
             DateTime hoy = DateTime.Now;
 
+            // 1. Expirar los lotes positivos que ya vencieron
             var lotesExpirados = await _context.PuntosObtenidosClientes
                 .Where(x => x.Usuario.Id == user.Id && x.FechaVencimiento <= hoy && x.PuntosDisponibles > 0)
                 .ToListAsync();
@@ -165,6 +166,27 @@ namespace EstanciasCore.Services
                 }
 
                 await _context.SaveChangesAsync();
+            }
+
+            // 2. Revisar si la suma total de puntos (positivos + negativos) da 0 o negativo
+            var lotesActivos = await _context.PuntosObtenidosClientes
+                .Where(x => x.Usuario.Id == user.Id && x.PuntosDisponibles != 0)
+                .ToListAsync();
+
+            if (lotesActivos.Any())
+            {
+                long saldoTotal = lotesActivos.Sum(x => x.PuntosDisponibles);
+
+                // Si el saldo es 0 o negativo, limpiamos absolutamente todos los lotes para "perdonar" la deuda
+                // y empezar de cero, tal como define la regla de negocio.
+                if (saldoTotal <= 0)
+                {
+                    foreach (var lote in lotesActivos)
+                    {
+                        lote.PuntosDisponibles = 0;
+                    }
+                    await _context.SaveChangesAsync();
+                }
             }
         }
 
