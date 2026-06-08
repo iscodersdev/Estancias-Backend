@@ -24,6 +24,7 @@ namespace EstanciasCore.Areas.Core.Controllers
         public async Task<IActionResult> Index(string searchTerm)
         {
             ViewBag.SearchTerm = searchTerm;
+            ViewBag.Usuario = null;
 
             var query = _context.PuntosObtenidosClientes
                 .Include(p => p.Usuario)
@@ -44,6 +45,7 @@ namespace EstanciasCore.Areas.Core.Controllers
 
                 if (usuario != null)
                 {
+                    ViewBag.Usuario = usuario;
                     await _obtenerPuntosService.ObtenerPuntos(usuario);
                     await _obtenerPuntosService.ActualizarLotesVencidos(usuario);
                 }

@@ -55,13 +55,13 @@
 
         <!-- Datos del Cliente (Derecha) -->
         <div class="col-md-6">
-            @if (Model != null && Model.Any())
+            @if (ViewBag.Usuario != null)
             {
-                var clienteInfo = Model.FirstOrDefault();
-                var nombreCompleto = clienteInfo.Usuario?.Personas != null ? $"{clienteInfo.Usuario.Personas.Nombres} {clienteInfo.Usuario.Personas.Apellido}" : "Sin nombre";
-                var documento = clienteInfo.Usuario?.Personas?.NroDocumento ?? "N/A";
-                var email = clienteInfo.Usuario?.UserName ?? "N/A";
-                var totalPuntos = Model.Sum(x => x.PuntosDisponibles);
+                var usuario = (DAL.Models.Usuario)ViewBag.Usuario;
+                var nombreCompleto = usuario.Personas != null ? $"{usuario.Personas.Nombres} {usuario.Personas.Apellido}" : "Sin nombre";
+                var documento = usuario.Personas?.NroDocumento ?? "N/A";
+                var email = usuario.UserName ?? "N/A";
+                var totalPuntos = Model != null ? Model.Sum(x => x.PuntosDisponibles) : 0;
 
                 <div class="box box-widget widget-user-2" style="box-shadow: 0 1px 3px rgba(0,0,0,0.15);">
                     <div class="widget-user-header bg-green" style="padding: 15px 20px;">
@@ -113,7 +113,7 @@
                     <div class="box-header with-border">
                         <h3 class="box-title" style="margin-top: 5px;"><i class="fa fa-list"></i> Historial de Operaciones</h3>
                         <div class="box-tools pull-right">
-                            @if (Model != null && Model.Any())
+                            @if (ViewBag.Usuario != null)
                             {
                                 <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modal-add-puntos">
                                     <i class="fa fa-plus"></i> Cargar Puntos
@@ -153,7 +153,14 @@
                                     <tr>
                                         <td colspan="5" class="text-center" style="padding: 30px;">
                                             <i class="fa fa-inbox fa-3x text-muted" style="margin-bottom: 15px;"></i><br/>
-                                            <span class="text-muted">No se encontraron resultados para la búsqueda.</span>
+                                            @if (ViewBag.Usuario != null)
+                                            {
+                                                <span class="text-muted">El cliente no registra historial de operaciones de puntos.</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No se encontraron resultados para la búsqueda.</span>
+                                            }
                                         </td>
                                     </tr>
                                 }
@@ -178,8 +185,9 @@
                 <div class="modal-body">
                     <!-- Parámetros Ocultos -->
                     <input type="hidden" name="SearchTerm" value="@ViewBag.SearchTerm" />
-                    @if (Model != null && Model.Any()) {
-                        <input type="hidden" name="UsuarioId" value="@Model.FirstOrDefault().Usuario?.Id" />
+                    @if (ViewBag.Usuario != null) {
+                        var usuario = (DAL.Models.Usuario)ViewBag.Usuario;
+                        <input type="hidden" name="UsuarioId" value="@usuario.Id" />
                     }
                     
                     <div class="form-group">
