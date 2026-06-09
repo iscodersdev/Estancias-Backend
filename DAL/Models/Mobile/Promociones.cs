@@ -25,6 +25,7 @@ namespace DAL.Models
         public bool QR { get; set; }
         public virtual Empresas Empresa { get; set; }
         public virtual Colores Color { get; set; }
+        public virtual Marcas Marca { get; set; }
         public DateTime FechaDesde { get; set; }
         public DateTime FechaHasta { get; set; }
         public bool Vencimiento { get; set; }

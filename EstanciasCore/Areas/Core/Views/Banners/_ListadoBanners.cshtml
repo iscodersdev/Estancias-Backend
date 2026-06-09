@@ -1,9 +1,20 @@
 @using DAL.Models
+@inject DAL.Data.EstanciasContext _context
 @model Commons.Models.Page<DAL.Models.Banners>
+@{
+    var marcas = _context.Marcas.Where(x => x.Activo).OrderBy(x => x.Orden).ToList();
+}
 
 <box-header title="Listado">
     <box-search update-div="tablaBanners">
-        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+        <div class="pull-right" style="display: flex; align-items: center;">
+            <select id="marcaFiltroBanners" class="form-control" style="width: 250px; margin-right: 35px; display: inline-block;">
+                <option value="">Todas las Marcas</option>
+                @foreach (var m in marcas)
+                {
+                    <option value="@m.Nombre">@m.Nombre</option>
+                }
+            </select>
             <a onclick="nuevoBanner()" class="btn btn-info btn-sm">
                 <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
             </a>
@@ -37,7 +48,7 @@
         <tbody>
             @foreach (var item in Model.Items.OrderBy(x => x.Fecha))
             {
-                <tr>
+                <tr class="banner-row" data-marca="@(item.Marcas != null ? item.Marcas.Nombre : "")">
                     <td>
                         @Html.DisplayFor(modelItem => item.Titulo)
                     </td>
@@ -242,4 +253,16 @@
         });
 
     }
+
+    $(document).ready(function () {
+        $('#marcaFiltroBanners').on('change', function () {
+            var val = $(this).val();
+            if (val) {
+                $('.banner-row').hide();
+                $('.banner-row[data-marca="' + val + '"]').show();
+            } else {
+                $('.banner-row').show();
+            }
+        });
+    });
 </script>

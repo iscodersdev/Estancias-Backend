@@ -1,5 +1,7 @@
-﻿using Commons.Models;
+using Commons.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using DAL.Data;
 using DAL.Models;
 using System.Linq;
@@ -29,6 +31,11 @@ namespace EstanciasCore.Controllers
         }
         public ActionResult Create()
         {
+            ViewBag.Marcas = _context.Marcas
+                                .Where(x => x.Activo)
+                                .OrderBy(x => x.Orden)
+                                .Select(x => new SelectListItem { Text = x.Nombre, Value = x.Id.ToString() })
+                                .ToList();
             return PartialView();
         }
         public IActionResult ObtenerPromociones(Page<Promociones> page)
@@ -38,6 +45,7 @@ namespace EstanciasCore.Controllers
             if (usuario == null || usuario.Clientes?.Empresa == null)
             {
                 var promocionesFiltradas = _context.Promociones
+                    .Include(x => x.Marca)
                     .Where(x => x.Empresa == null && (x.Titulo.Contains(page.SearchText) || x.Texto.Contains(page.SearchText)))
                     .OrderBy(x => x.Orden); // Ordenar por Titulo o el campo que desees
 
@@ -51,6 +59,7 @@ namespace EstanciasCore.Controllers
                 }
 
                 var promocionesFiltradas = _context.Promociones
+                    .Include(x => x.Marca)
                     .Where(x => (x.Titulo.Contains(page.SearchText) || x.Texto.Contains(page.SearchText)))
                     .OrderBy(x => x.Orden); // Ordenar por Titulo o el campo que desees
 
@@ -62,7 +71,7 @@ namespace EstanciasCore.Controllers
 
 
         [HttpPost]
-        public async System.Threading.Tasks.Task<ActionResult> Create(Promociones promociones, int colorId, int PromocionFija, string TieneFechaVencimiento)
+        public async System.Threading.Tasks.Task<ActionResult> Create(Promociones promociones, int colorId, int PromocionFija, string TieneFechaVencimiento, int? MarcaId)
         {
             try
             {
@@ -80,6 +89,10 @@ namespace EstanciasCore.Controllers
                 else
                 {
                     promociones.PromocionFija = false;
+                }
+                if (MarcaId.HasValue && MarcaId.Value > 0)
+                {
+                    promociones.Marca = await _context.Marcas.FindAsync(MarcaId.Value);
                 }
                 _context.Promociones.Add(promociones);
                 _context.SaveChanges();
@@ -118,12 +131,24 @@ namespace EstanciasCore.Controllers
         }
         public ActionResult Update(int id)
         {
-            return PartialView(_context.Promociones.Where(s => s.Id == id).First());
+            var promociones = _context.Promociones.Include(x => x.Marca).Where(s => s.Id == id).First();
+            var currentMarcaId = promociones?.Marca?.Id;
+            ViewBag.Marcas = _context.Marcas
+                                .Where(x => x.Activo)
+                                .OrderBy(x => x.Orden)
+                                .Select(x => new SelectListItem
+                                {
+                                    Text = x.Nombre,
+                                    Value = x.Id.ToString(),
+                                    Selected = currentMarcaId.HasValue && x.Id == currentMarcaId.Value
+                                })
+                                .ToList();
+            return PartialView(promociones);
         }
         [HttpPost]
-        public async System.Threading.Tasks.Task<ActionResult> Update(Promociones promociones, int colorId, int PromocionFija, string TieneFechaVencimiento)
+        public async System.Threading.Tasks.Task<ActionResult> Update(Promociones promociones, int colorId, int PromocionFija, string TieneFechaVencimiento, int? MarcaId)
         {
-            Promociones d = _context.Promociones.Where(s => s.Id == promociones.Id).First();
+            Promociones d = _context.Promociones.Include(x => x.Marca).Where(s => s.Id == promociones.Id).First();
             d.Titulo = promociones.Titulo;
             d.Subtitulo = promociones.Subtitulo == null ? " " : promociones.Subtitulo;
             d.Texto = promociones.Texto==null?" ": promociones.Texto;
@@ -150,6 +175,14 @@ namespace EstanciasCore.Controllers
             else
             {
                 d.PromocionFija = false;
+            }
+            if (MarcaId.HasValue && MarcaId.Value > 0)
+            {
+                d.Marca = await _context.Marcas.FindAsync(MarcaId.Value);
+            }
+            else
+            {
+                d.Marca = null;
             }
             _context.SaveChanges();
             return RedirectToAction("Index", "Promociones");

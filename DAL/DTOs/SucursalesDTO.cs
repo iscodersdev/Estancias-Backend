@@ -21,6 +21,8 @@ namespace DAL.DTOs
         public string latitude { get; set; }
         public string longitude { get; set; }
         public string group { get; set; }
+        public string NombreDeMarca { get; set; }
+
 
     }
 

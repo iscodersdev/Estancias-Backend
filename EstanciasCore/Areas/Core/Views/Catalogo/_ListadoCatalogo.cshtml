@@ -1,9 +1,20 @@
-﻿@model Commons.Models.Page<DAL.Models.Catalogo>
+@model Commons.Models.Page<DAL.Models.Catalogo>
+@inject DAL.Data.EstanciasContext _context
+@{
+    var marcas = _context.Marcas.Where(x => x.Activo).OrderBy(x => x.Orden).ToList();
+}
 
 <div class="box box-info">
     <div class="box-header with-border filtro-grilla">
         <span class="txt-titulo-box">Listado de Catálogo</span>
-        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+        <div class="pull-right" style="display: flex; align-items: center;">
+            <select id="marcaFiltroCatalogo" class="form-control" style="width: 250px; margin-right: 35px; display: inline-block;">
+                <option value="">Todas las Marcas</option>
+                @foreach (var m in marcas)
+                {
+                    <option value="@m.Nombre">@m.Nombre</option>
+                }
+            </select>
             <a onclick="nuevoCatalogo()" class="btn btn-info btn-sm">
                 <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
             </a>
@@ -18,6 +29,9 @@
                     </th>
                     <th>
                         Link
+                    </th>
+                    <th>
+                        Marca
                     </th>
                     <th>
                         Estado
@@ -38,6 +52,16 @@
                             <a href="@item.Link" target="_blank">
                                 @Html.DisplayFor(modelItem => item.Link)
                             </a>
+                        </td>
+                        <td>
+                            @if (item.Marca != null)
+                            {
+                                @item.Marca.Nombre
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin Marca</span>
+                            }
                         </td>
                         <td>
                             @if (item.Activo)
@@ -70,13 +94,19 @@
     $(document).ready(function () {
         var tablaCatalogo = $('#listadoCatalogo').DataTable({
             "columnDefs": [
-                { "width": "10%", "targets": 0 },
-                { "width": "40%","searchable": false, "orderable": false, "targets": 1 },
-                { "width": "40%", class: "text-center", "searchable": false, "orderable": false, "targets": 2 },
-                { "width": "20%", class: "text-center", "searchable": false, "orderable": false, "targets": 3 }],
+                { "width": "15%", "targets": 0 },
+                { "width": "30%", "searchable": false, "orderable": false, "targets": 1 },
+                { "width": "20%", "targets": 2 },
+                { "width": "15%", class: "text-center", "searchable": false, "orderable": false, "targets": 3 },
+                { "width": "20%", class: "text-center", "searchable": false, "orderable": false, "targets": 4 }],
             "language": {
                 'url': '@Url.Content("~/lib/arg.json")'
             }
+        });
+
+        $('#marcaFiltroCatalogo').on('change', function () {
+            var val = $(this).val();
+            tablaCatalogo.column(2).search(val ? '^' + $.fn.dataTable.util.escapeRegex(val) + '$' : '', true, false).draw();
         });
     });
 

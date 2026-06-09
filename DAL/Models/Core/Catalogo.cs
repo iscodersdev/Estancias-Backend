@@ -11,6 +11,7 @@ namespace DAL.Models
         public string Link { get; set; }
         public DateTime FechaDesde { get; set; }
         public DateTime FechaHasta { get; set; }
+        public virtual Marcas Marca { get; set; }
         public bool Activo { get; set; }
     }
 

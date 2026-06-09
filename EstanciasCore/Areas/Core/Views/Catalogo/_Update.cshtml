@@ -1,4 +1,4 @@
-﻿@model DAL.Models.Catalogo
+@model DAL.Models.Catalogo
 @{
     ViewData["Title"] = "Editar Catálogo";
 }
@@ -21,6 +21,11 @@
             <label asp-for="Link" class="control-label"></label>
             <input asp-for="Link" class="form-control" />
             <span asp-validation-for="Link" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Marca</label>
+            <select id="marcaSelectUpdate" name="MarcaId" class="form-control" asp-items="@ViewBag.Marcas">
+            </select>
         </div>
     </div>
     <div class="box-footer">

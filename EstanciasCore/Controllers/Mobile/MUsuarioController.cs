@@ -1876,11 +1876,13 @@ namespace EstanciasCore.Controllers
                 {
                     var Sucursal = new SucursalesDTO();
                     Sucursal.name = sucu.name;
+                    Sucursal.NombreDeMarca = sucu.Marca != null ? sucu.Marca.Nombre : "Sin Marca";
                     Sucursal.address = sucu.address;
                     Sucursal.group = sucu.group;
                     Sucursal.phone = sucu.phone;
                     Sucursal.latitude = sucu.latitude;
                     Sucursal.longitude = sucu.longitude;
+
                     lista.Add(Sucursal);
                 }
                 sucursalesDTO.Sucursales = lista;

@@ -54,7 +54,7 @@ namespace EstanciasCore.Controllers
             }
 
             var promociones = _context.Promociones.Where(x => (uat.UltimaId == 0 || x.Id < uat.UltimaId) && x.Foto != null && x.Vencimiento==false).OrderBy(x => x.Orden)
-                .Select(x => new MPromociones { PromocionFija= x.PromocionFija, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, QR = x.QR, Imagen = Convert.FromBase64String(x.Foto), Orden = x.Orden }).ToList();
+                .Select(x => new MPromociones { PromocionFija= x.PromocionFija, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, NombreDeMarca = x.Marca.Nombre, Subtitulo=x.Subtitulo, Link = x.Link, QR = x.QR, Imagen = Convert.FromBase64String(x.Foto), Orden = x.Orden }).ToList();
 
             var promocionesVencimiento = _context.Promociones
                 .Where(x => x.Vencimiento == true &&
@@ -69,6 +69,7 @@ namespace EstanciasCore.Controllers
                     Id = x.Id,
                     Titulo = x.Titulo,
                     Subtitulo = x.Subtitulo,
+                    NombreDeMarca = x.Marca.Nombre,
                     Link = x.Link,
                     QR = x.QR,
                     Imagen = Convert.FromBase64String(x.Foto),

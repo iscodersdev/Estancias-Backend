@@ -1,4 +1,4 @@
-﻿@using DAL.Models
+@using DAL.Models
 @using System.Globalization;
 @model Commons.Models.Page<DAL.Models.Promociones>
 
@@ -25,6 +25,9 @@
                     Orden
                 </th>
                 <th>
+                    Marca
+                </th>
+                <th>
                     Estado
                 </th>
                 <th>
@@ -47,6 +50,16 @@
                  </td>
                  <td>
                      @Html.DisplayFor(modelItem => item.Orden)
+                 </td>
+                 <td>
+                     @if (item.Marca != null)
+                     {
+                         @item.Marca.Nombre
+                     }
+                     else
+                     {
+                         <span class="text-muted">Sin Marca</span>
+                     }
                  </td>
                  <td>
                         @if (item.Vencimiento)

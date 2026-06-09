@@ -1,9 +1,20 @@
 @model Commons.Models.Page<DAL.Models.Premios>
+@inject DAL.Data.EstanciasContext _context
+@{
+    var marcas = _context.Marcas.Where(x => x.Activo).OrderBy(x => x.Orden).ToList();
+}
 
 <div class="box box-info">
     <div class="box-header with-border filtro-grilla">
         <span class="txt-titulo-box">Listado de Cupones</span>
-        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+        <div class="pull-right" style="display: flex; align-items: center;">
+            <select id="marcaFiltroPremios" class="form-control" style="width: 250px; margin-right: 35px; display: inline-block;">
+                <option value="">Todas las Marcas</option>
+                @foreach (var m in marcas)
+                {
+                    <option value="@m.Nombre">@m.Nombre</option>
+                }
+            </select>
             <a onclick="nuevoPremio()" class="btn btn-info btn-sm">
                 <i class="fa fa-plus"><span class="hidden-xs"> Nueva</span></i>
             </a>
@@ -101,11 +112,17 @@
 
 <script>
     $(document).ready(function () {
-        $('#listadoPremios').DataTable({
+        var table = $('#listadoPremios').DataTable({
             "columnDefs": [{ "width": "10%", class: "text-center", "searchable": false, "orderable": false, "targets": -1 }],
             "language": {
                 'url': '@Url.Content("~/lib/arg.json")'
             }
+        });
+
+        $('#marcaFiltroPremios').on('change', function () {
+            var val = $(this).val();
+            // The Marca column is index 6 (0: Nombre, 1: Descripción, 2: Stock, 3: Canjes Totales, 4: Puntos, 5: Categoría, 6: Marca)
+            table.column(6).search(val ? '^' + $.fn.dataTable.util.escapeRegex(val) + '$' : '', true, false).draw();
         });
     });
 </script>

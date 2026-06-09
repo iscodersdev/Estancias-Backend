@@ -8,6 +8,7 @@ namespace DAL.DTOs.API
     public class MCatalogoDTO : RespuestaAPI
     {
         public string Link { get; set; }
+        public string NombreDeMarca { get; set; }
     }
       
 }

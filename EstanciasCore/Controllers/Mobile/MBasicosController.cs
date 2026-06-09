@@ -46,6 +46,8 @@ namespace EstanciasCore.Controllers
                 if (catalogo!=null)
                 {
                     catalogoDTO.Link = catalogo.Link;
+                    catalogoDTO.NombreDeMarca = catalogo.Marca!=null?catalogo.Marca.Nombre:"Sin Marca";
+                    
                 }
                 else
                 {
