@@ -1,10 +1,10 @@
 @using Commons.HtmlHelpers
-@model DAL.Models.Marcas
+@model DAL.Models.RelacionPuntos
 @{
-    ViewData["Title"] = "Cargar Imagen de la Marca";
+    ViewData["Title"] = "Cargar Imagen de la Relación Puntos";
 }
 
-<form asp-action="_Image" enctype="multipart/form-data">
+<form asp-action="_Image" asp-controller="RelacionPuntos" asp-area="Core" enctype="multipart/form-data">
 
     @using (Html.BoxBody())
     {
@@ -13,13 +13,13 @@
         <div class="form-group">
             <div class="row">
                 <div class="col-md-6">
-                    <label class="control-label">Seleccione una Imagen para la Marca:</label>
-                    <input class="preview" type="file" name="FotoMarca" data-div="FotoMarcaUpdate" required />
+                    <label class="control-label">Seleccione una Imagen:</label>
+                    <input class="preview" type="file" name="FotoRelacion" data-div="FotoRelacionUpdate" required />
                     <span class="help-block" style="font-size: 12px; margin-top: 5px;">* La imagen no puede ser mayor a 1080x1080</span>
-                    <span id="alertaFondoMarca" class="text-danger"></span>
+                    <span id="alertaFondoRelacion" class="text-danger"></span>
                 </div>
                 <div class="col-md-6" style="text-align: center;">
-                    <div id="FotoMarcaUpdate">
+                    <div id="FotoRelacionUpdate">
                         @if (@ViewBag.Foto != null)
                         {
                             <img src="data:image/jpeg;base64,@ViewBag.Foto" style="max-height:80px; max-width:160px;" />
@@ -31,8 +31,8 @@
     }
     @using (Html.BoxFooter())
     {
-        <a class="btn btn-default" asp-action="Index">Cancelar</a>
-        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+        <a class="btn btn-danger" data-dismiss="modal">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-info pull-right" />
     }
 
 </form>

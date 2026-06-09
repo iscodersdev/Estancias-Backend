@@ -71,6 +71,7 @@ namespace DAL.DTOs
     public class PuntosDTO : RequestApi
     {
         public long Puntos { get; set; }
+        public string BannerPuntosHome { get; set; }
     }
 
     public class HistorialPuntosResponseDto

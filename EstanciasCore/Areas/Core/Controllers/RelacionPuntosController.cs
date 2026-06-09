@@ -1,8 +1,10 @@
-﻿using Commons.Models;
+using Commons.Models;
 using DAL.Data;
 using DAL.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -117,6 +119,53 @@ namespace EstanciasCore.Controllers
             }
         }
 
+        public ActionResult _Image(int id)
+        {
+            RelacionPuntos relacion = _context.RelacionPuntos.Find(id);
+            if (relacion != null)
+            {
+                if (relacion.Imagen != null)
+                {
+                    ViewBag.Foto = Convert.ToBase64String(relacion.Imagen);
+                }
+                return PartialView(relacion);
+            }
+            AddPageAlerts(PageAlertType.Error, "Hubo un error al editar la Imagen. Inténtelo nuevamente más tarde.");
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> _Image(RelacionPuntos model, IFormFile FotoRelacion)
+        {
+            try
+            {
+                RelacionPuntos relacionEdit = await _context.RelacionPuntos.FindAsync(model.Id);
+                if (relacionEdit == null)
+                {
+                    AddPageAlerts(PageAlertType.Error, "No se encontró el registro para cargar la imagen.");
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (FotoRelacion != null)
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await FotoRelacion.CopyToAsync(memoryStream);
+                        relacionEdit.Imagen = memoryStream.ToArray();
+                    }
+                }
+
+                _context.RelacionPuntos.Update(relacionEdit);
+                await _context.SaveChangesAsync();
+                AddPageAlerts(PageAlertType.Success, "Se cargó correctamente la Imagen.");
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception)
+            {
+                AddPageAlerts(PageAlertType.Error, "Hubo un error al cargar la Imagen. Inténtelo nuevamente más tarde.");
+                return RedirectToAction(nameof(Index));
+            }
+        }
 
     }
 }

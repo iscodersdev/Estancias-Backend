@@ -1,4 +1,4 @@
-﻿@model Commons.Models.Page<DAL.Models.RelacionPuntos>
+@model Commons.Models.Page<DAL.Models.RelacionPuntos>
 
 <div class="box box-info">
     <div class="box-header with-border filtro-grilla">
@@ -35,6 +35,17 @@
                             @Html.DisplayFor(modelItem => item.Puntos)
                         </td>
                         <td>
+                            @if (item.Imagen != null)
+                            {
+                                <a onclick="imagenRelacion('@item.Id')" title="Editar Imagen" class="btn btn-warning btn-xs"><i class="fa fa-image"></i></a>
+                            }
+                            else
+                            {
+                                <a onclick="imagenRelacion('@item.Id')" title="No ha ingresado Imagen" class="btn btn-danger btn-xs">
+                                    <i class="fa fa-image"></i>
+                                    <i class="fa fa-exclamation"></i>
+                                </a>
+                            }
                             <a onclick="editRelacion('@item.Id')" title="Editar Relación" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
                             <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Esta seguro de borrar esta Relación?" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
                         </td>
@@ -46,6 +57,7 @@
 </div>
 <modal title="Nueva Relación" callback-modal="true" function="nuevaRelacion" load-url="/Core/RelacionPuntos/_Create/" size="Medium"></modal>
 <modal title="Edición de Relación" callback-modal="true" function="editRelacion" load-url="/Core/RelacionPuntos/_Update/" size="Medium"></modal>
+<modal title="Cambiar Imagen" callback-modal="true" function="imagenRelacion" load-url="/Core/RelacionPuntos/_Image/" size="Medium"></modal>
 
 <script>
     $(document).ready(function () {

@@ -243,6 +243,7 @@ namespace EstanciasCore.API.Controllers.Billetera
         {
             try
             {
+                RelacionPuntos relacionPuntos = _context.RelacionPuntos.FirstOrDefault();
                 var usuario = TraeUsuarioUAT(request.UAT);
                 if (usuario == null)
                     return new PuntosDTO { Status = 500, UAT = request.UAT, Mensaje = "No existe UAT de Usuario" };
@@ -259,6 +260,7 @@ namespace EstanciasCore.API.Controllers.Billetera
 
                 // 5. Armar y retornar la respuesta exitosa
                 request.Puntos = totalPuntosValidos;
+                request.BannerPuntosHome = Convert.ToBase64String(relacionPuntos.Imagen);
                 request.Status = 200;
                 request.Mensaje = "Puntos Actuales Actualizados";
 
