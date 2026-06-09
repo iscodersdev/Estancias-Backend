@@ -133,16 +133,23 @@ namespace EstanciasCore.Controllers
         public IActionResult Delete(int id)
         {
             try
-            {
+            {                
+                if(_context.HistorialCanje.Any(x => x.Premio.Id == id))
+                {
+                    AddPageAlerts(PageAlertType.Error, "No se puede canjear un Cupón Canjeado.");
+                    return RedirectToAction("Index", "Premios");
+                }
                 Premios premio = _context.Premios.Where(s => s.Id == id).First();
+                List<FotosPremios> fotos = _context.FotosPremios.Where(x => x.Premio.Id == id).ToList();
+                _context.FotosPremios.RemoveRange(fotos);
                 _context.Premios.Remove(premio);
                 _context.SaveChanges();
-                AddPageAlerts(PageAlertType.Success, "Se eliminó correctamente el Premio.");
+                AddPageAlerts(PageAlertType.Success, "Se eliminó correctamente el Cupón.");
                 return RedirectToAction(nameof(Index));
             }
             catch (System.Exception)
             {
-                AddPageAlerts(PageAlertType.Success, "Hubo un error al eliminar el Premio.");
+                AddPageAlerts(PageAlertType.Error, "Hubo un error al eliminar el Cupón.");
                 return RedirectToAction("Index", "Premios");
             }
         }
