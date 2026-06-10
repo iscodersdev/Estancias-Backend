@@ -1,21 +1,22 @@
-﻿using DAL.Data;
-using DAL.Models;
-using System.Linq;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Authorization;
-using System;
-using Commons.Controllers;
+﻿using Commons.Controllers;
 using Commons.Identity.Services;
+using DAL.Data;
+using DAL.DTOs;
+using DAL.DTOs.API;
+using DAL.Models;
+using EstanciasCore.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 using QRCoder;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 using System.Security.Policy;
-using DAL.DTOs;
-using EstanciasCore.Services;
-using DAL.DTOs.API;
+using System.Text;
 
 namespace EstanciasCore.Controllers
 {
@@ -35,34 +36,38 @@ namespace EstanciasCore.Controllers
         [Route("TraeLinkCatalogo")]
         [EnableCors("CorsPolicy")]
         [AllowAnonymous]
-        public MCatalogoDTO TraeLinkCatalogo()
+        public MCatalogosDTO TraeLinkCatalogo()
         {
             MCatalogoDTO catalogoDTO = new MCatalogoDTO();
+            MCatalogosDTO catalogoResponse = new MCatalogosDTO();
             try
             {
-                catalogoDTO.Status = 200;
-                catalogoDTO.Mensaje = "Correcto";
-                Catalogo catalogo = _context.Catalogo.Where(x => x.Activo==true).FirstOrDefault();
-                if (catalogo!=null)
+                List<Catalogo> catalogo = _context.Catalogo.Where(x => x.Activo == true).ToList();
+                if (catalogo != null)
                 {
-                    catalogoDTO.Link = catalogo.Link;
-                    catalogoDTO.NombreDeMarca = catalogo.Marca!=null?catalogo.Marca.Nombre:"Sin Marca";
-                    
+                    catalogoResponse.Catalogos = catalogo.Select(c => new MCatalogoDTO()
+                    {
+                        Link = c.Link,
+                        NombreDeMarca = c.Marca != null ? c.Marca.Nombre : "Sin Marca"
+                    }).ToList();
+
+                    catalogoResponse.Status = 200;
+                    catalogoResponse.Mensaje = "Correcto";
                 }
                 else
                 {
-                    catalogoDTO.Status = 404;
-                    catalogoDTO.Mensaje = "NotFound";
+                    catalogoResponse.Status = 404;
+                    catalogoResponse.Mensaje = "NotFound";
                 }
             }
             catch (Exception e)
             {
-                catalogoDTO.Status = 500;
-                catalogoDTO.Mensaje = e.Message;
+                catalogoResponse.Status = 500;
+                catalogoResponse.Mensaje = e.Message;
             }
 
-            return catalogoDTO;
-        }        
-        
+            return catalogoResponse;
+        }
+
     }
 }
