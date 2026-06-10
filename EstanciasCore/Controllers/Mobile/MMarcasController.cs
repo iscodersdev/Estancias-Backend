@@ -38,7 +38,7 @@ namespace EstanciasCore.Controllers
         {
             MTraeBotonesDTO uat = new MTraeBotonesDTO();
             var botones = _context.Marcas.Where(x => x.Activo==true).OrderBy(x => x.Orden)
-                .Select(x => new MBotonesDTO { Id = x.Id, Nombre= x.Nombre, Orden=x.Orden, Imagen = Convert.ToBase64String(x.Imagen) }).ToList();
+                .Select(x => new MBotonesDTO { Id = x.Id, Nombre= x.Nombre, Alias = x.NomAliasbre, CBU = x.CBU, Whatsapp = x.WhatsApp, Orden=x.Orden, Imagen = Convert.ToBase64String(x.Imagen) }).ToList();
 
 
             if (botones.Count > 0)

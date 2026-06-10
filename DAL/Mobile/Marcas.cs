@@ -18,6 +18,9 @@ namespace DAL.Models
     {
         public int Id { get; set; }
         public string Nombre { get; set; }
+        public string Alias { get; set; }
+        public string CBU { get; set; }
+        public string Whatsapp { get; set; }
         public string Imagen { get; set; }
         public int Orden { get; set; }
     }
