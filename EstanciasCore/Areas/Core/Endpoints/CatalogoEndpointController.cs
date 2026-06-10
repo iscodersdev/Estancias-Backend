@@ -168,8 +168,13 @@ namespace EstanciasCore.Areas.Core.Endpoints
                 {
                     Nombre = dto.Nombre.Trim(),
                     Descripcion = dto.Descripcion ?? "",
-                    Link = dto.Link ?? ""
+                    Link = dto.Link ?? "",
                 };
+
+                if(dto.MarcaId.HasValue && dto.MarcaId.Value > 0)
+                {
+                    catalogo.Marca = await _context.Marcas.FindAsync(dto.MarcaId.Value);
+                }
 
                 await _context.Catalogo.AddAsync(catalogo);
                 await _context.SaveChangesAsync();
@@ -184,7 +189,8 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         Nombre = catalogo.Nombre ?? "",
                         Descripcion = catalogo.Descripcion ?? "",
                         Link = catalogo.Link ?? "",
-                        Activo = catalogo.Activo
+                        Activo = catalogo.Activo,
+                        Marca = catalogo.Marca,
                     }
                 });
             }
@@ -213,15 +219,6 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     });
                 }
 
-                if (id != dto.Id)
-                {
-                    return BadRequest(new CatalogoResponseDTO
-                    {
-                        Status = 400,
-                        Mensaje = "El Id enviado por ruta no coincide con el Id del Catálogo."
-                    });
-                }
-
                 if (string.IsNullOrWhiteSpace(dto.Nombre))
                 {
                     return BadRequest(new CatalogoResponseDTO
@@ -246,6 +243,16 @@ namespace EstanciasCore.Areas.Core.Endpoints
                 catalogoUpdate.Descripcion = dto.Descripcion ?? "";
                 catalogoUpdate.Link = dto.Link ?? "";
 
+                if(dto.MarcaId.HasValue && dto.MarcaId.Value > 0)
+                {
+                    catalogoUpdate.Marca = await _context.Marcas.FindAsync(dto.MarcaId.Value);
+                }
+                else
+                {
+                    catalogoUpdate.Marca = null;
+                }
+                
+
                 _context.Catalogo.Update(catalogoUpdate);
                 await _context.SaveChangesAsync();
 
@@ -259,7 +266,8 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         Nombre = catalogoUpdate.Nombre ?? "",
                         Descripcion = catalogoUpdate.Descripcion ?? "",
                         Link = catalogoUpdate.Link ?? "",
-                        Activo = catalogoUpdate.Activo
+                        Activo = catalogoUpdate.Activo,
+                        Marca = catalogoUpdate.Marca,
                     }
                 });
             }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DAL.Models;
+using System;
 using System.Collections.Generic;
 
 namespace DAL.DTOs
@@ -10,6 +11,7 @@ namespace DAL.DTOs
         public string Descripcion { get; set; } = string.Empty;
         public string Link { get; set; } = string.Empty;
         public bool Activo { get; set; }
+        public Marcas Marca { get; set; }
     }
 
     public class CatalogoCreateDTO
@@ -17,14 +19,15 @@ namespace DAL.DTOs
         public string Nombre { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Link { get; set; } = string.Empty;
+        public int? MarcaId { get; set; }
     }
 
     public class CatalogoUpdateDTO
     {
-        public int Id { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Link { get; set; } = string.Empty;
+        public int? MarcaId { get; set; }
     }
 
     public class CatalogoListadoDTO
