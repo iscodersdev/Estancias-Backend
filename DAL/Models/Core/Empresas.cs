@@ -56,6 +56,12 @@ namespace DAL.Models
         public string latitude { get; set; }
         public string longitude { get; set; }
         public string group { get; set; }
+
+    }
+    public class SucursalesMarcas
+    {
+        public int Id { get; set; }
+        public virtual Sucursales Sucursales { get; set; }
         public virtual Marcas Marca { get; set; }
 
     }

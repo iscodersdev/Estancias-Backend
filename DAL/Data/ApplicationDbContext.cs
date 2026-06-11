@@ -34,6 +34,7 @@ namespace DAL.Data
         public DbSet<Empresas> Empresas { get; set; }
         public DbSet<Grupos> Grupos { get; set; }
         public DbSet<Sucursales> Sucursales { get; set; }
+        public DbSet<SucursalesMarcas> SucursalesMarcas { get; set; }
 
         public DbSet<Vendedores> Vendedores { get; set; }
         public DbSet<Monedas> Monedas { get; set; }

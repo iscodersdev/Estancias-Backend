@@ -73,9 +73,15 @@
                             @Html.DisplayFor(modelItem => item.group)
                         </td>
                         <td>
-                            @if (item.Marca != null)
+                            @{
+                                var marcasSucursal = _context.SucursalesMarcas
+                                    .Where(sm => sm.Sucursales.Id == item.Id)
+                                    .Select(sm => sm.Marca.Nombre)
+                                    .ToList();
+                            }
+                            @if (marcasSucursal.Any())
                             {
-                                @item.Marca.Nombre
+                                @string.Join(", ", marcasSucursal)
                             }
                             else
                             {
@@ -106,7 +112,7 @@
 
         $('#marcaFiltroSucursales').on('change', function () {
             var val = $(this).val();
-            table.column(6).search(val ? '^' + $.fn.dataTable.util.escapeRegex(val) + '$' : '', true, false).draw();
+            table.column(6).search(val ? $.fn.dataTable.util.escapeRegex(val) : '', true, false).draw();
         });
     });
 </script>

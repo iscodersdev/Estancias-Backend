@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -30,7 +31,7 @@ namespace EstanciasCore.Controllers
             var c = _context.Sucursales.Count();
             if (c < 1) { c = 1; }
             page.SelectPage("/Sucursales/_ListadoSucursales",
-                _context.Sucursales.Include(x => x.Marca), c);
+                _context.Sucursales, c);
 
             return PartialView("_ListadoSucursales", page);
         }
@@ -47,19 +48,29 @@ namespace EstanciasCore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> _Create(Sucursales sucursales, int? MarcaId)
+        public async Task<IActionResult> _Create(Sucursales sucursales, List<int> MarcaIds)
         {
             ModelState.Remove("Id");
             if (ModelState.IsValid)
             {
                 try
                 {
-                    if (MarcaId.HasValue && MarcaId.Value > 0)
-                    {
-                        sucursales.Marca = await _context.Marcas.FindAsync(MarcaId.Value);
-                    }
                     await _context.Sucursales.AddAsync(sucursales);
                     await _context.SaveChangesAsync();
+
+                    if (MarcaIds != null && MarcaIds.Any())
+                    {
+                        foreach (var id in MarcaIds)
+                        {
+                            var marca = await _context.Marcas.FindAsync(id);
+                            if (marca != null)
+                            {
+                                await _context.SucursalesMarcas.AddAsync(new SucursalesMarcas { Sucursales = sucursales, Marca = marca });
+                            }
+                        }
+                        await _context.SaveChangesAsync();
+                    }
+
                     AddPageAlerts(PageAlertType.Success, "Se creó correctamente la Sucursal " + sucursales.name + ".");
                     return RedirectToAction("Index", "Sucursales");
                 }
@@ -83,12 +94,15 @@ namespace EstanciasCore.Controllers
 
         public async Task<IActionResult> _Update(int Id)
         {
-            Sucursales sucursal = await _context.Sucursales.Include(x => x.Marca).FirstOrDefaultAsync(x => x.Id == Id);
+            Sucursales sucursal = await _context.Sucursales.FirstOrDefaultAsync(x => x.Id == Id);
             if (sucursal == null)
             {
                 sucursal = await _context.Sucursales.FindAsync(Id);
             }
-            var currentMarcaId = sucursal?.Marca?.Id;
+            var selectedMarcas = await _context.SucursalesMarcas
+                                        .Where(x => x.Sucursales.Id == Id)
+                                        .Select(x => x.Marca.Id)
+                                        .ToListAsync();
             ViewBag.Marcas = _context.Marcas
                                 .Where(x => x.Activo)
                                 .OrderBy(x => x.Orden)
@@ -96,7 +110,7 @@ namespace EstanciasCore.Controllers
                                 { 
                                     Text = x.Nombre, 
                                     Value = x.Id.ToString(),
-                                    Selected = currentMarcaId.HasValue && x.Id == currentMarcaId.Value
+                                    Selected = selectedMarcas.Contains(x.Id)
                                 })
                                 .ToList();
             return PartialView(sucursal);
@@ -105,13 +119,13 @@ namespace EstanciasCore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> _Update(Sucursales sucursal, int? MarcaId)
+        public async Task<IActionResult> _Update(Sucursales sucursal, List<int> MarcaIds)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    var existing = await _context.Sucursales.Include(x => x.Marca).FirstOrDefaultAsync(x => x.Id == sucursal.Id);
+                    var existing = await _context.Sucursales.FirstOrDefaultAsync(x => x.Id == sucursal.Id);
                     if (existing == null)
                     {
                         return NotFound();
@@ -123,16 +137,23 @@ namespace EstanciasCore.Controllers
                     existing.longitude = sucursal.longitude;
                     existing.group = sucursal.group;
 
-                    if (MarcaId.HasValue && MarcaId.Value > 0)
+                    _context.Sucursales.Update(existing);
+
+                    var existingMarcas = await _context.SucursalesMarcas.Where(x => x.Sucursales.Id == sucursal.Id).ToListAsync();
+                    _context.SucursalesMarcas.RemoveRange(existingMarcas);
+
+                    if (MarcaIds != null && MarcaIds.Any())
                     {
-                        existing.Marca = await _context.Marcas.FindAsync(MarcaId.Value);
-                    }
-                    else
-                    {
-                        existing.Marca = null;
+                        foreach (var id in MarcaIds)
+                        {
+                            var marca = await _context.Marcas.FindAsync(id);
+                            if (marca != null)
+                            {
+                                await _context.SucursalesMarcas.AddAsync(new SucursalesMarcas { Sucursales = existing, Marca = marca });
+                            }
+                        }
                     }
 
-                    _context.Sucursales.Update(existing);
                     await _context.SaveChangesAsync();
                     AddPageAlerts(PageAlertType.Success, "Se editó correctamente la Sucursal " + sucursal.name + ".");
                     return RedirectToAction("Index", "Sucursales");
@@ -146,7 +167,7 @@ namespace EstanciasCore.Controllers
             }
             else
             {
-                var currentMarcaId = MarcaId;
+                var selectedMarcas = MarcaIds ?? new List<int>();
                 ViewBag.Marcas = _context.Marcas
                                     .Where(x => x.Activo)
                                     .OrderBy(x => x.Orden)
@@ -154,7 +175,7 @@ namespace EstanciasCore.Controllers
                                     { 
                                         Text = x.Nombre, 
                                         Value = x.Id.ToString(),
-                                        Selected = currentMarcaId.HasValue && x.Id == currentMarcaId.Value
+                                        Selected = selectedMarcas.Contains(x.Id)
                                     })
                                     .ToList();
                 return PartialView(sucursal);
@@ -166,6 +187,12 @@ namespace EstanciasCore.Controllers
         {
             try
             {
+                var existingMarcas = _context.SucursalesMarcas.Where(x => x.Sucursales.Id == id).ToList();
+                if(existingMarcas.Any())
+                {
+                    _context.SucursalesMarcas.RemoveRange(existingMarcas);
+                }
+
                 Sucursales sucursal = _context.Sucursales.Where(s => s.Id == id).First();
                 _context.Sucursales.Remove(sucursal);
                 _context.SaveChanges();
@@ -174,7 +201,7 @@ namespace EstanciasCore.Controllers
             }
             catch (System.Exception)
             {
-                AddPageAlerts(PageAlertType.Success, "Hubo un error al eliminar la Sucursal.");
+                AddPageAlerts(PageAlertType.Error, "Hubo un error al eliminar la Sucursal.");
                 return RedirectToAction("Index", "Sucursales");
             }
         }

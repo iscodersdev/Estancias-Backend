@@ -1,4 +1,4 @@
-﻿using Commons.Controllers;
+using Commons.Controllers;
 using Commons.Identity.Services;
 using DAL.Data;
 using DAL.DTOs;
@@ -1876,7 +1876,10 @@ namespace EstanciasCore.Controllers
                 {
                     var Sucursal = new SucursalesDTO();
                     Sucursal.name = sucu.name;
-                    Sucursal.NombreDeMarca = sucu.Marca != null ? sucu.Marca.Nombre : "Sin Marca";
+                    Sucursal.Marcas = _context.SucursalesMarcas
+                                        .Where(sm => sm.Sucursales.Id == sucu.Id)
+                                        .Select(sm => sm.Marca.Nombre)
+                                        .ToList();
                     Sucursal.address = sucu.address;
                     Sucursal.group = sucu.group;
                     Sucursal.phone = sucu.phone;
