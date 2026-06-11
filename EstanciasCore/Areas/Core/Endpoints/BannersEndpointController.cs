@@ -57,30 +57,34 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     .Include(x => x.Marcas)
                     .AsQueryable();
 
-                if (!string.IsNullOrWhiteSpace(buscar))
-                {
-                    string texto = buscar.Trim();
-
-                    query = query.Where(x =>
-                        ((x.Titulo ?? "").Contains(texto)) ||
-                        ((x.Texto ?? "").Contains(texto))
-                    );
-                }
-
                 /*
-                 * IMPORTANTE:
-                 * Si el UAT no carga User.Identity.Name, usuario queda null.
-                 * En ese caso NO filtramos por Empresa == null, porque si no trae 0 registros.
-                 * Si sí encuentra usuario con empresa, trae solo los banners de esa empresa.
+                 * Respeta la lógica original:
+                 *
+                 * Si no hay usuario o no tiene empresa:
+                 * trae solo banners con Empresa == null.
+                 *
+                 * Si hay usuario con empresa:
+                 * trae solo banners de esa empresa.
                  */
-                if (usuario != null && usuario.Clientes != null && usuario.Clientes.Empresa != null)
+                if (usuario == null || usuario.Clientes == null || usuario.Clientes.Empresa == null)
+                {
+                    query = query.Where(x =>
+                        x.Empresa == null &&
+                        (
+                            ((x.Titulo ?? "").Contains(buscar)) ||
+                            ((x.Texto ?? "").Contains(buscar))
+                        ));
+                }
+                else
                 {
                     int empresaId = usuario.Clientes.Empresa.Id;
 
                     query = query.Where(x =>
-                        x.Empresa != null &&
-                        x.Empresa.Id == empresaId
-                    );
+                        x.Empresa.Id == empresaId &&
+                        (
+                            ((x.Titulo ?? "").Contains(buscar)) ||
+                            ((x.Texto ?? "").Contains(buscar))
+                        ));
                 }
 
                 var totalRegistros = await query.CountAsync();
@@ -266,19 +270,23 @@ namespace EstanciasCore.Areas.Core.Endpoints
 
                 var banner = new Banners();
 
-                banner.Titulo = dto.Titulo ?? "";
-                banner.Subtitulo = dto.Subtitulo ?? "";
-                banner.Texto = dto.Texto ?? "";
-                banner.TextoBoton = dto.TextoBoton ?? "";
+                banner.Titulo = dto.Titulo;
+                banner.Subtitulo = dto.Subtitulo;
+                banner.Texto = dto.Texto;
+                banner.TextoBoton = dto.TextoBoton;
 
-                banner.Fecha = dto.Fecha ?? DateTime.Now;
-                banner.FechaDesde = dto.FechaDesde ?? DateTime.Now;
-                banner.FechaHasta = dto.FechaHasta;
-
+                banner.Fecha = dto.Fecha.HasValue ? dto.Fecha.Value : DateTime.Now;
                 banner.Publico = dto.Publico;
-                banner.Link = dto.Link ?? "";
+                banner.Link = dto.Link;
+                banner.FechaDesde = dto.FechaDesde.HasValue ? dto.FechaDesde.Value : DateTime.Now;
+                banner.FechaHasta = dto.FechaHasta;
                 banner.LinkExterno = dto.LinkExterno;
-                banner.Orden = dto.Orden;
+
+                /*
+                 * El original NO setea Orden en Create explícitamente.
+                 * Si querés respetar 100%, no lo seteamos acá.
+                 * El orden se modifica con ModificarOrden.
+                 */
 
                 if (usuario != null && usuario.Clientes != null)
                 {
@@ -308,38 +316,13 @@ namespace EstanciasCore.Areas.Core.Endpoints
 
                 banner.EsVideo = false;
 
-                await _context.Banners.AddAsync(banner);
+                _context.Banners.Add(banner);
                 await _context.SaveChangesAsync();
 
-                return Ok(new BannerItemResponseDTO
+                return Ok(new BannerResponseDTO
                 {
                     Status = 200,
-                    Mensaje = "Se registró correctamente el Banner.",
-                    Banner = new BannerListadoDTO
-                    {
-                        Id = banner.Id,
-                        Titulo = banner.Titulo ?? "",
-                        Subtitulo = banner.Subtitulo ?? "",
-                        Texto = banner.Texto ?? "",
-                        TextoBoton = banner.TextoBoton ?? "",
-                        Fecha = banner.Fecha,
-                        FechaDesde = banner.FechaDesde,
-                        FechaHasta = banner.FechaHasta,
-                        Publico = banner.Publico,
-                        Link = banner.Link ?? "",
-                        LinkExterno = banner.LinkExterno,
-                        BannerFijo = banner.BannerFijo,
-                        Vencimiento = banner.Vencimiento,
-                        EsVideo = banner.EsVideo,
-                        Video = banner.Video ?? "",
-                        Foto = banner.Foto ?? "",
-                        Orden = banner.Orden,
-                        Marca = banner.Marcas == null ? null : new MarcaBannerDTO
-                        {
-                            Id = banner.Marcas.Id,
-                            Nombre = banner.Marcas.Nombre ?? ""
-                        }
-                    }
+                    Mensaje = "Se registró correctamente el Banner."
                 });
             }
             catch (Exception)
@@ -347,13 +330,13 @@ namespace EstanciasCore.Areas.Core.Endpoints
                 return StatusCode(500, new BannerResponseDTO
                 {
                     Status = 500,
-                    Mensaje = "Hubo un error al registrar el Banner. Intentelo nuevamente mas tarde."
+                    Mensaje = "Hubo un error al registrar el Banner."
                 });
             }
         }
 
-        // PUT: endpoint/banners/editar/5
-        [HttpPut("editar/{id}")]
+        // POST: endpoint/banners/editar/5
+        [HttpPost("editar/{id}")]
         public async Task<IActionResult> Editar(int id, [FromBody] BannerEditarDTO dto)
         {
             try
@@ -376,12 +359,12 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     });
                 }
 
-                Banners bannerUpdate = await _context.Banners
+                Banners d = await _context.Banners
                     .Include(x => x.Marcas)
-                    .Where(s => s.Id == id)
+                    .Where(s => s.Id == dto.Id)
                     .FirstOrDefaultAsync();
 
-                if (bannerUpdate == null)
+                if (d == null)
                 {
                     return NotFound(new BannerResponseDTO
                     {
@@ -390,80 +373,56 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     });
                 }
 
-                bannerUpdate.Titulo = dto.Titulo ?? "";
-                bannerUpdate.Subtitulo = dto.Subtitulo == null ? " " : dto.Subtitulo;
-                bannerUpdate.Texto = dto.Texto == null ? " " : dto.Texto;
-                bannerUpdate.TextoBoton = dto.TextoBoton == null ? " " : dto.TextoBoton;
+                /*
+                 * Respeta la lógica original del Update:
+                 * pisa campos directamente y no modifica Orden.
+                 */
+                d.Titulo = dto.Titulo;
+                d.Subtitulo = dto.Subtitulo == null ? " " : dto.Subtitulo;
+                d.Texto = dto.Texto == null ? " " : dto.Texto;
+                d.TextoBoton = dto.TextoBoton == null ? " " : dto.TextoBoton;
 
-                bannerUpdate.Fecha = dto.Fecha ?? bannerUpdate.Fecha;
-                bannerUpdate.FechaDesde = dto.FechaDesde ?? bannerUpdate.FechaDesde;
-
-                bannerUpdate.Publico = dto.Publico;
-                bannerUpdate.Link = dto.Link ?? "";
-                bannerUpdate.LinkExterno = dto.LinkExterno;
-                bannerUpdate.Orden = dto.Orden;
+                d.Fecha = dto.Fecha.HasValue ? dto.Fecha.Value : d.Fecha;
+                d.Publico = dto.Publico;
+                d.Link = dto.Link;
+                d.FechaDesde = dto.FechaDesde.HasValue ? dto.FechaDesde.Value : d.FechaDesde;
+                d.LinkExterno = dto.LinkExterno;
 
                 if (dto.BannerFijo == 1)
                 {
-                    bannerUpdate.BannerFijo = true;
+                    d.BannerFijo = true;
                 }
                 else
                 {
-                    bannerUpdate.BannerFijo = false;
+                    d.BannerFijo = false;
                 }
 
                 if (dto.TieneFechaVencimiento == "on")
                 {
-                    bannerUpdate.FechaHasta = dto.FechaHasta;
-                    bannerUpdate.Vencimiento = true;
+                    d.FechaHasta = dto.FechaHasta;
+                    d.Vencimiento = true;
                 }
                 else
                 {
-                    bannerUpdate.FechaHasta = null;
-                    bannerUpdate.Vencimiento = false;
+                    d.FechaHasta = null;
+                    d.Vencimiento = false;
                 }
 
                 if (dto.MarcasId.HasValue && dto.MarcasId.Value > 0)
                 {
-                    bannerUpdate.Marcas = await _context.Marcas.FindAsync(dto.MarcasId.Value);
+                    d.Marcas = await _context.Marcas.FindAsync(dto.MarcasId.Value);
                 }
                 else
                 {
-                    bannerUpdate.Marcas = null;
+                    d.Marcas = null;
                 }
 
-                _context.Banners.Update(bannerUpdate);
                 await _context.SaveChangesAsync();
 
-                return Ok(new BannerItemResponseDTO
+                return Ok(new BannerResponseDTO
                 {
                     Status = 200,
-                    Mensaje = "Se modificó correctamente el Banner.",
-                    Banner = new BannerListadoDTO
-                    {
-                        Id = bannerUpdate.Id,
-                        Titulo = bannerUpdate.Titulo ?? "",
-                        Subtitulo = bannerUpdate.Subtitulo ?? "",
-                        Texto = bannerUpdate.Texto ?? "",
-                        TextoBoton = bannerUpdate.TextoBoton ?? "",
-                        Fecha = bannerUpdate.Fecha,
-                        FechaDesde = bannerUpdate.FechaDesde,
-                        FechaHasta = bannerUpdate.FechaHasta,
-                        Publico = bannerUpdate.Publico,
-                        Link = bannerUpdate.Link ?? "",
-                        LinkExterno = bannerUpdate.LinkExterno,
-                        BannerFijo = bannerUpdate.BannerFijo,
-                        Vencimiento = bannerUpdate.Vencimiento,
-                        EsVideo = bannerUpdate.EsVideo,
-                        Video = bannerUpdate.Video ?? "",
-                        Foto = bannerUpdate.Foto ?? "",
-                        Orden = bannerUpdate.Orden,
-                        Marca = bannerUpdate.Marcas == null ? null : new MarcaBannerDTO
-                        {
-                            Id = bannerUpdate.Marcas.Id,
-                            Nombre = bannerUpdate.Marcas.Nombre ?? ""
-                        }
-                    }
+                    Mensaje = "Se modificó correctamente el Banner."
                 });
             }
             catch (Exception)
@@ -471,7 +430,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                 return StatusCode(500, new BannerResponseDTO
                 {
                     Status = 500,
-                    Mensaje = "Hubo un error al modificar el Banner. Intentelo nuevamente mas tarde."
+                    Mensaje = "Hubo un error al modificar el Banner."
                 });
             }
         }
@@ -482,8 +441,8 @@ namespace EstanciasCore.Areas.Core.Endpoints
         {
             try
             {
-                var banner = await _context.Banners
-                    .Where(x => x.Id == id)
+                Banners banner = await _context.Banners
+                    .Where(s => s.Id == id)
                     .FirstOrDefaultAsync();
 
                 if (banner == null)
@@ -522,6 +481,10 @@ namespace EstanciasCore.Areas.Core.Endpoints
             {
                 var banner = await _context.Banners.FindAsync(id);
 
+                /*
+                 * En el original esto está después de usar banner.EsVideo,
+                 * pero acá se valida antes para evitar NullReference.
+                 */
                 if (banner == null)
                 {
                     return NotFound(new BannerResponseDTO
@@ -549,11 +512,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     {
                         string uploadsPath = Path.Combine(_env.WebRootPath, "uploads");
                         string rutaArchivo = Path.Combine(uploadsPath, nombreArchivo);
-
-                        if (System.IO.File.Exists(rutaArchivo))
-                        {
-                            System.IO.File.Delete(rutaArchivo);
-                        }
+                        System.IO.File.Delete(rutaArchivo);
                     }
                     catch (Exception)
                     {
@@ -587,89 +546,6 @@ namespace EstanciasCore.Areas.Core.Endpoints
             }
         }
 
-        // POST: endpoint/banners/cambiar-video/5
-        [HttpPost("cambiar-video/{id}")]
-        public async Task<IActionResult> CambiarVideo(int id, IFormFile file)
-        {
-            try
-            {
-                var banner = await _context.Banners.FindAsync(id);
-
-                if (banner == null)
-                {
-                    return NotFound(new BannerResponseDTO
-                    {
-                        Status = 404,
-                        Mensaje = "No se encontró el Banner solicitado."
-                    });
-                }
-
-                if (file == null || file.Length == 0)
-                {
-                    return BadRequest(new BannerResponseDTO
-                    {
-                        Status = 400,
-                        Mensaje = "Debe enviar un video."
-                    });
-                }
-
-                if (banner.EsVideo && banner.Video != null)
-                {
-                    Uri uri = new Uri(banner.Video);
-                    string nombreArchivo = Path.GetFileName(uri.LocalPath);
-
-                    try
-                    {
-                        string uploadsPath = Path.Combine(_env.WebRootPath, "uploads");
-                        string rutaArchivo = Path.Combine(uploadsPath, nombreArchivo);
-
-                        if (System.IO.File.Exists(rutaArchivo))
-                        {
-                            System.IO.File.Delete(rutaArchivo);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-                Directory.CreateDirectory(uploadsFolder);
-
-                string cadenaSinEspacios = file.FileName.Replace(" ", "_");
-                var uniqueFileName = Guid.NewGuid().ToString() + "_" + cadenaSinEspacios;
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    file.CopyTo(fileStream);
-                }
-
-                var urlBase = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}";
-
-                banner.Video = Url.Content(urlBase + "/uploads/" + uniqueFileName);
-                banner.Foto = null;
-                banner.EsVideo = true;
-
-                _context.Banners.Update(banner);
-                await _context.SaveChangesAsync();
-
-                return Ok(new BannerResponseDTO
-                {
-                    Status = 200,
-                    Mensaje = "Se cargó correctamente el video."
-                });
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new BannerResponseDTO
-                {
-                    Status = 500,
-                    Mensaje = "Hubo un error al cargar el video."
-                });
-            }
-        }
-
         // POST: endpoint/banners/notificacion/5
         [HttpPost("notificacion/{id}")]
         public IActionResult Notificacion(int id)
@@ -685,21 +561,12 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         .ThenInclude(x => x.Empresa)
                     .FirstOrDefault(x => x.Email == emailUsuario);
 
-                var existeBanner = _context.Banners.Any(x => x.Id == id);
-
-                if (!existeBanner)
-                {
-                    return NotFound(new BannerResponseDTO
-                    {
-                        Status = 404,
-                        Mensaje = "No se encontró el Banner solicitado."
-                    });
-                }
-
                 if (usuario != null && usuario.Clientes != null && usuario.Clientes.Empresa != null)
                 {
                     var listaPush = _context.Clientes
                         .Where(x => x.Empresa.Id == usuario.Clientes.Empresa.Id);
+
+                    var promocion = _context.Banners.Find(id);
 
                     return Ok(new BannerResponseDTO
                     {
@@ -711,7 +578,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                 return BadRequest(new BannerResponseDTO
                 {
                     Status = 400,
-                    Mensaje = "No se pudieron enviar las notificaciones porque no se encontró empresa asociada al usuario."
+                    Mensaje = "No se pudieron enviar las notificaciones."
                 });
             }
             catch (Exception)
@@ -739,10 +606,14 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     });
                 }
 
-                var banner = await _context.Banners
+                Banners banner = await _context.Banners
                     .Where(x => x.Id == dto.Id)
                     .FirstOrDefaultAsync();
 
+                /*
+                 * El original no valida null y caería al catch.
+                 * Acá respondemos claro sin romper.
+                 */
                 if (banner == null)
                 {
                     return NotFound(new BannerResponseDTO
@@ -768,7 +639,80 @@ namespace EstanciasCore.Areas.Core.Endpoints
                 return StatusCode(500, new BannerResponseDTO
                 {
                     Status = 500,
-                    Mensaje = "No se pudo modificar el Banner."
+                    Mensaje = "No se pudieron modificar el Banner."
+                });
+            }
+        }
+
+        // POST: endpoint/banners/cambiar-video/5
+        [HttpPost("cambiar-video/{id}")]
+        public async Task<IActionResult> CambiarVideo(int id, IFormFile file)
+        {
+            try
+            {
+                var banner = _context.Banners.Find(id);
+
+                if (banner == null)
+                {
+                    return NotFound(new BannerResponseDTO
+                    {
+                        Status = 404,
+                        Mensaje = "No se encontró el Banner solicitado."
+                    });
+                }
+
+                if (banner.EsVideo && banner.Video != null)
+                {
+                    Uri uri = new Uri(banner.Video);
+                    string nombreArchivo = Path.GetFileName(uri.LocalPath);
+
+                    try
+                    {
+                        string uploadsPath = Path.Combine(_env.WebRootPath, "uploads");
+                        string rutaArchivo = Path.Combine(uploadsPath, nombreArchivo);
+                        System.IO.File.Delete(rutaArchivo);
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                if (file != null && file.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                    Directory.CreateDirectory(uploadsFolder);
+
+                    string cadenaSinEspacios = file.FileName.Replace(" ", "_");
+                    var uniqueFileName = Guid.NewGuid().ToString() + "_" + cadenaSinEspacios;
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        file.CopyTo(fileStream);
+                    }
+
+                    var urlBase = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}";
+
+                    banner.Video = Url.Content(urlBase + "/uploads/" + uniqueFileName);
+                    banner.Foto = null;
+                    banner.EsVideo = true;
+
+                    _context.Update(banner);
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(new BannerResponseDTO
+                {
+                    Status = 200,
+                    Mensaje = "Se cargó correctamente el video."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new BannerResponseDTO
+                {
+                    Status = 500,
+                    Mensaje = "Hubo un error al cargar el video."
                 });
             }
         }
