@@ -211,6 +211,7 @@ namespace EstanciasCore.API.Controllers.Billetera
                     Id = x.Id,
                     Nombre = x.Premio.Nombre,
                     Descripcion = x.Premio.Descripcion,
+                    TerminosCondiciones = x.Premio.TerminosCondiciones,
                     Activo = x.Activo,
                     CategoriaNombre = x.Premio.Categoria.Nombre,
                     Codigo = x.CodigoCupon,
