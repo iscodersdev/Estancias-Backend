@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using DAL.Models;
 
 namespace DAL.DTOs
 {
@@ -28,6 +29,10 @@ namespace DAL.DTOs
         public string CategoriaNombre { get; set; }
 
         public DateTime FechaVencimiento { get; set; }
+
+        public int DiasDeVencimiento { get; set; }
+
+        public Marcas Marca { get; set; }
     }
 
     public class PremioCreateDTO
@@ -44,7 +49,11 @@ namespace DAL.DTOs
 
         public int CategoriaId { get; set; }
 
+        public int MarcaId { get; set; }
+
         public DateTime FechaVencimiento { get; set; }
+
+        public int DiasDeVencimiento { get; set; }
     }
 
     public class PremioUpdateDTO
@@ -59,7 +68,13 @@ namespace DAL.DTOs
 
         public long Puntos { get; set; }
 
+        public int CategoriaId { get; set; }
+
+        public int MarcaId { get; set; }
+
         public DateTime FechaVencimiento { get; set; }
+
+        public int DiasDeVencimiento { get; set; }
     }
 
     public class PremiosResponseDTO

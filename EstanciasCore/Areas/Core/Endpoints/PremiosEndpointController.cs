@@ -40,7 +40,8 @@ namespace EstanciasCore.Endpoints
                         ((p.Nombre ?? "").ToLower().Contains(texto)) ||
                         ((p.Descripcion ?? "").ToLower().Contains(texto)) ||
                         ((p.TerminosCondiciones ?? "").ToLower().Contains(texto)) ||
-                        (p.Categoria != null && (p.Categoria.Nombre ?? "").ToLower().Contains(texto))
+                        (p.Categoria != null && (p.Categoria.Nombre ?? "").ToLower().Contains(texto)) ||
+                        (p.Marcas != null && (p.Marcas.Nombre ?? "").ToLower().Contains(texto))
                     );
                 }
 
@@ -57,9 +58,14 @@ namespace EstanciasCore.Endpoints
                         Puntos = p.Puntos,
                         Fecha = p.Fecha,
                         Activo = p.Activo,
+
                         CategoriaId = p.Categoria != null ? p.Categoria.Id : 0,
                         CategoriaNombre = p.Categoria != null ? p.Categoria.Nombre : null,
-                        FechaVencimiento = p.FechaVencimiento
+
+                        FechaVencimiento = p.FechaVencimiento,
+                        DiasDeVencimiento = p.DiasDeVencimiento,
+
+                        Marca = p.Marcas
                     })
                     .ToList();
 
@@ -100,9 +106,14 @@ namespace EstanciasCore.Endpoints
                         Puntos = p.Puntos,
                         Fecha = p.Fecha,
                         Activo = p.Activo,
+
                         CategoriaId = p.Categoria != null ? p.Categoria.Id : 0,
                         CategoriaNombre = p.Categoria != null ? p.Categoria.Nombre : null,
-                        FechaVencimiento = p.FechaVencimiento
+
+                        FechaVencimiento = p.FechaVencimiento,
+                        DiasDeVencimiento = p.DiasDeVencimiento,
+
+                        Marca = p.Marcas
                     })
                     .FirstOrDefault();
 
@@ -164,6 +175,20 @@ namespace EstanciasCore.Endpoints
                     });
                 }
 
+                var marca = _context.Marcas
+                    .Where(x => x.Id == dto.MarcaId)
+                    .FirstOrDefault();
+
+                if (marca == null)
+                {
+                    return BadRequest(new PremioResponseDTO
+                    {
+                        Success = false,
+                        Mensaje = "La marca indicada no existe.",
+                        Premio = null
+                    });
+                }
+
                 var premio = new Premios
                 {
                     Nombre = dto.Nombre,
@@ -173,7 +198,9 @@ namespace EstanciasCore.Endpoints
                     StockActual = dto.Stock,
                     Puntos = dto.Puntos,
                     Categoria = categoria,
+                    Marcas = marca,
                     FechaVencimiento = dto.FechaVencimiento,
+                    DiasDeVencimiento = dto.DiasDeVencimiento,
                     Fecha = DateTime.Now,
                     Activo = true
                 };
@@ -192,9 +219,14 @@ namespace EstanciasCore.Endpoints
                     Puntos = premio.Puntos,
                     Fecha = premio.Fecha,
                     Activo = premio.Activo,
+
                     CategoriaId = categoria.Id,
                     CategoriaNombre = categoria.Nombre,
-                    FechaVencimiento = premio.FechaVencimiento
+
+                    FechaVencimiento = premio.FechaVencimiento,
+                    DiasDeVencimiento = premio.DiasDeVencimiento,
+
+                    Marca = marca
                 };
 
                 return Ok(new PremioResponseDTO
@@ -245,12 +277,43 @@ namespace EstanciasCore.Endpoints
                     });
                 }
 
+                var categoria = _context.Categorias
+                    .Where(x => x.Id == dto.CategoriaId)
+                    .FirstOrDefault();
+
+                if (categoria == null)
+                {
+                    return BadRequest(new PremioResponseDTO
+                    {
+                        Success = false,
+                        Mensaje = "La categoría indicada no existe.",
+                        Premio = null
+                    });
+                }
+
+                var marca = _context.Marcas
+                    .Where(x => x.Id == dto.MarcaId)
+                    .FirstOrDefault();
+
+                if (marca == null)
+                {
+                    return BadRequest(new PremioResponseDTO
+                    {
+                        Success = false,
+                        Mensaje = "La marca indicada no existe.",
+                        Premio = null
+                    });
+                }
+
+                premioDB.Categoria = categoria;
+                premioDB.Marcas = marca;
                 premioDB.Nombre = dto.Nombre;
                 premioDB.Descripcion = dto.Descripcion;
                 premioDB.Stock = dto.Stock;
                 premioDB.Puntos = dto.Puntos;
                 premioDB.TerminosCondiciones = dto.TerminosCondiciones;
                 premioDB.FechaVencimiento = dto.FechaVencimiento;
+                premioDB.DiasDeVencimiento = dto.DiasDeVencimiento;
 
                 _context.Premios.Update(premioDB);
                 await _context.SaveChangesAsync();
@@ -266,9 +329,14 @@ namespace EstanciasCore.Endpoints
                     Puntos = premioDB.Puntos,
                     Fecha = premioDB.Fecha,
                     Activo = premioDB.Activo,
-                    CategoriaId = premioDB.Categoria != null ? premioDB.Categoria.Id : 0,
-                    CategoriaNombre = premioDB.Categoria != null ? premioDB.Categoria.Nombre : null,
-                    FechaVencimiento = premioDB.FechaVencimiento
+
+                    CategoriaId = categoria.Id,
+                    CategoriaNombre = categoria.Nombre,
+
+                    FechaVencimiento = premioDB.FechaVencimiento,
+                    DiasDeVencimiento = premioDB.DiasDeVencimiento,
+
+                    Marca = marca
                 };
 
                 return Ok(new PremioResponseDTO
@@ -295,6 +363,16 @@ namespace EstanciasCore.Endpoints
         {
             try
             {
+                if (_context.HistorialCanje.Any(x => x.Premio.Id == id))
+                {
+                    return BadRequest(new PremioResponseDTO
+                    {
+                        Success = false,
+                        Mensaje = "No se puede eliminar un Cupón Canjeado.",
+                        Premio = null
+                    });
+                }
+
                 var premio = _context.Premios
                     .Where(s => s.Id == id)
                     .FirstOrDefault();
@@ -309,13 +387,19 @@ namespace EstanciasCore.Endpoints
                     });
                 }
 
+                var fotos = _context.FotosPremios
+                    .Where(x => x.Premio.Id == id)
+                    .ToList();
+
+                _context.FotosPremios.RemoveRange(fotos);
                 _context.Premios.Remove(premio);
+
                 await _context.SaveChangesAsync();
 
                 return Ok(new PremioResponseDTO
                 {
                     Success = true,
-                    Mensaje = "Se eliminó correctamente el Premio.",
+                    Mensaje = "Se eliminó correctamente el Cupón.",
                     Premio = null
                 });
             }
@@ -324,7 +408,7 @@ namespace EstanciasCore.Endpoints
                 return StatusCode(500, new PremioResponseDTO
                 {
                     Success = false,
-                    Mensaje = "Hubo un error al eliminar el Premio: " + ex.Message,
+                    Mensaje = "Hubo un error al eliminar el Cupón: " + ex.Message,
                     Premio = null
                 });
             }
