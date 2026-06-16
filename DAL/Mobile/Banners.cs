@@ -28,6 +28,7 @@ namespace DAL.Models
         public bool EsVideo { get; set; }
         public int Orden { get; set; }
         public string NombreDeMarca { get; set; }
+        public bool EsCarrousel { get; set; }
         public byte[] Imagen { get; set; }
         public MBannersPlataforma Plataforma { get; set; }
     }

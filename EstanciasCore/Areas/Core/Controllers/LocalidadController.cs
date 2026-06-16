@@ -125,18 +125,18 @@ namespace EstanciasCore.Controllers
             }
         }
 
-        public async Task<IActionResult> Delete(int Id)
-        {
-            ViewBag.Provincias = _context.Provincia.Select(g => new SelectListItem() { Text = g.Descripcion, Value = g.Id.ToString() });
-            Localidad localidad = await _context.Localidad.FindAsync(Id);
-            return PartialView(localidad);
-        }
+        //public async Task<IActionResult> Delete(int Id)
+        //{
+        //    ViewBag.Provincias = _context.Provincia.Select(g => new SelectListItem() { Text = g.Descripcion, Value = g.Id.ToString() });
+        //    Localidad localidad = await _context.Localidad.FindAsync(Id);
+        //    return PartialView(localidad);
+        //}
 
-        public IActionResult Delete(Localidad localidad)
+        public IActionResult Delete(int Id)
         {
             try
             {
-                Localidad deleteLocalidad = _context.Localidad.Where(s => s.Id == localidad.Id).First();
+                Localidad deleteLocalidad = _context.Localidad.Where(s => s.Id == Id).First();
                 _context.Localidad.Remove(deleteLocalidad);
                 _context.SaveChanges();
                 AddPageAlerts(PageAlertType.Success, "Se eliminó correctamente la Localidad.");
