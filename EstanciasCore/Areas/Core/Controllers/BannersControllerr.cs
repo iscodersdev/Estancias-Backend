@@ -139,6 +139,7 @@ namespace EstanciasCore.Controllers
             d.Link = banner.Link;
             d.FechaDesde = banner.FechaDesde;
             d.LinkExterno = banner.LinkExterno;
+            d.EsCarrousel = banner.EsCarrousel;
             if (BannerFijo==1)
             {
 

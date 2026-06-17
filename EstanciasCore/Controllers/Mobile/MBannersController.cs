@@ -1,4 +1,4 @@
-﻿using DAL.Data;
+using DAL.Data;
 using DAL.Models;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
@@ -57,7 +57,7 @@ namespace EstanciasCore.Controllers
             //    .Select(x => new MBanners { BannerFijo= x.BannerFijo, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Foto : null), EsVideo=x.EsVideo }).ToList();
 
             var banner = _context.Banners.Where(x => x.FechaDesde<=DateTime.Now && (x.FechaHasta>=DateTime.Now || x.Vencimiento==false)).Where(x => x.Foto!=null || x.Video!=null).OrderBy(x => x.Orden)
-                .Select(x => new MBanners { NombreDeMarca= x.Marcas.Nombre, BannerFijo= x.BannerFijo, Orden=x.Orden, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Video : null), EsVideo=x.EsVideo, Plataforma = new MBannersPlataforma() { Web = AsignarYModificarLink(x.Link, x.LinkExterno, 1), Mobile = AsignarYModificarLink(x.Link, x.LinkExterno, 2) } }).Take(10).ToList();
+                .Select(x => new MBanners { NombreDeMarca= x.Marcas.Nombre, BannerFijo= x.BannerFijo, Orden=x.Orden, Fecha = x.Fecha, Texto = x.Texto, Id = x.Id, Titulo = x.Titulo, Subtitulo=x.Subtitulo, Link = x.Link, Imagen = (x.EsVideo ? null : Convert.FromBase64String(x.Foto)), Video = (x.EsVideo ? x.Video : null), EsVideo=x.EsVideo, EsCarrousel = x.EsCarrousel, Plataforma = new MBannersPlataforma() { Web = AsignarYModificarLink(x.Link, x.LinkExterno, 1), Mobile = AsignarYModificarLink(x.Link, x.LinkExterno, 2) } }).Take(10).ToList();
 
 
             if (banner.Count > 0)
