@@ -30,60 +30,113 @@ namespace EstanciasCore.Endpoints
             _notificacionPush = notificacionPush;
         }
 
-        [HttpGet("listar")]
-        public async Task<IActionResult> GetAll(
-    [FromQuery] string buscar = "",
-    [FromQuery] int page = 1,
-    [FromQuery] int pageSize = 10)
+        [HttpGet("obtener-novedades")]
+        public async Task<IActionResult> ObtenerNovedades(
+     [FromQuery] string buscar = "",
+     [FromQuery] int page = 1,
+     [FromQuery] int pageSize = 10)
         {
-            if (page < 1)
-                page = 1;
+            try
+            {
+                if (page < 1)
+                    page = 1;
 
-            if (pageSize < 1)
-                pageSize = 10;
+                if (pageSize < 1)
+                    pageSize = 10;
 
-            var userName = User?.Identity?.Name;
+                var searchText = buscar ?? "";
 
-            var usuario = await _context.Usuarios
-                .Include(x => x.Clientes)
-                    .ThenInclude(x => x.Empresa)
-                .FirstOrDefaultAsync(x => x.Email == userName);
+                string usuarioEmail = null;
 
-            var query = _context.Novedades
+                if (Request.Headers.ContainsKey("UsuarioEmail"))
+                    usuarioEmail = Request.Headers["UsuarioEmail"].ToString();
+
+                if (string.IsNullOrWhiteSpace(usuarioEmail))
+                    usuarioEmail = User?.Identity?.Name;
+
+                var usuario = await _context.Usuarios
+                    .Include(x => x.Clientes)
+                        .ThenInclude(x => x.Empresa)
+                    .FirstOrDefaultAsync(x => x.Email == usuarioEmail);
+
+                var query = _context.Novedades
+                    .Include(x => x.Empresa)
+                    .Include(x => x.Color)
+                    .AsQueryable();
+
+                if (usuario == null || usuario.Clientes == null || usuario.Clientes.Empresa == null)
+                {
+                    query = query.Where(x =>
+                        x.Empresa == null &&
+                        (
+                            string.IsNullOrEmpty(searchText) ||
+                            x.Titulo.Contains(searchText) ||
+                            x.Texto.Contains(searchText)
+                        )
+                    );
+                }
+                else
+                {
+                    var empresaId = usuario.Clientes.Empresa.Id;
+
+                    query = query.Where(x =>
+                        x.Empresa != null &&
+                        x.Empresa.Id == empresaId &&
+                        (
+                            string.IsNullOrEmpty(searchText) ||
+                            x.Titulo.Contains(searchText) ||
+                            x.Texto.Contains(searchText)
+                        )
+                    );
+                }
+
+                var totalRegistros = await query.CountAsync();
+
+                var novedades = await query
+                    .OrderBy(x => x.Fecha)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(x => new NovedadesDTO
+                    {
+                        Id = x.Id,
+                        Fecha = x.Fecha,
+                        Titulo = x.Titulo,
+                        Subtitulo = x.Subtitulo,
+                        Foto = x.Foto,
+                        Texto = x.Texto,
+                        TextoBoton = x.TextoBoton,
+                        Publica = x.Publica,
+                        EmpresaId = x.Empresa != null ? x.Empresa.Id : (int?)null,
+                        ColorId = x.Color != null ? x.Color.Id : (int?)null
+                    })
+                    .ToListAsync();
+
+                return Ok(new NovedadesListadoDTO
+                {
+                    TotalRegistros = totalRegistros,
+                    PaginaActual = page,
+                    RegistrosPorPagina = pageSize,
+                    Novedades = novedades
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Status = 400,
+                    Mensaje = "Error al obtener el listado de novedades.",
+                    Error = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var novedad = await _context.Novedades
                 .Include(x => x.Empresa)
                 .Include(x => x.Color)
-                .AsQueryable();
-
-            if (usuario == null || usuario.Clientes == null || usuario.Clientes.Empresa == null)
-            {
-                query = query.Where(x => x.Empresa == null);
-            }
-            else
-            {
-                var empresaId = usuario.Clientes.Empresa.Id;
-
-                query = query.Where(x =>
-                    x.Empresa != null &&
-                    x.Empresa.Id == empresaId
-                );
-            }
-
-            if (!string.IsNullOrWhiteSpace(buscar))
-            {
-                var texto = buscar.Trim();
-
-                query = query.Where(x =>
-                    (x.Titulo != null && x.Titulo.Contains(texto)) ||
-                    (x.Texto != null && x.Texto.Contains(texto))
-                );
-            }
-
-            var totalRegistros = await query.CountAsync();
-
-            var novedades = await query
-                .OrderByDescending(x => x.Fecha)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
+                .Where(x => x.Id == id)
                 .Select(x => new NovedadesDTO
                 {
                     Id = x.Id,
@@ -97,41 +150,18 @@ namespace EstanciasCore.Endpoints
                     EmpresaId = x.Empresa != null ? x.Empresa.Id : (int?)null,
                     ColorId = x.Color != null ? x.Color.Id : (int?)null
                 })
-                .ToListAsync();
-
-            return Ok(new NovedadesListadoDTO
-            {
-                TotalRegistros = totalRegistros,
-                PaginaActual = page,
-                RegistrosPorPagina = pageSize,
-                Novedades = novedades
-            });
-        }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var novedad = await _context.Novedades
-                .Include(x => x.Empresa)
-                .Include(x => x.Color)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync();
 
             if (novedad == null)
             {
-                return NotFound(new NovedadesResponseDTO
+                return NotFound(new
                 {
                     Status = 404,
-                    Mensaje = "No se encontró la novedad solicitada.",
-                    Novedad = null
+                    Mensaje = "No se encontró la novedad solicitada."
                 });
             }
 
-            return Ok(new NovedadesResponseDTO
-            {
-                Status = 200,
-                Mensaje = "Novedad obtenida correctamente.",
-                Novedad = MapToDTO(novedad)
-            });
+            return Ok(novedad);
         }
 
         [HttpPost]
