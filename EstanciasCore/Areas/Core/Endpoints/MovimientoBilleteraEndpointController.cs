@@ -4,14 +4,15 @@ using DAL.Models.Core;
 using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
 {
     [TypeFilter(typeof(EndpointUatAuthorizeAttribute))]
-    [Route("endpoint/movimientos-billetera")]
     [ApiController]
+    [Route("endpoint/movimiento-billetera")]
     public class MovimientoBilleteraEndpointController : ControllerBase
     {
         private readonly EstanciasContext _context;
@@ -21,236 +22,315 @@ namespace EstanciasCore.Endpoints
             _context = context;
         }
 
+        // GET: endpoint/movimiento-billetera
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var movimientos = await _context.MovimientosBilletera
-                .Select(m => new MovimientoBilleteraDTO
-                {
-                    Id = m.Id,
-                    Fecha = m.Fecha,
-                    TipoMovimientoId = m.TipoMovimiento != null ? m.TipoMovimiento.Id : 0,
-                    TipoMovimientoNombre = m.TipoMovimiento != null ? m.TipoMovimiento.Nombre : null,
-                    Monto = m.Monto,
-                    QR = m.QR,
-                    CBU = m.CBU
-                })
-                .ToListAsync();
-
-            return Ok(new
+            try
             {
-                ok = true,
-                data = movimientos
-            });
+                var movimientosBilletera = await _context.MovimientosBilletera
+                    .Select(m => new MovimientoBilleteraDTO
+                    {
+                        Id = m.Id,
+                        Fecha = m.Fecha,
+                        Monto = m.Monto,
+                        CBU = m.CBU,
+                        TipoMovimiento = m.TipoMovimiento == null ? null : new TipoMovimientoBilleteraDTO
+                        {
+                            Id = m.TipoMovimiento.Id,
+                            Nombre = m.TipoMovimiento.Nombre,
+                            Credito = m.TipoMovimiento.Credito,
+                            Debito = m.TipoMovimiento.Debito
+                        }
+                    })
+                    .ToListAsync();
+
+                return Ok(new MovimientoBilleteraResponseDTO
+                {
+                    Data = new MovimientoBilleteraListadoResponseDTO
+                    {
+                        MovimientosBilletera = movimientosBilletera
+                    },
+                    Status = 200,
+                    Mensaje = "Listado de Movimientos de Billetera obtenido correctamente."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new MovimientoBilleteraResponseDTO
+                {
+                    Data = null,
+                    Status = 500,
+                    Mensaje = "Hubo un error al obtener el listado de Movimientos de Billetera."
+                });
+            }
         }
 
+        // GET: endpoint/movimiento-billetera/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var movimiento = await _context.MovimientosBilletera
-                .Where(m => m.Id == id)
-                .Select(m => new MovimientoBilleteraDTO
+            try
+            {
+                var movimientoBilletera = await _context.MovimientosBilletera
+                    .Where(m => m.Id == id)
+                    .Select(m => new MovimientoBilleteraDTO
+                    {
+                        Id = m.Id,
+                        Fecha = m.Fecha,
+                        Monto = m.Monto,
+                        CBU = m.CBU,
+                        TipoMovimiento = m.TipoMovimiento == null ? null : new TipoMovimientoBilleteraDTO
+                        {
+                            Id = m.TipoMovimiento.Id,
+                            Nombre = m.TipoMovimiento.Nombre,
+                            Credito = m.TipoMovimiento.Credito,
+                            Debito = m.TipoMovimiento.Debito
+                        }
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (movimientoBilletera == null)
                 {
-                    Id = m.Id,
-                    Fecha = m.Fecha,
-                    TipoMovimientoId = m.TipoMovimiento != null ? m.TipoMovimiento.Id : 0,
-                    TipoMovimientoNombre = m.TipoMovimiento != null ? m.TipoMovimiento.Nombre : null,
-                    Monto = m.Monto,
-                    QR = m.QR,
-                    CBU = m.CBU
-                })
-                .FirstOrDefaultAsync();
-
-            if (movimiento == null)
-            {
-                return NotFound(new
-                {
-                    ok = false,
-                    message = "No se encontró el movimiento de billetera."
-                });
-            }
-
-            return Ok(new
-            {
-                ok = true,
-                data = movimiento
-            });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] MovimientoBilleteraCreateRequest request)
-        {
-            if (request == null)
-            {
-                return BadRequest(new
-                {
-                    ok = false,
-                    message = "Los datos del movimiento de billetera son obligatorios."
-                });
-            }
-
-            if (request.TipoMovimientoId == 0)
-            {
-                return BadRequest(new
-                {
-                    ok = false,
-                    message = "Debe seleccionar un tipo de movimiento."
-                });
-            }
-
-            if (request.Monto <= 0)
-            {
-                return BadRequest(new
-                {
-                    ok = false,
-                    message = "El monto debe ser mayor a cero."
-                });
-            }
-
-            var tipoMovimiento = await _context.TipoMovimientoBilletera
-                .FirstOrDefaultAsync(t => t.Id == request.TipoMovimientoId);
-
-            if (tipoMovimiento == null)
-            {
-                return NotFound(new
-                {
-                    ok = false,
-                    message = "No se encontró el tipo de movimiento seleccionado."
-                });
-            }
-
-            var movimiento = new MovimientoBilletera
-            {
-                Fecha = request.Fecha,
-                TipoMovimiento = tipoMovimiento,
-                Monto = request.Monto,
-                QR = request.QR,
-                CBU = request.CBU
-            };
-
-            await _context.MovimientosBilletera.AddAsync(movimiento);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                ok = true,
-                message = "Movimiento de billetera creado correctamente.",
-                data = new MovimientoBilleteraDTO
-                {
-                    Id = movimiento.Id,
-                    Fecha = movimiento.Fecha,
-                    TipoMovimientoId = tipoMovimiento.Id,
-                    TipoMovimientoNombre = tipoMovimiento.Nombre,
-                    Monto = movimiento.Monto,
-                    QR = movimiento.QR,
-                    CBU = movimiento.CBU
+                    return NotFound(new MovimientoBilleteraResponseDTO
+                    {
+                        Data = null,
+                        Status = 404,
+                        Mensaje = "No se encontró el Movimiento de Billetera solicitado."
+                    });
                 }
-            });
+
+                return Ok(new MovimientoBilleteraResponseDTO
+                {
+                    Data = movimientoBilletera,
+                    Status = 200,
+                    Mensaje = "Movimiento de Billetera obtenido correctamente."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new MovimientoBilleteraResponseDTO
+                {
+                    Data = null,
+                    Status = 500,
+                    Mensaje = "Hubo un error al obtener el Movimiento de Billetera."
+                });
+            }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] MovimientoBilleteraUpdateRequest request)
+        // GET: endpoint/movimiento-billetera/tipos-movimiento
+        [HttpGet("tipos-movimiento")]
+        public async Task<IActionResult> GetTiposMovimiento()
         {
-            if (request == null)
+            try
             {
-                return BadRequest(new
+                var tiposMovimiento = await _context.TipoMovimientoBilletera
+                    .Select(t => new TipoMovimientoBilleteraDTO
+                    {
+                        Id = t.Id,
+                        Nombre = t.Nombre,
+                        Credito = t.Credito,
+                        Debito = t.Debito
+                    })
+                    .ToListAsync();
+
+                return Ok(new MovimientoBilleteraResponseDTO
                 {
-                    ok = false,
-                    message = "Los datos del movimiento de billetera son obligatorios."
+                    Data = tiposMovimiento,
+                    Status = 200,
+                    Mensaje = "Listado de Tipos de Movimiento de Billetera obtenido correctamente."
                 });
             }
-
-            if (request.TipoMovimientoId == 0)
+            catch (Exception)
             {
-                return BadRequest(new
+                return StatusCode(500, new MovimientoBilleteraResponseDTO
                 {
-                    ok = false,
-                    message = "Debe seleccionar un tipo de movimiento."
+                    Data = null,
+                    Status = 500,
+                    Mensaje = "Hubo un error al obtener los Tipos de Movimiento de Billetera."
                 });
             }
-
-            if (request.Monto <= 0)
-            {
-                return BadRequest(new
-                {
-                    ok = false,
-                    message = "El monto debe ser mayor a cero."
-                });
-            }
-
-            var movimiento = await _context.MovimientosBilletera
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (movimiento == null)
-            {
-                return NotFound(new
-                {
-                    ok = false,
-                    message = "No se encontró el movimiento de billetera."
-                });
-            }
-
-            var tipoMovimiento = await _context.TipoMovimientoBilletera
-                .FirstOrDefaultAsync(t => t.Id == request.TipoMovimientoId);
-
-            if (tipoMovimiento == null)
-            {
-                return NotFound(new
-                {
-                    ok = false,
-                    message = "No se encontró el tipo de movimiento seleccionado."
-                });
-            }
-
-            movimiento.Fecha = request.Fecha;
-            movimiento.TipoMovimiento = tipoMovimiento;
-            movimiento.Monto = request.Monto;
-            movimiento.QR = request.QR;
-            movimiento.CBU = request.CBU;
-
-            _context.MovimientosBilletera.Update(movimiento);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                ok = true,
-                message = "Movimiento de billetera actualizado correctamente.",
-                data = new MovimientoBilleteraDTO
-                {
-                    Id = movimiento.Id,
-                    Fecha = movimiento.Fecha,
-                    TipoMovimientoId = tipoMovimiento.Id,
-                    TipoMovimientoNombre = tipoMovimiento.Nombre,
-                    Monto = movimiento.Monto,
-                    QR = movimiento.QR,
-                    CBU = movimiento.CBU
-                }
-            });
         }
 
-        [HttpDelete("{id}")]
+        // POST: endpoint/movimiento-billetera/crear
+        [HttpPost("crear")]
+        public async Task<IActionResult> Create([FromBody] MovimientoBilleteraCreateDTO dto)
+        {
+            try
+            {
+                if (dto == null)
+                {
+                    return BadRequest(new MovimientoBilleteraResponseDTO
+                    {
+                        Data = null,
+                        Status = 400,
+                        Mensaje = "Los datos del Movimiento de Billetera son obligatorios."
+                    });
+                }
+
+                var tipoMovimiento = await _context.TipoMovimientoBilletera
+                    .FindAsync(dto.TipoMovimientoId);
+
+                var movimientoBilletera = new MovimientoBilletera
+                {
+                    TipoMovimiento = tipoMovimiento,
+                    Monto = dto.Monto,
+                    CBU = dto.CBU
+                };
+
+                await _context.MovimientosBilletera.AddAsync(movimientoBilletera);
+                await _context.SaveChangesAsync();
+
+                return Ok(new MovimientoBilleteraResponseDTO
+                {
+                    Data = new MovimientoBilleteraDTO
+                    {
+                        Id = movimientoBilletera.Id,
+                        Fecha = movimientoBilletera.Fecha,
+                        Monto = movimientoBilletera.Monto,
+                        CBU = movimientoBilletera.CBU,
+                        TipoMovimiento = movimientoBilletera.TipoMovimiento == null ? null : new TipoMovimientoBilleteraDTO
+                        {
+                            Id = movimientoBilletera.TipoMovimiento.Id,
+                            Nombre = movimientoBilletera.TipoMovimiento.Nombre,
+                            Credito = movimientoBilletera.TipoMovimiento.Credito,
+                            Debito = movimientoBilletera.TipoMovimiento.Debito
+                        }
+                    },
+                    Status = 200,
+                    Mensaje = "Se cargo correctamente el Movimiento de la Billetera."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new MovimientoBilleteraResponseDTO
+                {
+                    Data = null,
+                    Status = 500,
+                    Mensaje = "Hubo un error al cargar el Movimiento de la Billetera. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        // PUT: endpoint/movimiento-billetera/editar/5
+        [HttpPut("editar/{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] MovimientoBilleteraUpdateDTO dto)
+        {
+            try
+            {
+                if (dto == null)
+                {
+                    return BadRequest(new MovimientoBilleteraResponseDTO
+                    {
+                        Data = null,
+                        Status = 400,
+                        Mensaje = "Los datos del Movimiento de Billetera son obligatorios."
+                    });
+                }
+
+                if (id != dto.Id)
+                {
+                    return BadRequest(new MovimientoBilleteraResponseDTO
+                    {
+                        Data = null,
+                        Status = 400,
+                        Mensaje = "El Id enviado por ruta no coincide con el Id del Movimiento de Billetera."
+                    });
+                }
+
+                var movimientoBilletera = await _context.MovimientosBilletera
+                    .Where(m => m.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (movimientoBilletera == null)
+                {
+                    return NotFound(new MovimientoBilleteraResponseDTO
+                    {
+                        Data = null,
+                        Status = 404,
+                        Mensaje = "No se encontró el Movimiento de Billetera solicitado."
+                    });
+                }
+
+                movimientoBilletera.TipoMovimiento = await _context.TipoMovimientoBilletera
+                    .FindAsync(dto.TipoMovimientoId);
+
+                movimientoBilletera.Monto = dto.Monto;
+                movimientoBilletera.CBU = dto.CBU;
+
+                _context.MovimientosBilletera.Update(movimientoBilletera);
+                await _context.SaveChangesAsync();
+
+                return Ok(new MovimientoBilleteraResponseDTO
+                {
+                    Data = new MovimientoBilleteraDTO
+                    {
+                        Id = movimientoBilletera.Id,
+                        Fecha = movimientoBilletera.Fecha,
+                        Monto = movimientoBilletera.Monto,
+                        CBU = movimientoBilletera.CBU,
+                        TipoMovimiento = movimientoBilletera.TipoMovimiento == null ? null : new TipoMovimientoBilleteraDTO
+                        {
+                            Id = movimientoBilletera.TipoMovimiento.Id,
+                            Nombre = movimientoBilletera.TipoMovimiento.Nombre,
+                            Credito = movimientoBilletera.TipoMovimiento.Credito,
+                            Debito = movimientoBilletera.TipoMovimiento.Debito
+                        }
+                    },
+                    Status = 200,
+                    Mensaje = "Se modifico corretamente el Movimiento de la Billetera."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new MovimientoBilleteraResponseDTO
+                {
+                    Data = null,
+                    Status = 500,
+                    Mensaje = "Hubo un error al modificar el Movimiento de la Billetera. Intentelo nuevamente mas tarde."
+                });
+            }
+        }
+
+        // DELETE: endpoint/movimiento-billetera/eliminar/5
+        [HttpDelete("eliminar/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var movimiento = await _context.MovimientosBilletera
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (movimiento == null)
+            try
             {
-                return NotFound(new
+                var movimientoBilletera = await _context.MovimientosBilletera
+                    .Where(m => m.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (movimientoBilletera == null)
                 {
-                    ok = false,
-                    message = "No se encontró el movimiento de billetera."
+                    return NotFound(new MovimientoBilleteraResponseDTO
+                    {
+                        Data = null,
+                        Status = 404,
+                        Mensaje = "No se encontró el Movimiento de Billetera solicitado."
+                    });
+                }
+
+                _context.MovimientosBilletera.Remove(movimientoBilletera);
+                await _context.SaveChangesAsync();
+
+                return Ok(new MovimientoBilleteraResponseDTO
+                {
+                    Data = null,
+                    Status = 200,
+                    Mensaje = "Se eliminó correctamente el Movimiento de la Billetera."
                 });
             }
-
-            _context.MovimientosBilletera.Remove(movimiento);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
+            catch (Exception)
             {
-                ok = true,
-                message = "Movimiento de billetera eliminado correctamente."
-            });
+                return StatusCode(500, new MovimientoBilleteraResponseDTO
+                {
+                    Data = null,
+                    Status = 500,
+                    Mensaje = "Hubo un error al eliminar el Movimiento de la Billetera."
+                });
+            }
         }
     }
 }

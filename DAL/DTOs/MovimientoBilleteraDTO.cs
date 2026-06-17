@@ -1,33 +1,52 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace DAL.DTOs
 {
     public class MovimientoBilleteraDTO
     {
         public int Id { get; set; }
+
         public DateTime Fecha { get; set; }
-        public int TipoMovimientoId { get; set; }
-        public string TipoMovimientoNombre { get; set; }
+
+        public TipoMovimientoBilleteraDTO TipoMovimiento { get; set; }
+
         public decimal Monto { get; set; }
-        public string QR { get; set; }
+
         public string CBU { get; set; }
     }
 
-    public class MovimientoBilleteraCreateRequest
+    public class MovimientoBilleteraCreateDTO
     {
-        public DateTime Fecha { get; set; }
         public int TipoMovimientoId { get; set; }
+
         public decimal Monto { get; set; }
-        public string QR { get; set; }
+
         public string CBU { get; set; }
     }
 
-    public class MovimientoBilleteraUpdateRequest
+    public class MovimientoBilleteraUpdateDTO
     {
-        public DateTime Fecha { get; set; }
+        public int Id { get; set; }
+
         public int TipoMovimientoId { get; set; }
+
         public decimal Monto { get; set; }
-        public string QR { get; set; }
+
         public string CBU { get; set; }
+    }
+
+    public class MovimientoBilleteraResponseDTO
+    {
+        public object Data { get; set; }
+
+        public int Status { get; set; }
+
+        public string Mensaje { get; set; }
+    }
+
+    public class MovimientoBilleteraListadoResponseDTO
+    {
+        public List<MovimientoBilleteraDTO> MovimientosBilletera { get; set; }
     }
 }
