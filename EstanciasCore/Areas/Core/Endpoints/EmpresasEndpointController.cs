@@ -4,6 +4,7 @@ using DAL.Models;
 using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -21,6 +22,7 @@ namespace EstanciasCore.Endpoints
             _context = context;
         }
 
+        // GET: endpoint/empresas
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -41,6 +43,56 @@ namespace EstanciasCore.Endpoints
             });
         }
 
+        // GET: endpoint/empresas/grupos
+        [HttpGet("grupos")]
+        public async Task<IActionResult> GetGrupos()
+        {
+            var grupos = await _context.Grupos
+                .Select(g => new EmpresaGrupoDTO
+                {
+                    Id = g.Id,
+                    Nombre = g.Nombre
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                ok = true,
+                data = grupos
+            });
+        }
+
+        // GET: endpoint/empresas/datos-bancarios
+        [HttpGet("datos-bancarios")]
+        public async Task<IActionResult> GetDatosBancarios()
+        {
+            var datos = await _context.DatosEstructura
+                .Select(d => new EmpresaDatosBancariosDTO
+                {
+                    Telefono = d.Telefono,
+                    CUIT = d.CUIT,
+                    CBU = d.CBU,
+                    Alias = d.Alias
+                })
+                .FirstOrDefaultAsync();
+
+            if (datos == null)
+            {
+                return NotFound(new
+                {
+                    ok = false,
+                    message = "No se encontraron datos bancarios."
+                });
+            }
+
+            return Ok(new
+            {
+                ok = true,
+                data = datos
+            });
+        }
+
+        // GET: endpoint/empresas/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -85,6 +137,7 @@ namespace EstanciasCore.Endpoints
             });
         }
 
+        // POST: endpoint/empresas
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] EmpresaCreateRequest request)
         {
@@ -115,7 +168,7 @@ namespace EstanciasCore.Endpoints
                 });
             }
 
-            if (request.GrupoId == 0)
+            if (!request.GrupoId.HasValue || request.GrupoId.Value <= 0)
             {
                 return BadRequest(new
                 {
@@ -124,8 +177,7 @@ namespace EstanciasCore.Endpoints
                 });
             }
 
-            var grupo = await _context.Grupos
-                .FirstOrDefaultAsync(g => g.Id == request.GrupoId);
+            var grupo = await _context.Grupos.FindAsync(request.GrupoId.Value);
 
             if (grupo == null)
             {
@@ -168,11 +220,12 @@ namespace EstanciasCore.Endpoints
                     Id = empresa.Id,
                     CUIT = empresa.CUIT.ToString(),
                     RazonSocial = empresa.RazonSocial,
-                    Grupo = empresa.Grupo != null ? empresa.Grupo.Nombre : null
+                    Grupo = grupo.Nombre
                 }
             });
         }
 
+        // PUT: endpoint/empresas/5
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] EmpresaUpdateRequest request)
         {
@@ -203,7 +256,7 @@ namespace EstanciasCore.Endpoints
                 });
             }
 
-            if (request.GrupoId == 0)
+            if (!request.GrupoId.HasValue || request.GrupoId.Value <= 0)
             {
                 return BadRequest(new
                 {
@@ -213,6 +266,7 @@ namespace EstanciasCore.Endpoints
             }
 
             var empresa = await _context.Empresas
+                .Include(e => e.Grupo)
                 .FirstOrDefaultAsync(e => e.Id == id);
 
             if (empresa == null)
@@ -224,8 +278,7 @@ namespace EstanciasCore.Endpoints
                 });
             }
 
-            var grupo = await _context.Grupos
-                .FirstOrDefaultAsync(g => g.Id == request.GrupoId);
+            var grupo = await _context.Grupos.FindAsync(request.GrupoId.Value);
 
             if (grupo == null)
             {
@@ -242,7 +295,6 @@ namespace EstanciasCore.Endpoints
             empresa.Domicilio = request.Domicilio;
             empresa.Telefono = request.Telefono;
             empresa.Mail = request.Mail;
-            empresa.Grupo = grupo;
             empresa.ColorFontCarnet = request.ColorFontCarnet;
             empresa.ColorCarnet = request.ColorCarnet;
             empresa.ColorFondo = request.ColorFondo;
@@ -252,8 +304,8 @@ namespace EstanciasCore.Endpoints
             empresa.Facebook = request.Facebook;
             empresa.WhatsApp = request.WhatsApp;
             empresa.ColorLogin = request.ColorLogin;
+            empresa.Grupo = grupo;
 
-            _context.Empresas.Update(empresa);
             await _context.SaveChangesAsync();
 
             return Ok(new
@@ -265,11 +317,58 @@ namespace EstanciasCore.Endpoints
                     Id = empresa.Id,
                     CUIT = empresa.CUIT.ToString(),
                     RazonSocial = empresa.RazonSocial,
-                    Grupo = empresa.Grupo != null ? empresa.Grupo.Nombre : null
+                    Grupo = grupo.Nombre
                 }
             });
         }
 
+        // PUT: endpoint/empresas/datos-bancarios
+        [HttpPut("datos-bancarios")]
+        public async Task<IActionResult> UpdateDatosBancarios([FromBody] EmpresaDatosBancariosUpdateRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest(new
+                {
+                    ok = false,
+                    message = "Los datos bancarios son obligatorios."
+                });
+            }
+
+            var datosEstructuraUpdate = await _context.DatosEstructura.FirstOrDefaultAsync();
+
+            if (datosEstructuraUpdate == null)
+            {
+                return NotFound(new
+                {
+                    ok = false,
+                    message = "No se encontraron datos bancarios para actualizar."
+                });
+            }
+
+            datosEstructuraUpdate.Telefono = request.Telefono;
+            datosEstructuraUpdate.CUIT = request.CUIT;
+            datosEstructuraUpdate.CBU = request.CBU;
+            datosEstructuraUpdate.Alias = request.Alias;
+
+            _context.DatosEstructura.Update(datosEstructuraUpdate);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                ok = true,
+                message = "Datos bancarios actualizados correctamente.",
+                data = new EmpresaDatosBancariosDTO
+                {
+                    Telefono = datosEstructuraUpdate.Telefono,
+                    CUIT = datosEstructuraUpdate.CUIT,
+                    CBU = datosEstructuraUpdate.CBU,
+                    Alias = datosEstructuraUpdate.Alias
+                }
+            });
+        }
+
+        // DELETE: endpoint/empresas/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -285,14 +384,33 @@ namespace EstanciasCore.Endpoints
                 });
             }
 
-            _context.Empresas.Remove(empresa);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
+            try
             {
-                ok = true,
-                message = "Empresa eliminada correctamente."
-            });
+                _context.Empresas.Remove(empresa);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    ok = true,
+                    message = "Empresa eliminada correctamente."
+                });
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest(new
+                {
+                    ok = false,
+                    message = "No se puede eliminar la empresa porque está relacionada con otros registros."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    ok = false,
+                    message = "Ocurrió un error al eliminar la empresa."
+                });
+            }
         }
     }
 }
