@@ -30,11 +30,11 @@ namespace EstanciasCore.Endpoints
             _notificacionPush = notificacionPush;
         }
 
-        [HttpGet]
+        [HttpGet("listar")]
         public async Task<IActionResult> GetAll(
-            [FromQuery] string buscar = "",
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+    [FromQuery] string buscar = "",
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
         {
             if (page < 1)
                 page = 1;
@@ -42,13 +42,16 @@ namespace EstanciasCore.Endpoints
             if (pageSize < 1)
                 pageSize = 10;
 
+            var userName = User?.Identity?.Name;
+
             var usuario = await _context.Usuarios
                 .Include(x => x.Clientes)
                     .ThenInclude(x => x.Empresa)
-                .FirstOrDefaultAsync(x => x.Email == User.Identity.Name);
+                .FirstOrDefaultAsync(x => x.Email == userName);
 
             var query = _context.Novedades
                 .Include(x => x.Empresa)
+                .Include(x => x.Color)
                 .AsQueryable();
 
             if (usuario == null || usuario.Clientes == null || usuario.Clientes.Empresa == null)
@@ -57,20 +60,21 @@ namespace EstanciasCore.Endpoints
             }
             else
             {
-                int empresaId = usuario.Clientes.Empresa.Id;
+                var empresaId = usuario.Clientes.Empresa.Id;
 
                 query = query.Where(x =>
                     x.Empresa != null &&
-                    x.Empresa.Id == empresaId);
+                    x.Empresa.Id == empresaId
+                );
             }
 
             if (!string.IsNullOrWhiteSpace(buscar))
             {
-                var texto = buscar.Trim().ToLower();
+                var texto = buscar.Trim();
 
                 query = query.Where(x =>
-                    ((x.Titulo ?? "").ToLower().Contains(texto)) ||
-                    ((x.Texto ?? "").ToLower().Contains(texto))
+                    (x.Titulo != null && x.Titulo.Contains(texto)) ||
+                    (x.Texto != null && x.Texto.Contains(texto))
                 );
             }
 
