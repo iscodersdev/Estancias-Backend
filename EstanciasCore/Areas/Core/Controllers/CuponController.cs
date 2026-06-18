@@ -57,7 +57,7 @@ namespace EstanciasCore.Controllers
 
                 if (cupones.Any())
                 {
-                    var cupones_disponibles = cupones.Where(x => x.Activo && x.FechaVencimientoCupon.Date >= DateTime.Now.Date).ToList();
+                    var cupones_disponibles = cupones.Where(x => x.Activo && DateTime.Now.Date <= x.Fecha.Date.AddDays(x.Premio.DiasDeVencimiento)).ToList();
                     var cupones_canjeados = cupones.Where(x => !x.Activo).ToList();
 
                     breadcumb.Add(new Message() { DisplayName = "Validar Cupón" });
@@ -127,7 +127,7 @@ namespace EstanciasCore.Controllers
                         return RedirectToAction("Index");
                     }
 
-                    if (cupon.FechaVencimientoCupon.Date < DateTime.Now.Date)
+                    if (DateTime.Now.Date > cupon.Fecha.Date.AddDays(cupon.Premio.DiasDeVencimiento))
                     {
                         AddPageAlerts(PageAlertType.Error, "El cupón ingresado se encuentra vencido.");
                         return RedirectToAction("Index");

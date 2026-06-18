@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace DAL.DTOs
@@ -37,6 +37,8 @@ namespace DAL.DTOs
         public bool Vencido { get; set; }
 
         public string Estado { get; set; }
+
+        public string TerminosCondiciones { get; set; }
     }
 
     public class ValidarCuponRequestDTO
