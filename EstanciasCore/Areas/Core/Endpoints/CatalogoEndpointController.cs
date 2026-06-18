@@ -62,7 +62,8 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         Nombre = c.Nombre ?? "",
                         Descripcion = c.Descripcion ?? "",
                         Link = c.Link ?? "",
-                        Activo = c.Activo
+                        Activo = c.Activo,
+                        Marca = c.Marca
                     })
                     .ToListAsync();
 
@@ -110,7 +111,8 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         Nombre = c.Nombre ?? "",
                         Descripcion = c.Descripcion ?? "",
                         Link = c.Link ?? "",
-                        Activo = c.Activo
+                        Activo = c.Activo,
+                        Marca = c.Marca,
                     })
                     .FirstOrDefaultAsync();
 

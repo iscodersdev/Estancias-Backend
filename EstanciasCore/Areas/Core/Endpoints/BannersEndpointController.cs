@@ -44,14 +44,10 @@ namespace EstanciasCore.Areas.Core.Endpoints
 
                 buscar = buscar ?? "";
 
-                string emailUsuario = User != null && User.Identity != null
-                    ? User.Identity.Name
-                    : null;
-
                 var usuario = _context.Usuarios
                     .Include(x => x.Clientes)
                         .ThenInclude(x => x.Empresa)
-                    .FirstOrDefault(x => x.Email == emailUsuario);
+                    .FirstOrDefault();
 
                 var query = _context.Banners
                     .Include(x => x.Marcas)
@@ -65,18 +61,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                  *
                  * Si hay usuario con empresa:
                  * trae solo banners de esa empresa.
-                 */
-                if (usuario == null || usuario.Clientes == null || usuario.Clientes.Empresa == null)
-                {
-                    query = query.Where(x =>
-                        x.Empresa == null &&
-                        (
-                            ((x.Titulo ?? "").Contains(buscar)) ||
-                            ((x.Texto ?? "").Contains(buscar))
-                        ));
-                }
-                else
-                {
+                 */             
                     int empresaId = usuario.Clientes.Empresa.Id;
 
                     query = query.Where(x =>
@@ -85,7 +70,6 @@ namespace EstanciasCore.Areas.Core.Endpoints
                             ((x.Titulo ?? "").Contains(buscar)) ||
                             ((x.Texto ?? "").Contains(buscar))
                         ));
-                }
 
                 var totalRegistros = await query.CountAsync();
 
