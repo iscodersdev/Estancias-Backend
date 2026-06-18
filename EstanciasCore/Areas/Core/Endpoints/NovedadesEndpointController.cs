@@ -46,18 +46,10 @@ namespace EstanciasCore.Endpoints
 
                 var searchText = buscar ?? "";
 
-                string usuarioEmail = null;
-
-                if (Request.Headers.ContainsKey("UsuarioEmail"))
-                    usuarioEmail = Request.Headers["UsuarioEmail"].ToString();
-
-                if (string.IsNullOrWhiteSpace(usuarioEmail))
-                    usuarioEmail = User?.Identity?.Name;
-
                 var usuario = await _context.Usuarios
                     .Include(x => x.Clientes)
                         .ThenInclude(x => x.Empresa)
-                    .FirstOrDefaultAsync(x => x.Email == usuarioEmail);
+                    .FirstOrDefaultAsync();
 
                 var query = _context.Novedades
                     .Include(x => x.Empresa)
