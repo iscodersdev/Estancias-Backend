@@ -79,7 +79,7 @@
                     </div>
                   <div class="form-group">
                         <label class="control-label">Marca</label>
-                        <select id="marcaSelectUpdate" name="MarcasId" class="form-control" asp-items="@ViewBag.Marcas">
+                        <select id="marcaSelectUpdate" asp-for="Marcas.Id" name="MarcasId" class="form-control" asp-items="@ViewBag.Marcas">
                         </select>
                     </div>
                     @*  <div class="form-group" id="marcaPreviewDivUpdate" style="display:none; text-align: center; margin-bottom: 15px;">

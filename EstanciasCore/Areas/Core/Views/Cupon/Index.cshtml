@@ -54,9 +54,9 @@
     if (ViewBag.EsBusqueda == true)
     {
         var cliente = Model.First().Cliente.Persona;
-        var cuponesDisponibles = Model.Where(x => x.Activo && x.FechaVencimientoCupon.Date >= DateTime.Now.Date).ToList();
+        var cuponesDisponibles = Model.Where(x => x.Activo && DateTime.Now.Date <= x.Fecha.Date.AddDays(x.Premio.DiasDeVencimiento)).ToList();
         var cuponesCanjeados = Model.Where(x => !x.Activo).OrderByDescending(x => x.Fecha).ToList();
-        var cuponesVencidos = Model.Where(x => x.Activo && x.FechaVencimientoCupon.Date < DateTime.Now.Date).ToList();
+        var cuponesVencidos = Model.Where(x => x.Activo && DateTime.Now.Date > x.Fecha.Date.AddDays(x.Premio.DiasDeVencimiento)).ToList();
 
         <div class="row" style="margin-bottom: 10px;">
             <div class="col-xs-12">
@@ -76,6 +76,7 @@
                             <tr>
                                 <th>Premio</th>
                                 <th>Descripción</th>
+                                <th>Términos y Condiciones</th>
                                 <th>Puntos</th>
                                 <th>Código Cupón</th>
                                 <th>Vencimiento</th>
@@ -88,9 +89,10 @@
                                 <tr>
                                     <td>@item.Premio.Nombre</td>
                                     <td>@item.Premio.Descripcion</td>
+                                    <td>@item.Premio.TerminosCondiciones</td>
                                     <td>@item.Premio.Puntos</td>
                                     <td>@item.CodigoCupon</td>
-                                    <td>@item.FechaVencimientoCupon.ToString("dd/MM/yyyy")</td>
+                                    <td>@item.Fecha.Date.AddDays(item.Premio.DiasDeVencimiento).ToString("dd/MM/yyyy")</td>
                                     <td>
                                         <form asp-action="Validar" method="post" style="display:inline;">
                                             <input type="hidden" name="codigo" value="@item.CodigoCupon" />
@@ -151,6 +153,7 @@
                             <tr>
                                 <th>Premio</th>
                                 <th>Descripción</th>
+                                <th>Términos y Condiciones</th>
                                 <th>Código Cupón</th>
                                 <th>Vencimiento</th>
                                 <th>Estado</th>
@@ -162,8 +165,9 @@
                                 <tr>
                                     <td>@item.Premio.Nombre</td>
                                     <td>@item.Premio.Descripcion</td>
+                                    <td>@item.Premio.TerminosCondiciones</td>
                                     <td>@item.CodigoCupon</td>
-                                    <td>@item.FechaVencimientoCupon.ToString("dd/MM/yyyy")</td>
+                                    <td>@item.Fecha.Date.AddDays(item.Premio.DiasDeVencimiento).ToString("dd/MM/yyyy")</td>
                                     <td><span class="label label-danger">Vencido</span></td>
                                 </tr>
                             }

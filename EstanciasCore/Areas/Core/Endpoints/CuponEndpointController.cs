@@ -103,7 +103,7 @@ namespace EstanciasCore.Endpoints
                 }
 
                 var cuponesDisponibles = cupones
-                    .Where(x => x.Activo && x.FechaVencimientoCupon.Date >= DateTime.Now.Date)
+                    .Where(x => x.Activo && DateTime.Now.Date <= x.Fecha.Date.AddDays(x.Premio.DiasDeVencimiento))
                     .ToList();
 
                 var cuponesCanjeados = cupones
@@ -219,7 +219,7 @@ namespace EstanciasCore.Endpoints
                     });
                 }
 
-                if (cupon.FechaVencimientoCupon.Date < DateTime.Now.Date)
+                if (DateTime.Now.Date > cupon.Fecha.Date.AddDays(cupon.Premio.DiasDeVencimiento))
                 {
                     return BadRequest(new ValidarCuponResponseDTO
                     {
@@ -257,7 +257,7 @@ namespace EstanciasCore.Endpoints
 
         private static ValidacionCuponDetalleDTO MapearCupon(dynamic x)
         {
-            var vencido = x.FechaVencimientoCupon.Date < DateTime.Now.Date;
+            var vencido = DateTime.Now.Date > ((DateTime)x.Fecha).Date.AddDays((int)x.Premio.DiasDeVencimiento);
 
             string estado;
 
@@ -291,10 +291,11 @@ namespace EstanciasCore.Endpoints
                 Premio = x.Premio?.Nombre,
                 CodigoCupon = x.CodigoCupon,
                 Fecha = x.Fecha,
-                FechaVencimientoCupon = x.FechaVencimientoCupon,
+                FechaVencimientoCupon = ((DateTime)x.Fecha).Date.AddDays((int)x.Premio.DiasDeVencimiento),
                 Activo = x.Activo,
                 Vencido = vencido,
-                Estado = estado
+                Estado = estado,
+                TerminosCondiciones = x.Premio?.TerminosCondiciones
             };
         }
     }
