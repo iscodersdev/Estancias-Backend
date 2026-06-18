@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DAL.Models;
+using System;
 using System.Collections.Generic;
 
 namespace DAL.DTOs
@@ -30,6 +31,7 @@ namespace DAL.DTOs
         public int? EmpresaId { get; set; }
 
         public string Estado { get; set; }
+        public Marcas Marca { get; set; }
     }
 
     public class PromocionCreateDTO
@@ -54,6 +56,7 @@ namespace DAL.DTOs
         public int Orden { get; set; }
 
         public int ColorId { get; set; }
+        public int MarcaId { get; set; }
     }
 
     public class PromocionUpdateDTO
@@ -78,6 +81,7 @@ namespace DAL.DTOs
         public int PromocionFija { get; set; }
 
         public int ColorId { get; set; }
+        public int MarcaId { get; set; }
     }
 
     public class PromocionCambiarOrdenDTO

@@ -58,21 +58,6 @@ namespace EstanciasCore.Areas.Core.Endpoints
 
                 IQueryable<Promociones> query;
 
-                if (usuario == null || usuario.Clientes == null || usuario.Clientes.Empresa == null)
-                {
-                    query = _context.Promociones
-                        .Include(x => x.Empresa)
-                        .Where(x =>
-                            x.Empresa == null &&
-                            (
-                                (x.Titulo ?? "").Contains(buscar) ||
-                                (x.Texto ?? "").Contains(buscar)
-                            )
-                        )
-                        .OrderBy(x => x.Orden);
-                }
-                else
-                {
                     query = _context.Promociones
                         .Include(x => x.Empresa)
                         .Where(x =>
@@ -80,7 +65,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                             (x.Texto ?? "").Contains(buscar)
                         )
                         .OrderBy(x => x.Orden);
-                }
+    
 
                 var total = await query.CountAsync();
 
@@ -107,7 +92,8 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         EmpresaId = x.Empresa != null ? (int?)x.Empresa.Id : null,
                         Estado = x.Vencimiento && x.FechaHasta.Date < DateTime.Now.Date
                             ? "Vencida"
-                            : "Habilitada"
+                            : "Habilitada",
+                        Marca = x.Marca,
                     })
                     .ToListAsync();
 
@@ -167,7 +153,8 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     EmpresaId = promocion.Empresa != null ? (int?)promocion.Empresa.Id : null,
                     Estado = promocion.Vencimiento && promocion.FechaHasta.Date < DateTime.Now.Date
                         ? "Vencida"
-                        : "Habilitada"
+                        : "Habilitada",
+                    Marca = promocion.Marca,
                 };
 
                 return Ok(dto);
@@ -218,6 +205,18 @@ namespace EstanciasCore.Areas.Core.Endpoints
 
                     PromocionFija = dto.PromocionFija == 1
                 };
+
+                var marca = _context.Marcas.Where(x => x.Id == dto.MarcaId).FirstOrDefault();
+                
+                if(marca == null)
+                {
+                    return BadRequest(new
+                    {
+                        mensaje = "No se encontro la marca...",
+                        promocionId = promocion.Id
+                    });
+                }
+                promocion.Marca = marca;
 
                 _context.Promociones.Add(promocion);
                 await _context.SaveChangesAsync();
@@ -278,6 +277,12 @@ namespace EstanciasCore.Areas.Core.Endpoints
                 else
                 {
                     promocion.PromocionFija = false;
+                }
+
+                var marca = _context.Marcas.Where(x => x.Id == dto.MarcaId).FirstOrDefault();
+                if(marca != null)
+                {
+                    promocion.Marca = marca;
                 }
 
                 await _context.SaveChangesAsync();
