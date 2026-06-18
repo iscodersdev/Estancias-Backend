@@ -64,19 +64,6 @@ namespace EstanciasCore.Endpoints
                     .Include(x => x.Color)
                     .AsQueryable();
 
-                if (usuario == null || usuario.Clientes == null || usuario.Clientes.Empresa == null)
-                {
-                    query = query.Where(x =>
-                        x.Empresa == null &&
-                        (
-                            string.IsNullOrEmpty(searchText) ||
-                            x.Titulo.Contains(searchText) ||
-                            x.Texto.Contains(searchText)
-                        )
-                    );
-                }
-                else
-                {
                     var empresaId = usuario.Clientes.Empresa.Id;
 
                     query = query.Where(x =>
@@ -88,7 +75,6 @@ namespace EstanciasCore.Endpoints
                             x.Texto.Contains(searchText)
                         )
                     );
-                }
 
                 var totalRegistros = await query.CountAsync();
 
