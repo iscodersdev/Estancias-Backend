@@ -63,6 +63,12 @@ namespace DAL.DTOs.Reportes
     {
         public string NroTarjetaFiltro { get; set; } = "";
         public string NroDocumentoFiltro { get; set; } = "";
+
+        // Nuevos campos para endpoints paginados.
+        // No rompen el uso anterior porque tienen valores por defecto.
+        public int Pagina { get; set; } = 1;
+        public int Cantidad { get; set; } = 50;
+        public string Buscar { get; set; } = "";
     }
 
     public class ResumenTarjetaListadoResponseDTO
@@ -114,5 +120,18 @@ namespace DAL.DTOs.Reportes
 
         public List<MovimientoResumenDeudaDTO> Movimientos { get; set; } = new List<MovimientoResumenDeudaDTO>();
         public List<DetalleCuotaConSolicitudDTO> DetallesCuotas { get; set; } = new List<DetalleCuotaConSolicitudDTO>();
+    }
+
+    public class ResumenDeudaListadoResponseDTO
+    {
+        public int Status { get; set; }
+        public string Mensaje { get; set; } = "";
+
+        public int TotalRegistros { get; set; }
+        public int PaginaActual { get; set; }
+        public int CantidadPorPagina { get; set; }
+        public int TotalPaginas { get; set; }
+
+        public List<ResumenDeudaResponseDTO> Data { get; set; } = new List<ResumenDeudaResponseDTO>();
     }
 }

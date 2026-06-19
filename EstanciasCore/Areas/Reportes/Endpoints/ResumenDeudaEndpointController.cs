@@ -35,6 +35,13 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             _viewEngine = viewEngine;
         }
 
+        private class UsuarioResumenDeudaConsultaDTO
+        {
+            public string UsuarioId { get; set; }
+            public string NroDocumento { get; set; }
+            public string NroTarjeta { get; set; }
+        }
+
         // GET: /reportes/endpoint/resumen-deuda/filtros
         [HttpGet("filtros")]
         public IActionResult Filtros()
@@ -42,83 +49,65 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             return Ok(new FiltroResumenTarjetaRequestDTO
             {
                 NroTarjetaFiltro = "",
-                NroDocumentoFiltro = ""
+                NroDocumentoFiltro = "",
+                Pagina = 1,
+                Cantidad = 50,
+                Buscar = ""
             });
         }
-        //metodo privado
-        private async Task<ResumenDeudaResponseDTO> ObtenerResumenDeudaPorUsuario(Usuario usuario, DatosEstructura empresa)
+
+        private ResumenDeudaResponseDTO CrearResumenVacio(
+            int status,
+            string mensaje,
+            string usuarioId = "",
+            string nroDocumento = "",
+            string nroTarjeta = "")
+        {
+            return new ResumenDeudaResponseDTO
+            {
+                Status = status,
+                Mensaje = mensaje,
+                UsuarioId = usuarioId ?? "",
+                NroDocumento = nroDocumento ?? "",
+                NroTarjeta = nroTarjeta ?? "",
+                MontoDisponible = "0",
+                FechaVencimiento = "",
+                MontoPunitoriosTotal = 0,
+                Movimientos = new List<MovimientoResumenDeudaDTO>(),
+                DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
+            };
+        }
+
+        private async Task<ResumenDeudaResponseDTO> ObtenerResumenDeudaPorDatosUsuario(
+            string usuarioId,
+            string nroDocumento,
+            string nroTarjeta,
+            DatosEstructura empresa)
         {
             try
             {
-                if (usuario == null)
-                {
-                    return new ResumenDeudaResponseDTO
-                    {
-                        Status = 404,
-                        Mensaje = "Usuario inválido.",
-                        UsuarioId = "",
-                        NroDocumento = "",
-                        NroTarjeta = "",
-                        MontoDisponible = "0",
-                        FechaVencimiento = "",
-                        MontoPunitoriosTotal = 0,
-                        Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                        DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                    };
-                }
-
-                if (usuario.Personas == null)
-                {
-                    return new ResumenDeudaResponseDTO
-                    {
-                        Status = 404,
-                        Mensaje = "El usuario encontrado no tiene una persona asociada.",
-                        UsuarioId = usuario.Id,
-                        NroDocumento = "",
-                        NroTarjeta = "",
-                        MontoDisponible = "0",
-                        FechaVencimiento = "",
-                        MontoPunitoriosTotal = 0,
-                        Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                        DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                    };
-                }
-
-                string nroDocumento = usuario.Personas.NroDocumento ?? "";
-                string nroTarjeta = usuario.Personas.NroTarjeta ?? "";
+                usuarioId = usuarioId ?? "";
+                nroDocumento = nroDocumento ?? "";
+                nroTarjeta = nroTarjeta ?? "";
 
                 if (string.IsNullOrWhiteSpace(nroDocumento) || string.IsNullOrWhiteSpace(nroTarjeta))
                 {
-                    return new ResumenDeudaResponseDTO
-                    {
-                        Status = 400,
-                        Mensaje = "El usuario no tiene número de documento o número de tarjeta.",
-                        UsuarioId = usuario.Id,
-                        NroDocumento = nroDocumento,
-                        NroTarjeta = nroTarjeta,
-                        MontoDisponible = "0",
-                        FechaVencimiento = "",
-                        MontoPunitoriosTotal = 0,
-                        Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                        DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                    };
+                    return CrearResumenVacio(
+                        400,
+                        "El usuario no tiene número de documento o número de tarjeta.",
+                        usuarioId,
+                        nroDocumento,
+                        nroTarjeta);
                 }
 
                 if (!long.TryParse(nroTarjeta, out long nroTarjetaLong))
                 {
-                    return new ResumenDeudaResponseDTO
-                    {
-                        Status = 400,
-                        Mensaje = "El número de tarjeta no tiene un formato válido.",
-                        UsuarioId = usuario.Id,
-                        NroDocumento = nroDocumento,
-                        NroTarjeta = nroTarjeta,
-                        MontoDisponible = "0",
-                        FechaVencimiento = "",
-                        MontoPunitoriosTotal = 0,
-                        Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                        DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                    };
+                    return CrearResumenVacio(
+                        400,
+                        "El número de tarjeta no tiene un formato válido.",
+                        usuarioId,
+                        nroDocumento,
+                        nroTarjeta);
                 }
 
                 DateTime fechaActual = DateTime.Now;
@@ -131,7 +120,7 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                 string montoDisponible = "0";
 
                 var datosMovimientos = await _datosServices.ConsultarMovimientos(
-                    empresa.UsernameWS.ToLower(),
+                    empresa.UsernameWS != null ? empresa.UsernameWS.ToLower() : "",
                     empresa.PasswordWS,
                     nroDocumento,
                     nroTarjetaLong,
@@ -145,54 +134,60 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                 {
                     montoDisponible = datosMovimientos.Detalle.MontoDisponible ?? "0";
 
-                    comprasAgrupadas = datosMovimientos.Movimientos
-                        .Where(x => x.Descripcion == "PAGOS DE CUOTA REGULAR")
-                        .GroupBy(m => new { m.Descripcion, m.Fecha })
-                        .Select(g =>
-                        {
-                            decimal monto = g.Sum(m => ParseDecimalServicio(m.Monto) + ParseDecimalServicio(m.Recargo));
-
-                            return new MovimientoResumenDeudaDTO
+                    if (datosMovimientos.Movimientos != null)
+                    {
+                        comprasAgrupadas = datosMovimientos.Movimientos
+                            .Where(x => x.Descripcion == "PAGOS DE CUOTA REGULAR")
+                            .GroupBy(m => new { m.Descripcion, m.Fecha })
+                            .Select(g =>
                             {
-                                Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy"),
-                                TipoMovimiento = g.Key.Descripcion ?? "",
-                                Monto = FormatDecimalServicio(monto)
-                            };
-                        })
-                        .ToList();
+                                decimal monto = g.Sum(m => ParseDecimalServicio(m.Monto) + ParseDecimalServicio(m.Recargo));
 
-                    comprasAgrupadas.AddRange(datosMovimientos.Movimientos
-                        .Where(x => x.Descripcion != "PAGOS DE CUOTA REGULAR")
-                        .Select(g => new MovimientoResumenDeudaDTO
-                        {
-                            Fecha = g.Fecha.Date.ToString("dd/MM/yyyy"),
-                            TipoMovimiento = g.Descripcion ?? "",
-                            Monto = FormatDecimalServicio(ParseDecimalServicio(g.Monto))
-                        })
-                        .ToList());
-
-                    detallesCuotas = datosMovimientos.DetallesSolicitud
-                        .Where(result => result != null && result.DetallesCuota != null)
-                        .SelectMany(
-                            result => result.DetallesCuota,
-                            (result, detalle) => new DetalleCuotaConSolicitudDTO
-                            {
-                                NroSolicitud = result.NumeroSolicitud ?? "",
-                                NroCuota = detalle.NumeroCuota ?? "",
-                                Monto = detalle.Monto ?? "",
-                                Fecha = detalle.Fecha ?? ""
+                                return new MovimientoResumenDeudaDTO
+                                {
+                                    Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy"),
+                                    TipoMovimiento = g.Key.Descripcion ?? "",
+                                    Monto = FormatDecimalServicio(monto)
+                                };
                             })
-                        .Where(x => ConvertirFechaServicio(x.Fecha) <= fechaVencimiento)
-                        .ToList();
+                            .ToList();
 
-                    montoPunitoriosTotal = await _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
+                        comprasAgrupadas.AddRange(datosMovimientos.Movimientos
+                            .Where(x => x.Descripcion != "PAGOS DE CUOTA REGULAR")
+                            .Select(g => new MovimientoResumenDeudaDTO
+                            {
+                                Fecha = g.Fecha.Date.ToString("dd/MM/yyyy"),
+                                TipoMovimiento = g.Descripcion ?? "",
+                                Monto = FormatDecimalServicio(ParseDecimalServicio(g.Monto))
+                            })
+                            .ToList());
+                    }
+
+                    if (datosMovimientos.DetallesSolicitud != null)
+                    {
+                        detallesCuotas = datosMovimientos.DetallesSolicitud
+                            .Where(result => result != null && result.DetallesCuota != null)
+                            .SelectMany(
+                                result => result.DetallesCuota,
+                                (result, detalle) => new DetalleCuotaConSolicitudDTO
+                                {
+                                    NroSolicitud = result.NumeroSolicitud ?? "",
+                                    NroCuota = detalle.NumeroCuota ?? "",
+                                    Monto = detalle.Monto ?? "",
+                                    Fecha = detalle.Fecha ?? ""
+                                })
+                            .Where(x => ConvertirFechaServicio(x.Fecha) <= fechaVencimiento)
+                            .ToList();
+
+                        montoPunitoriosTotal = await _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
+                    }
                 }
 
                 return new ResumenDeudaResponseDTO
                 {
                     Status = 200,
                     Mensaje = "",
-                    UsuarioId = usuario.Id,
+                    UsuarioId = usuarioId,
                     NroDocumento = nroDocumento,
                     NroTarjeta = nroTarjeta,
                     MontoDisponible = montoDisponible,
@@ -204,75 +199,127 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             }
             catch (Exception ex)
             {
-                return new ResumenDeudaResponseDTO
-                {
-                    Status = 500,
-                    Mensaje = "Se produjo un error al procesar el usuario: " + ex.Message,
-                    UsuarioId = usuario != null ? usuario.Id : "",
-                    NroDocumento = usuario != null && usuario.Personas != null ? usuario.Personas.NroDocumento ?? "" : "",
-                    NroTarjeta = usuario != null && usuario.Personas != null ? usuario.Personas.NroTarjeta ?? "" : "",
-                    MontoDisponible = "0",
-                    FechaVencimiento = "",
-                    MontoPunitoriosTotal = 0,
-                    Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                    DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                };
+                return CrearResumenVacio(
+                    500,
+                    "Se produjo un error al procesar el usuario: " + ex.Message,
+                    usuarioId,
+                    nroDocumento,
+                    nroTarjeta);
             }
         }
 
-        // GET: /reportes/endpoint/resumen-deuda/todos
+        // GET: /reportes/endpoint/resumen-deuda/todos?pagina=1&cantidad=50&buscar=123
         [HttpGet("todos")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int pagina = 1,
+            [FromQuery] int cantidad = 50,
+            [FromQuery] string buscar = "")
         {
             try
             {
-                DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
+                if (pagina < 1)
+                {
+                    pagina = 1;
+                }
+
+                if (cantidad < 1)
+                {
+                    cantidad = 50;
+                }
+
+                if (cantidad > 200)
+                {
+                    cantidad = 200;
+                }
+
+                buscar = buscar ?? "";
+
+                DatosEstructura empresa = await _context.DatosEstructura
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
 
                 if (empresa == null)
                 {
-                    return StatusCode(500, new
+                    return StatusCode(500, new ResumenDeudaListadoResponseDTO
                     {
-                        status = 500,
-                        mensaje = "No se encontraron los datos de estructura para consultar el servicio.",
-                        totalRegistros = 0,
-                        data = new List<ResumenDeudaResponseDTO>()
+                        Status = 500,
+                        Mensaje = "No se encontraron los datos de estructura para consultar el servicio.",
+                        TotalRegistros = 0,
+                        PaginaActual = pagina,
+                        CantidadPorPagina = cantidad,
+                        TotalPaginas = 0,
+                        Data = new List<ResumenDeudaResponseDTO>()
                     });
                 }
 
-                List<Usuario> usuarios = await _context.Usuarios
-                    .Include(x => x.Personas)
+                IQueryable<Usuario> query = _context.Usuarios
+                    .AsNoTracking()
                     .Where(x =>
                         x.Personas != null &&
-                        !string.IsNullOrWhiteSpace(x.Personas.NroDocumento) &&
-                        !string.IsNullOrWhiteSpace(x.Personas.NroTarjeta)
-                    )
+                        x.Personas.NroDocumento != null &&
+                        x.Personas.NroDocumento != "" &&
+                        x.Personas.NroTarjeta != null &&
+                        x.Personas.NroTarjeta != ""
+                    );
+
+                if (!string.IsNullOrWhiteSpace(buscar))
+                {
+                    query = query.Where(x =>
+                        x.Personas.NroDocumento.Contains(buscar) ||
+                        x.Personas.NroTarjeta.Contains(buscar)
+                    );
+                }
+
+                int totalRegistros = await query.CountAsync();
+                int totalPaginas = (int)Math.Ceiling(totalRegistros / (double)cantidad);
+
+                List<UsuarioResumenDeudaConsultaDTO> usuarios = await query
+                    .OrderBy(x => x.Personas.NroDocumento)
+                    .Skip((pagina - 1) * cantidad)
+                    .Take(cantidad)
+                    .Select(x => new UsuarioResumenDeudaConsultaDTO
+                    {
+                        UsuarioId = x.Id,
+                        NroDocumento = x.Personas.NroDocumento,
+                        NroTarjeta = x.Personas.NroTarjeta
+                    })
                     .ToListAsync();
 
                 List<ResumenDeudaResponseDTO> data = new List<ResumenDeudaResponseDTO>();
 
-                foreach (Usuario usuario in usuarios)
+                foreach (UsuarioResumenDeudaConsultaDTO usuario in usuarios)
                 {
-                    ResumenDeudaResponseDTO resumen = await ObtenerResumenDeudaPorUsuario(usuario, empresa);
+                    ResumenDeudaResponseDTO resumen = await ObtenerResumenDeudaPorDatosUsuario(
+                        usuario.UsuarioId,
+                        usuario.NroDocumento,
+                        usuario.NroTarjeta,
+                        empresa);
+
                     data.Add(resumen);
                 }
 
-                return Ok(new
+                return Ok(new ResumenDeudaListadoResponseDTO
                 {
-                    status = 200,
-                    mensaje = "Listado completo de resumen de deuda obtenido correctamente.",
-                    totalRegistros = data.Count,
-                    data = data
+                    Status = 200,
+                    Mensaje = "Listado de resumen de deuda obtenido correctamente.",
+                    TotalRegistros = totalRegistros,
+                    PaginaActual = pagina,
+                    CantidadPorPagina = cantidad,
+                    TotalPaginas = totalPaginas,
+                    Data = data
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
+                return StatusCode(500, new ResumenDeudaListadoResponseDTO
                 {
-                    status = 500,
-                    mensaje = "Se produjo un error al obtener el listado completo de resumen de deuda.",
-                    error = ex.Message,
-                    totalRegistros = 0,
-                    data = new List<ResumenDeudaResponseDTO>()
+                    Status = 500,
+                    Mensaje = "Se produjo un error al obtener el listado de resumen de deuda: " + ex.Message,
+                    TotalRegistros = 0,
+                    PaginaActual = pagina,
+                    CantidadPorPagina = cantidad,
+                    TotalPaginas = 0,
+                    Data = new List<ResumenDeudaResponseDTO>()
                 });
             }
         }
@@ -293,23 +340,11 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
 
                 if (string.IsNullOrWhiteSpace(nroTarjetaFiltro) && string.IsNullOrWhiteSpace(nroDocumentoFiltro))
                 {
-                    return Ok(new ResumenDeudaResponseDTO
-                    {
-                        Status = 200,
-                        Mensaje = "",
-                        UsuarioId = "",
-                        NroDocumento = "",
-                        NroTarjeta = "",
-                        MontoDisponible = "0",
-                        FechaVencimiento = "",
-                        MontoPunitoriosTotal = 0,
-                        Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                        DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                    });
+                    return Ok(CrearResumenVacio(200, ""));
                 }
 
                 IQueryable<Usuario> query = _context.Usuarios
-                    .Include(x => x.Personas)
+                    .AsNoTracking()
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(nroTarjetaFiltro))
@@ -328,157 +363,57 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     );
                 }
 
-                Usuario usuario = await query.FirstOrDefaultAsync();
+                UsuarioResumenDeudaConsultaDTO usuario = await query
+                    .Select(x => new UsuarioResumenDeudaConsultaDTO
+                    {
+                        UsuarioId = x.Id,
+                        NroDocumento = x.Personas != null ? x.Personas.NroDocumento : "",
+                        NroTarjeta = x.Personas != null ? x.Personas.NroTarjeta : ""
+                    })
+                    .FirstOrDefaultAsync();
 
                 if (usuario == null)
                 {
-                    return Ok(new ResumenDeudaResponseDTO
-                    {
-                        Status = 404,
-                        Mensaje = "No se encontró ningún usuario con los datos proporcionados.",
-                        UsuarioId = "",
-                        NroDocumento = "",
-                        NroTarjeta = "",
-                        MontoDisponible = "0",
-                        FechaVencimiento = "",
-                        MontoPunitoriosTotal = 0,
-                        Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                        DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                    });
+                    return Ok(CrearResumenVacio(
+                        404,
+                        "No se encontró ningún usuario con los datos proporcionados."));
                 }
 
-                if (usuario.Personas == null)
+                if (string.IsNullOrWhiteSpace(usuario.NroDocumento) || string.IsNullOrWhiteSpace(usuario.NroTarjeta))
                 {
-                    return Ok(new ResumenDeudaResponseDTO
-                    {
-                        Status = 404,
-                        Mensaje = "El usuario encontrado no tiene una persona asociada.",
-                        UsuarioId = usuario.Id,
-                        NroDocumento = "",
-                        NroTarjeta = "",
-                        MontoDisponible = "0",
-                        FechaVencimiento = "",
-                        MontoPunitoriosTotal = 0,
-                        Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                        DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                    });
+                    return Ok(CrearResumenVacio(
+                        404,
+                        "El usuario encontrado no tiene una persona asociada.",
+                        usuario.UsuarioId));
                 }
 
-                DatosEstructura empresa = await _context.DatosEstructura.FirstOrDefaultAsync();
+                DatosEstructura empresa = await _context.DatosEstructura
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
 
                 if (empresa == null)
                 {
-                    return StatusCode(500, new ResumenDeudaResponseDTO
-                    {
-                        Status = 500,
-                        Mensaje = "No se encontraron los datos de estructura para consultar el servicio.",
-                        UsuarioId = usuario.Id,
-                        NroDocumento = usuario.Personas.NroDocumento ?? "",
-                        NroTarjeta = usuario.Personas.NroTarjeta ?? "",
-                        MontoDisponible = "0",
-                        FechaVencimiento = "",
-                        MontoPunitoriosTotal = 0,
-                        Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                        DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                    });
+                    return StatusCode(500, CrearResumenVacio(
+                        500,
+                        "No se encontraron los datos de estructura para consultar el servicio.",
+                        usuario.UsuarioId,
+                        usuario.NroDocumento,
+                        usuario.NroTarjeta));
                 }
 
-                DateTime fechaActual = DateTime.Now;
-                DateTime fechaVencimiento = ObtenerFechaCalculada(fechaActual);
+                ResumenDeudaResponseDTO resumen = await ObtenerResumenDeudaPorDatosUsuario(
+                    usuario.UsuarioId,
+                    usuario.NroDocumento,
+                    usuario.NroTarjeta,
+                    empresa);
 
-                List<MovimientoResumenDeudaDTO> comprasAgrupadas = new List<MovimientoResumenDeudaDTO>();
-                List<DetalleCuotaConSolicitudDTO> detallesCuotas = new List<DetalleCuotaConSolicitudDTO>();
-
-                decimal montoPunitoriosTotal = 0;
-                string montoDisponible = "0";
-
-                var datosMovimientos = await _datosServices.ConsultarMovimientos(
-                    empresa.UsernameWS.ToLower(),
-                    empresa.PasswordWS,
-                    usuario.Personas.NroDocumento,
-                    Convert.ToInt64(usuario.Personas.NroTarjeta),
-                    10,
-                    0
-                );
-
-                if (datosMovimientos != null &&
-                    datosMovimientos.Detalle != null &&
-                    datosMovimientos.Detalle.Resultado == "EXITO")
-                {
-                    montoDisponible = datosMovimientos.Detalle.MontoDisponible ?? "0";
-
-                    comprasAgrupadas = datosMovimientos.Movimientos
-                        .Where(x => x.Descripcion == "PAGOS DE CUOTA REGULAR")
-                        .GroupBy(m => new { m.Descripcion, m.Fecha })
-                        .Select(g =>
-                        {
-                            decimal monto = g.Sum(m => ParseDecimalServicio(m.Monto) + ParseDecimalServicio(m.Recargo));
-
-                            return new MovimientoResumenDeudaDTO
-                            {
-                                Fecha = g.Key.Fecha.Date.ToString("dd/MM/yyyy"),
-                                TipoMovimiento = g.Key.Descripcion ?? "",
-                                Monto = FormatDecimalServicio(monto)
-                            };
-                        })
-                        .ToList();
-
-                    comprasAgrupadas.AddRange(datosMovimientos.Movimientos
-                        .Where(x => x.Descripcion != "PAGOS DE CUOTA REGULAR")
-                        .Select(g => new MovimientoResumenDeudaDTO
-                        {
-                            Fecha = g.Fecha.Date.ToString("dd/MM/yyyy"),
-                            TipoMovimiento = g.Descripcion ?? "",
-                            Monto = FormatDecimalServicio(ParseDecimalServicio(g.Monto))
-                        })
-                        .ToList());
-
-                    detallesCuotas = datosMovimientos.DetallesSolicitud
-                        .Where(result => result != null && result.DetallesCuota != null)
-                        .SelectMany(
-                            result => result.DetallesCuota,
-                            (result, detalle) => new DetalleCuotaConSolicitudDTO
-                            {
-                                NroSolicitud = result.NumeroSolicitud ?? "",
-                                NroCuota = detalle.NumeroCuota ?? "",
-                                Monto = detalle.Monto ?? "",
-                                Fecha = detalle.Fecha ?? ""
-                            })
-                        .Where(x => ConvertirFechaServicio(x.Fecha) <= fechaVencimiento)
-                        .ToList();
-
-                    montoPunitoriosTotal = await _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
-                }
-
-                return Ok(new ResumenDeudaResponseDTO
-                {
-                    Status = 200,
-                    Mensaje = "",
-                    UsuarioId = usuario.Id,
-                    NroDocumento = usuario.Personas.NroDocumento ?? "",
-                    NroTarjeta = usuario.Personas.NroTarjeta ?? "",
-                    MontoDisponible = montoDisponible,
-                    FechaVencimiento = fechaVencimiento.ToString("dd/MM/yyyy"),
-                    MontoPunitoriosTotal = montoPunitoriosTotal,
-                    Movimientos = comprasAgrupadas,
-                    DetallesCuotas = detallesCuotas
-                });
+                return Ok(resumen);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new ResumenDeudaResponseDTO
-                {
-                    Status = 500,
-                    Mensaje = "Se produjo un error al procesar la solicitud: " + ex.Message,
-                    UsuarioId = "",
-                    NroDocumento = "",
-                    NroTarjeta = "",
-                    MontoDisponible = "0",
-                    FechaVencimiento = "",
-                    MontoPunitoriosTotal = 0,
-                    Movimientos = new List<MovimientoResumenDeudaDTO>(),
-                    DetallesCuotas = new List<DetalleCuotaConSolicitudDTO>()
-                });
+                return StatusCode(500, CrearResumenVacio(
+                    500,
+                    "Se produjo un error al procesar la solicitud: " + ex.Message));
             }
         }
 

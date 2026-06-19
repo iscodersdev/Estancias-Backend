@@ -27,25 +27,104 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             _context = context;
         }
 
-        // GET: /reportes/endpoint/clientes-reportes/todos
+        // GET: /reportes/endpoint/clientes-reportes/todos?pagina=1&cantidad=50&buscar=
         [HttpGet("todos")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(int pagina = 1, int cantidad = 50, string buscar = "")
         {
             try
             {
-                List<Clientes> clientes = await GetBaseQuery()
+                if (pagina < 1)
+                {
+                    pagina = 1;
+                }
+
+                if (cantidad < 1)
+                {
+                    cantidad = 50;
+                }
+
+                // Evita que el endpoint vuelva a intentar traer miles de registros juntos.
+                if (cantidad > 200)
+                {
+                    cantidad = 200;
+                }
+
+                buscar = buscar ?? "";
+                string texto = buscar.Trim().ToLower();
+
+                IQueryable<Clientes> query = _context.Clientes
+                    .AsNoTracking()
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(texto))
+                {
+                    query = query.Where(c =>
+                        (
+                            c.Usuario != null &&
+                            (c.Usuario.UserName ?? "").ToLower().Contains(texto)
+                        ) ||
+                        (
+                            c.Persona != null &&
+                            (
+                                (c.Persona.NroDocumento ?? "").ToLower().Contains(texto) ||
+                                (c.Persona.NroTarjeta ?? "").ToLower().Contains(texto) ||
+                                ((c.Persona.Apellido ?? "") + " " + (c.Persona.Nombres ?? "")).ToLower().Contains(texto) ||
+                                ((c.Persona.Nombres ?? "") + " " + (c.Persona.Apellido ?? "")).ToLower().Contains(texto)
+                            )
+                        )
+                    );
+                }
+
+                int totalRegistros = await query.CountAsync();
+
+                var registros = await query
                     .OrderBy(c => c.FechaIngreso)
+                    .Skip((pagina - 1) * cantidad)
+                    .Take(cantidad)
+                    .Select(c => new
+                    {
+                        Id = c.Id,
+                        PersonaId = c.Persona != null ? c.Persona.Id : 0,
+                        UsuarioId = c.Usuario != null ? c.Usuario.Id : "",
+                        Mail = c.Usuario != null ? c.Usuario.UserName : null,
+                        NroDocumento = c.Persona != null ? c.Persona.NroDocumento : null,
+                        Apellido = c.Persona != null ? c.Persona.Apellido : null,
+                        Nombres = c.Persona != null ? c.Persona.Nombres : null,
+                        NroTarjeta = c.Persona != null ? c.Persona.NroTarjeta : null,
+                        FechaIngreso = c.FechaIngreso
+                    })
                     .ToListAsync();
 
-                List<ClienteReporteDTO> data = clientes
-                    .Select(c => MapClienteReporteDTO(c))
+                List<ClienteReporteDTO> data = registros
+                    .Select(c =>
+                    {
+                        string apellido = c.Apellido ?? "";
+                        string nombres = c.Nombres ?? "";
+                        string nombreCompleto = (apellido + " " + nombres).Trim();
+
+                        return new ClienteReporteDTO
+                        {
+                            Id = c.Id,
+                            PersonaId = c.PersonaId,
+                            UsuarioId = c.UsuarioId ?? "",
+                            Mail = c.Mail ?? "Sin Datos",
+                            NroDocumento = c.NroDocumento ?? "Sin Datos",
+                            NombreCompleto = string.IsNullOrWhiteSpace(nombreCompleto) ? "Sin Datos" : nombreCompleto,
+                            NroTarjeta = c.NroTarjeta ?? "Sin Datos",
+                            FechaIngreso = c.FechaIngreso,
+                            FechaIngresoTexto = c.FechaIngreso.ToString("dd/MM/yyyy")
+                        };
+                    })
                     .ToList();
 
                 return Ok(new
                 {
                     status = 200,
-                    mensaje = "Listado completo de clientes obtenido correctamente.",
-                    totalRegistros = data.Count,
+                    mensaje = "Listado de clientes obtenido correctamente.",
+                    totalRegistros = totalRegistros,
+                    paginaActual = pagina,
+                    cantidadPorPagina = cantidad,
+                    totalPaginas = (int)Math.Ceiling(totalRegistros / (double)cantidad),
                     data = data
                 });
             }
@@ -54,7 +133,7 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                 return StatusCode(500, new
                 {
                     status = 500,
-                    mensaje = "Se produjo un error al obtener el listado completo de clientes.",
+                    mensaje = "Se produjo un error al obtener el listado de clientes.",
                     error = ex.Message
                 });
             }

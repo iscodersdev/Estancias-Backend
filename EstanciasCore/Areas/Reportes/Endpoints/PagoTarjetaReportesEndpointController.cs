@@ -30,33 +30,56 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
 
         // GET: /reportes/endpoint/pago-tarjeta-reportes/todos
         [HttpGet("todos")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll( int pagina = 1, int cantidad = 50)
         {
             try
             {
-                List<PagoTarjeta> pagos = await GetBaseQuery()
-                    .OrderByDescending(p => p.FechaComprobante)
+                if (pagina < 1)
+                {
+                    pagina = 1;
+                }
+                if (cantidad < 1)
+                {
+                    cantidad = 50;
+                }
+                if(cantidad > 200)
+                {
+                    cantidad = 200;
+                }
+
+                IQueryable<PagoTarjeta> query = GetBaseQuery();
+
+                List<PagoTarjeta> pagos = await query
+                    .OrderByDescending(x => x.FechaComprobante)
+                    .Skip((pagina-1)*cantidad)
+                    .Take(cantidad)
                     .ToListAsync();
 
+                int totalRegistros = await query.CountAsync();
+
                 List<PagoTarjetaReporteDTO> data = pagos
-                    .Select(p => MapPagoTarjetaReporteDTO(p))
+                    .Select(x => MapPagoTarjetaReporteDTO(x))
                     .ToList();
 
                 return Ok(new
                 {
-                    status = 200,
-                    mensaje = "Listado completo de pagos con tarjeta obtenido correctamente.",
-                    totalRegistros = data.Count,
-                    data = data
+                    Status = 200,
+                    Mensaje = "Listado completo de pagos con tarjeta obtenido correctamente.",
+                    TotalRegistros = totalRegistros,
+                    paginaActual = pagina,
+                    cantidadPorPagina = cantidad,
+                    totalPaginas = (int)Math.Ceiling(totalRegistros/(double)cantidad),
+                    Data = data
                 });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new
                 {
-                    status = 500,
-                    mensaje = "Se produjo un error al obtener el listado completo de pagos con tarjeta.",
-                    error = ex.Message
+                    Status = 500,
+                    Mensaje = "Se produjo un error al obtener el listado completo de pagos con tarjeta: " + ex.Message,
+                    TotalRegistros = 0,
+                    Data = new List<PagoTarjetaReporteDTO>()
                 });
             }
         }

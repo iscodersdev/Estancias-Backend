@@ -53,58 +53,63 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             {
                 DateTime fechaActual = DateTime.Now.AddMonths(1);
 
-                List<ResumenTarjeta> movimientos = await _context.ResumenTarjeta
-                    .Include(x => x.Usuario)
-                        .ThenInclude(x => x.Personas)
-                    .Include(x => x.Periodo)
+                var datos = await _context.ResumenTarjeta
+                    .AsNoTracking()
                     .Where(x =>
                         x.Usuario != null &&
+                        x.Usuario.Personas != null &&
                         x.Periodo != null &&
                         x.Periodo.FechaHasta < fechaActual
                     )
+                    .GroupBy(x => new
+                    {
+                        UsuarioId = x.Usuario.Id,
+                        PeriodoId = x.Periodo.Id,
+                        NroTarjeta = x.Usuario.Personas.NroTarjeta,
+                        Periodo = x.Periodo.Descripcion,
+                        FechaVencimiento = x.Periodo.FechaVencimiento
+                    })
+                    .Select(g => new
+                    {
+                        UsuarioId = g.Key.UsuarioId,
+                        PeriodoId = g.Key.PeriodoId,
+                        NroTarjeta = g.Key.NroTarjeta,
+                        Periodo = g.Key.Periodo,
+                        FechaVencimiento = g.Key.FechaVencimiento,
+                        Monto = g.Sum(x => x.Monto),
+                        Punitorios = g.Sum(x => x.MontoAdeudado)
+                    })
+                    .OrderByDescending(x => x.FechaVencimiento)
                     .ToListAsync();
 
-                List<ResumenTarjetaDTO> resumenes = movimientos
-                    .GroupBy(g => new
+                List<ResumenTarjetaDTO> resumenes = datos
+                    .Select(x =>
                     {
-                        UsuarioId = g.Usuario.Id,
-                        PeriodoId = g.Periodo.Id
-                    })
-                    .Select(g =>
-                    {
-                        ResumenTarjeta primerMovimiento = g.FirstOrDefault();
-
-                        Usuario usuario = primerMovimiento.Usuario;
-                        DAL.Models.Persona persona = usuario != null ? usuario.Personas : null;
-                        Periodo periodo = primerMovimiento.Periodo;
-
-                        decimal monto = g.Sum(m => m.Monto);
-                        decimal punitorios = g.Sum(m => m.MontoAdeudado);
-                        decimal montoTotal = monto + punitorios;
-
-                        int periodoId = periodo != null ? periodo.Id : 0;
-                        string usuarioId = usuario != null ? usuario.Id : "";
+                        decimal montoTotal = x.Monto + x.Punitorios;
 
                         return new ResumenTarjetaDTO
                         {
-                            Id = periodoId,
-                            NroTarjeta = persona != null ? persona.NroTarjeta ?? "" : "",
-                            UsuarioId = usuarioId,
-                            PeriodoId = periodoId,
-                            Periodo = periodo != null ? periodo.Descripcion ?? "" : "",
-                            FechaVencimiento = periodo != null ? periodo.FechaVencimiento.ToString("dd/MM/yyyy") : "",
-                            Monto = monto,
-                            Punitorios = punitorios,
+                            Id = x.PeriodoId,
+                            NroTarjeta = x.NroTarjeta ?? "",
+                            UsuarioId = x.UsuarioId,
+                            PeriodoId = x.PeriodoId,
+                            Periodo = x.Periodo ?? "",
+                            FechaVencimiento = x.FechaVencimiento.ToString("dd/MM/yyyy"),
+                            Monto = x.Monto,
+                            Punitorios = x.Punitorios,
                             MontoTotal = montoTotal,
-                            MontoTexto = monto.ToString("C2"),
-                            PunitoriosTexto = punitorios.ToString("C2"),
+                            MontoTexto = x.Monto.ToString("C2"),
+                            PunitoriosTexto = x.Punitorios.ToString("C2"),
                             MontoTotalTexto = montoTotal.ToString("C2"),
-                            DescargarResumenUrl = $"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id={periodoId},{usuarioId}",
-                            DescargarResumenArchivoUrl = $"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id={periodoId},{usuarioId}",
-                            Accion = $"<a href=\"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id={periodoId},{usuarioId}\" class=\"btn btn-warning btn-xs\" target=\"_blank\"><i class=\"fa fa-file-pdf-o\"></i></a>"
+                            DescargarResumenUrl = "/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id="
+                                + x.PeriodoId + "," + x.UsuarioId,
+                            DescargarResumenArchivoUrl = "/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id="
+                                + x.PeriodoId + "," + x.UsuarioId,
+                            Accion = "<a href=\"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id="
+                                + x.PeriodoId + "," + x.UsuarioId
+                                + "\" class=\"btn btn-warning btn-xs\" target=\"_blank\"><i class=\"fa fa-file-pdf-o\"></i></a>"
                         };
                     })
-                    .OrderByDescending(r => r.FechaVencimiento)
                     .ToList();
 
                 return Ok(new
