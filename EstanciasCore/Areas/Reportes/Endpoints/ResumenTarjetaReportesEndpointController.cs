@@ -33,23 +33,6 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             _viewEngine = viewEngine;
         }
 
-        // GET: /reportes/endpoint/resumen-tarjeta-reportes
-        [HttpGet]
-        public IActionResult Index()
-        {
-            return Ok(new
-            {
-                status = 200,
-                mensaje = "API Reportes - Resumen de Tarjeta",
-                endpoints = new
-                {
-                    filtros = "/reportes/endpoint/resumen-tarjeta-reportes/filtros",
-                    listadoResumenes = "/reportes/endpoint/resumen-tarjeta-reportes/listado-resumenes",
-                    descargarResumen = "/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id=PeriodoId,UsuarioId",
-                    descargarResumenArchivo = "/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id=PeriodoId,UsuarioId"
-                }
-            });
-        }
 
         // GET: /reportes/endpoint/resumen-tarjeta-reportes/filtros
         [HttpGet("filtros")]
@@ -60,6 +43,88 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                 NroTarjetaFiltro = "",
                 NroDocumentoFiltro = ""
             });
+        }
+
+        // GET: /reportes/endpoint/resumen-tarjeta-reportes/todos
+        [HttpGet("todos")]
+        public async Task<IActionResult> GetAll()
+        {
+            try
+            {
+                DateTime fechaActual = DateTime.Now.AddMonths(1);
+
+                List<ResumenTarjeta> movimientos = await _context.ResumenTarjeta
+                    .Include(x => x.Usuario)
+                        .ThenInclude(x => x.Personas)
+                    .Include(x => x.Periodo)
+                    .Where(x =>
+                        x.Usuario != null &&
+                        x.Periodo != null &&
+                        x.Periodo.FechaHasta < fechaActual
+                    )
+                    .ToListAsync();
+
+                List<ResumenTarjetaDTO> resumenes = movimientos
+                    .GroupBy(g => new
+                    {
+                        UsuarioId = g.Usuario.Id,
+                        PeriodoId = g.Periodo.Id
+                    })
+                    .Select(g =>
+                    {
+                        ResumenTarjeta primerMovimiento = g.FirstOrDefault();
+
+                        Usuario usuario = primerMovimiento.Usuario;
+                        DAL.Models.Persona persona = usuario != null ? usuario.Personas : null;
+                        Periodo periodo = primerMovimiento.Periodo;
+
+                        decimal monto = g.Sum(m => m.Monto);
+                        decimal punitorios = g.Sum(m => m.MontoAdeudado);
+                        decimal montoTotal = monto + punitorios;
+
+                        int periodoId = periodo != null ? periodo.Id : 0;
+                        string usuarioId = usuario != null ? usuario.Id : "";
+
+                        return new ResumenTarjetaDTO
+                        {
+                            Id = periodoId,
+                            NroTarjeta = persona != null ? persona.NroTarjeta ?? "" : "",
+                            UsuarioId = usuarioId,
+                            PeriodoId = periodoId,
+                            Periodo = periodo != null ? periodo.Descripcion ?? "" : "",
+                            FechaVencimiento = periodo != null ? periodo.FechaVencimiento.ToString("dd/MM/yyyy") : "",
+                            Monto = monto,
+                            Punitorios = punitorios,
+                            MontoTotal = montoTotal,
+                            MontoTexto = monto.ToString("C2"),
+                            PunitoriosTexto = punitorios.ToString("C2"),
+                            MontoTotalTexto = montoTotal.ToString("C2"),
+                            DescargarResumenUrl = $"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id={periodoId},{usuarioId}",
+                            DescargarResumenArchivoUrl = $"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id={periodoId},{usuarioId}",
+                            Accion = $"<a href=\"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id={periodoId},{usuarioId}\" class=\"btn btn-warning btn-xs\" target=\"_blank\"><i class=\"fa fa-file-pdf-o\"></i></a>"
+                        };
+                    })
+                    .OrderByDescending(r => r.FechaVencimiento)
+                    .ToList();
+
+                return Ok(new
+                {
+                    Status = 200,
+                    Mensaje = "Listado completo de resúmenes de tarjeta obtenido correctamente.",
+                    TotalRegistros = resumenes.Count,
+                    Data = resumenes
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Status = 500,
+                    Mensaje = "Se produjo un error al obtener el listado completo de resúmenes de tarjeta: " + ex.Message,
+                    TotalRegistros = 0,
+                    Data = new List<ResumenTarjetaDTO>()
+                });
+            }
         }
 
         // POST: /reportes/endpoint/resumen-tarjeta-reportes/listado-resumenes

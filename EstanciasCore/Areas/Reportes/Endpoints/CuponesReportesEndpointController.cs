@@ -28,22 +28,37 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             _context = context;
         }
 
-        // GET: /reportes/endpoint/cupones-reportes
-        [HttpGet]
-        public IActionResult Index()
+        // GET: /reportes/endpoint/cupones-reportes/todos
+        [HttpGet("todos")]
+        public async Task<IActionResult> GetAll()
         {
-            return Ok(new
+            try
             {
-                status = 200,
-                mensaje = "API Reportes - Cupones Reportes",
-                endpoints = new
+                List<HistorialCanje> cupones = await GetBaseQuery()
+                    .OrderByDescending(p => p.Fecha)
+                    .ToListAsync();
+
+                List<CuponesReportesDTO> data = cupones
+                    .Select(c => MapCuponReporteDTO(c))
+                    .ToList();
+
+                return Ok(new
                 {
-                    filtros = "/reportes/endpoint/cupones-reportes/filtros",
-                    filtrarCupones = "/reportes/endpoint/cupones-reportes/filtrar-cupones",
-                    exportar = "/reportes/endpoint/cupones-reportes/exportar",
-                    nombreApellidoComboJson = "/reportes/endpoint/cupones-reportes/nombre-apellido-combo-json"
-                }
-            });
+                    status = 200,
+                    mensaje = "Listado completo de cupones obtenido correctamente.",
+                    totalRegistros = data.Count,
+                    data = data
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Se produjo un error al obtener el listado completo de cupones.",
+                    error = ex.Message
+                });
+            }
         }
 
         // GET: /reportes/endpoint/cupones-reportes/filtros

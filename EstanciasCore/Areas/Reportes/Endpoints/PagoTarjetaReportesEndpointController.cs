@@ -28,23 +28,37 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             _context = context;
         }
 
-        // GET: /reportes/endpoint/pago-tarjeta-reportes
-        [HttpGet]
-        public IActionResult Index()
+        // GET: /reportes/endpoint/pago-tarjeta-reportes/todos
+        [HttpGet("todos")]
+        public async Task<IActionResult> GetAll()
         {
-            return Ok(new
+            try
             {
-                status = 200,
-                mensaje = "API Reportes - Pago Tarjeta Reportes",
-                endpoints = new
+                List<PagoTarjeta> pagos = await GetBaseQuery()
+                    .OrderByDescending(p => p.FechaComprobante)
+                    .ToListAsync();
+
+                List<PagoTarjetaReporteDTO> data = pagos
+                    .Select(p => MapPagoTarjetaReporteDTO(p))
+                    .ToList();
+
+                return Ok(new
                 {
-                    filtros = "/reportes/endpoint/pago-tarjeta-reportes/filtros",
-                    filtrarPagosTarjeta = "/reportes/endpoint/pago-tarjeta-reportes/filtrar-pagos-tarjeta",
-                    exportar = "/reportes/endpoint/pago-tarjeta-reportes/exportar",
-                    nombreApellidoComboJson = "/reportes/endpoint/pago-tarjeta-reportes/nombre-apellido-combo-json",
-                    comprobante = "/reportes/endpoint/pago-tarjeta-reportes/comprobante/{id}"
-                }
-            });
+                    status = 200,
+                    mensaje = "Listado completo de pagos con tarjeta obtenido correctamente.",
+                    totalRegistros = data.Count,
+                    data = data
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Se produjo un error al obtener el listado completo de pagos con tarjeta.",
+                    error = ex.Message
+                });
+            }
         }
 
         // GET: /reportes/endpoint/pago-tarjeta-reportes/filtros

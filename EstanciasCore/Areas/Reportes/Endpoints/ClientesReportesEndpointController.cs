@@ -27,25 +27,37 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             _context = context;
         }
 
-        // GET: /reportes/endpoint/clientes-reportes
-        [HttpGet]
-        public IActionResult Index()
+        // GET: /reportes/endpoint/clientes-reportes/todos
+        [HttpGet("todos")]
+        public async Task<IActionResult> GetAll()
         {
-            return Ok(new
+            try
             {
-                status = 200,
-                mensaje = "API Reportes - Clientes Reportes",
-                endpoints = new
+                List<Clientes> clientes = await GetBaseQuery()
+                    .OrderBy(c => c.FechaIngreso)
+                    .ToListAsync();
+
+                List<ClienteReporteDTO> data = clientes
+                    .Select(c => MapClienteReporteDTO(c))
+                    .ToList();
+
+                return Ok(new
                 {
-                    filtros = "/reportes/endpoint/clientes-reportes/filtros",
-                    listado = "/reportes/endpoint/clientes-reportes/listado-clientes",
-                    exportar = "/reportes/endpoint/clientes-reportes/exportar",
-                    exportarExcel = "/reportes/endpoint/clientes-reportes/exportar-excel",
-                    exportarCsv = "/reportes/endpoint/clientes-reportes/exportar-csv",
-                    exportarTxt = "/reportes/endpoint/clientes-reportes/exportar-txt",
-                    destinatariosComboJson = "/reportes/endpoint/clientes-reportes/destinatarios-combo-json"
-                }
-            });
+                    status = 200,
+                    mensaje = "Listado completo de clientes obtenido correctamente.",
+                    totalRegistros = data.Count,
+                    data = data
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Se produjo un error al obtener el listado completo de clientes.",
+                    error = ex.Message
+                });
+            }
         }
 
         // GET: /reportes/endpoint/clientes-reportes/filtros
