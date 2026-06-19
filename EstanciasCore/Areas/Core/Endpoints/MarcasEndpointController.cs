@@ -69,7 +69,8 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         WhatsApp = x.WhatsApp,
                         Orden = x.Orden,
                         Activo = x.Activo,
-                        TieneImagen = x.Imagen != null
+                        Imagen = x.Imagen != null ? "data:image/jpeg;base64" + Convert.ToBase64String(x.Imagen) : null
+
                     })
                     .ToListAsync();
 
@@ -118,7 +119,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     WhatsApp = marca.WhatsApp,
                     Orden = marca.Orden,
                     Activo = marca.Activo,
-                    TieneImagen = marca.Imagen != null
+                    Imagen = marca.Imagen != null ? "data:image/jpeg;base64" + Convert.ToBase64String(marca.Imagen) : null
                 });
             }
             catch (Exception)
@@ -168,8 +169,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         CBU = nuevaMarca.CBU,
                         WhatsApp = nuevaMarca.WhatsApp,
                         Orden = nuevaMarca.Orden,
-                        Activo = nuevaMarca.Activo,
-                        TieneImagen = nuevaMarca.Imagen != null
+                        Activo = nuevaMarca.Activo
                     }
                 });
             }
@@ -227,8 +227,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                         CBU = marcaExistente.CBU,
                         WhatsApp = marcaExistente.WhatsApp,
                         Orden = marcaExistente.Orden,
-                        Activo = marcaExistente.Activo,
-                        TieneImagen = marcaExistente.Imagen != null
+                        Activo = marcaExistente.Activo
                     }
                 });
             }

@@ -13,7 +13,7 @@ namespace DAL.DTOs
             public string WhatsApp { get; set; }
             public int Orden { get; set; }
             public bool Activo { get; set; }
-            public bool TieneImagen { get; set; }
+            public string Imagen { get; set; }
         }
 
         public class MarcaDTO
@@ -25,7 +25,7 @@ namespace DAL.DTOs
             public string WhatsApp { get; set; }
             public int Orden { get; set; }
             public bool Activo { get; set; }
-            public bool TieneImagen { get; set; }
+            public string Imagen { get; set; }
         }
 
         public class MarcaCreateDTO
@@ -35,7 +35,7 @@ namespace DAL.DTOs
             public string CBU { get; set; }
             public string WhatsApp { get; set; }
             public int Orden { get; set; }
-        }
+    }
 
         public class MarcaUpdateDTO
         {
