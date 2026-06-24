@@ -67,7 +67,8 @@ namespace EstanciasCore.Controllers
                             Observacion = (p.Observacion!=null) ? p.Observacion : "",
                             FechaDePago = (p.FechaDePago ?? DateTime.MinValue).ToString("dd/MM/yyyy"),
                         };
-            return DataTable<PagoTarjetaDataTableDTO>(query.AsQueryable<PagoTarjetaDataTableDTO>());
+            var lista = query.ToList();
+            return DataTable<PagoTarjetaDataTableDTO>(lista.AsQueryable());
 
             //return PartialView(page);
         }

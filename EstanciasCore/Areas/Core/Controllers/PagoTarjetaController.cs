@@ -79,8 +79,9 @@ namespace EstanciasCore.Controllers
                             FechaOrden = Convert.ToInt32((p.FechaComprobante ?? DateTime.MinValue).ToString("yyyyMMdd")),
                             Observacion = (p.Observacion!=null) ? p.Observacion : "",
                             FechaDePago = (p.FechaDePago ?? DateTime.MinValue).ToString("dd/MM/yyyy"),
-                        };
-            return DataTable<PagoTarjetaDataTableDTO>(query.AsQueryable<PagoTarjetaDataTableDTO>());
+                        }; 
+            var lista = query.ToList();
+            return DataTable<PagoTarjetaDataTableDTO>(lista.AsQueryable());
 
             //return PartialView(page);
         }
