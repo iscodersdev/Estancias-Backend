@@ -1,7 +1,5 @@
 using DAL.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace DAL.DTOs
 {
@@ -10,7 +8,7 @@ namespace DAL.DTOs
         public virtual List<SucursalesDTO> Sucursales { get; set; }
     }
 
-    //latitude y longitude lo converti a string porque en la base de datos esta en string y no en double
+    // latitude y longitude lo converti a string porque en la base de datos esta en string y no en double
 
     public class SucursalesDTO
     {
@@ -21,8 +19,15 @@ namespace DAL.DTOs
         public string latitude { get; set; }
         public string longitude { get; set; }
         public string group { get; set; }
-        public List<string> Marcas { get; set; }
 
+        public List<MarcaSucursalDTO> Marcas { get; set; }
+        public List<int> MarcasId { get; set; }
+    }
+
+    public class MarcaSucursalDTO
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
     }
 
     public class SucursalCreateRequest
@@ -33,6 +38,8 @@ namespace DAL.DTOs
         public string latitude { get; set; }
         public string longitude { get; set; }
         public string group { get; set; }
+
+        public List<int> MarcasId { get; set; }
     }
 
     public class SucursalUpdateRequest
@@ -43,6 +50,7 @@ namespace DAL.DTOs
         public string latitude { get; set; }
         public string longitude { get; set; }
         public string group { get; set; }
-    }
 
+        public List<int> MarcasId { get; set; }
+    }
 }
