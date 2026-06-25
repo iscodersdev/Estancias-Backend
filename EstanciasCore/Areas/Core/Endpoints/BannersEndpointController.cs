@@ -243,14 +243,10 @@ namespace EstanciasCore.Areas.Core.Endpoints
                     });
                 }
 
-                string emailUsuario = User != null && User.Identity != null
-                    ? User.Identity.Name
-                    : null;
-
                 var usuario = _context.Usuarios
                     .Include(x => x.Clientes)
                         .ThenInclude(x => x.Empresa)
-                    .FirstOrDefault(x => x.Email == emailUsuario);
+                    .FirstOrDefault();
 
                 var banner = new Banners();
 
@@ -536,14 +532,11 @@ namespace EstanciasCore.Areas.Core.Endpoints
         {
             try
             {
-                string emailUsuario = User != null && User.Identity != null
-                    ? User.Identity.Name
-                    : null;
 
                 var usuario = _context.Usuarios
                     .Include(x => x.Clientes)
                         .ThenInclude(x => x.Empresa)
-                    .FirstOrDefault(x => x.Email == emailUsuario);
+                    .FirstOrDefault();
 
                 if (usuario != null && usuario.Clientes != null && usuario.Clientes.Empresa != null)
                 {

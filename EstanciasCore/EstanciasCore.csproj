@@ -11,6 +11,7 @@
 		<UseRazorBuildServer>false</UseRazorBuildServer>
 		<RazorCompileOnBuild>false</RazorCompileOnBuild>
 		<MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
+		<AllowUntrustedCertificate>true</AllowUntrustedCertificate>
 	</PropertyGroup>
 
   <PropertyGroup>
