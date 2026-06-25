@@ -27,40 +27,51 @@ namespace EstanciasCore.Endpoints
         {
             var sucursales = await _context.Sucursales
                 .AsNoTracking()
+                .OrderBy(s => s.Id)
                 .ToListAsync();
 
             var sucursalesIds = sucursales.Select(s => s.Id).ToList();
 
-            var relaciones = await _context.Set<SucursalesMarcas>()
-                .AsNoTracking()
-                .Include(sm => sm.Sucursales)
-                .Include(sm => sm.Marca)
-                .Where(sm => sucursalesIds.Contains(sm.Sucursales.Id))
-                .ToListAsync();
+            var relaciones = new List<SucursalesMarcas>();
 
-            var data = sucursales.Select(s => new SucursalesDTO
+            if (sucursalesIds.Any())
             {
-                Id = s.Id,
-                name = s.name,
-                address = s.address,
-                phone = s.phone,
-                latitude = s.latitude,
-                longitude = s.longitude,
-                group = s.group,
+                relaciones = await _context.Set<SucursalesMarcas>()
+                    .AsNoTracking()
+                    .Include(sm => sm.Sucursales)
+                    .Include(sm => sm.Marca)
+                    .Where(sm => sm.Sucursales != null && sucursalesIds.Contains(sm.Sucursales.Id))
+                    .ToListAsync();
+            }
 
-                Marcas = relaciones
-                    .Where(r => r.Sucursales.Id == s.Id && r.Marca != null)
-                    .Select(r => new MarcaSucursalDTO
-                    {
-                        Id = r.Marca.Id,
-                        Nombre = r.Marca.Nombre
-                    })
-                    .ToList(),
+            var data = sucursales.Select(s =>
+            {
+                var marcasDeSucursal = relaciones
+                    .Where(r => r.Sucursales != null && r.Sucursales.Id == s.Id && r.Marca != null)
+                    .ToList();
 
-                MarcasId = relaciones
-                    .Where(r => r.Sucursales.Id == s.Id && r.Marca != null)
+                var nombresMarcas = marcasDeSucursal
+                    .Select(r => r.Marca.Nombre)
+                    .ToList();
+
+                var idsMarcas = marcasDeSucursal
                     .Select(r => r.Marca.Id)
-                    .ToList()
+                    .ToList();
+
+                return new SucursalesEndpointDTO
+                {
+                    Id = s.Id,
+                    name = s.name,
+                    address = s.address,
+                    phone = s.phone,
+                    latitude = s.latitude,
+                    longitude = s.longitude,
+                    group = s.group,
+
+                    Marca = string.Join(", ", nombresMarcas),
+                    Marcas = nombresMarcas,
+                    MarcasId = idsMarcas
+                };
             }).ToList();
 
             return Ok(new
@@ -86,7 +97,7 @@ namespace EstanciasCore.Endpoints
                 });
             }
 
-            var data = await ArmarSucursalDTO(id);
+            var data = await ArmarSucursalEndpointDTO(id);
 
             return Ok(new
             {
@@ -111,17 +122,22 @@ namespace EstanciasCore.Endpoints
                 ? request.MarcasId.Distinct().ToList()
                 : new List<int>();
 
-            var marcas = await _context.Marcas
-                .Where(m => marcasIds.Contains(m.Id))
-                .ToListAsync();
+            var marcas = new List<Marcas>();
 
-            if (marcas.Count != marcasIds.Count)
+            if (marcasIds.Any())
             {
-                return BadRequest(new
+                marcas = await _context.Marcas
+                    .Where(m => marcasIds.Contains(m.Id))
+                    .ToListAsync();
+
+                if (marcas.Count != marcasIds.Count)
                 {
-                    ok = false,
-                    message = "Una o más marcas seleccionadas no existen."
-                });
+                    return BadRequest(new
+                    {
+                        ok = false,
+                        message = "Una o más marcas seleccionadas no existen."
+                    });
+                }
             }
 
             var sucursal = new Sucursales
@@ -154,7 +170,7 @@ namespace EstanciasCore.Endpoints
             {
                 ok = true,
                 message = "Sucursal creada correctamente.",
-                data = await ArmarSucursalDTO(sucursal.Id)
+                data = await ArmarSucursalEndpointDTO(sucursal.Id)
             });
         }
 
@@ -186,17 +202,22 @@ namespace EstanciasCore.Endpoints
                 ? request.MarcasId.Distinct().ToList()
                 : new List<int>();
 
-            var marcas = await _context.Marcas
-                .Where(m => marcasIds.Contains(m.Id))
-                .ToListAsync();
+            var marcas = new List<Marcas>();
 
-            if (marcas.Count != marcasIds.Count)
+            if (marcasIds.Any())
             {
-                return BadRequest(new
+                marcas = await _context.Marcas
+                    .Where(m => marcasIds.Contains(m.Id))
+                    .ToListAsync();
+
+                if (marcas.Count != marcasIds.Count)
                 {
-                    ok = false,
-                    message = "Una o más marcas seleccionadas no existen."
-                });
+                    return BadRequest(new
+                    {
+                        ok = false,
+                        message = "Una o más marcas seleccionadas no existen."
+                    });
+                }
             }
 
             sucursal.name = request.name;
@@ -208,7 +229,7 @@ namespace EstanciasCore.Endpoints
 
             var marcasActuales = await _context.Set<SucursalesMarcas>()
                 .Include(sm => sm.Sucursales)
-                .Where(sm => sm.Sucursales.Id == id)
+                .Where(sm => sm.Sucursales != null && sm.Sucursales.Id == id)
                 .ToListAsync();
 
             _context.Set<SucursalesMarcas>().RemoveRange(marcasActuales);
@@ -231,7 +252,7 @@ namespace EstanciasCore.Endpoints
             {
                 ok = true,
                 message = "Sucursal actualizada correctamente.",
-                data = await ArmarSucursalDTO(sucursal.Id)
+                data = await ArmarSucursalEndpointDTO(sucursal.Id)
             });
         }
 
@@ -252,7 +273,7 @@ namespace EstanciasCore.Endpoints
 
             var marcasActuales = await _context.Set<SucursalesMarcas>()
                 .Include(sm => sm.Sucursales)
-                .Where(sm => sm.Sucursales.Id == id)
+                .Where(sm => sm.Sucursales != null && sm.Sucursales.Id == id)
                 .ToListAsync();
 
             _context.Set<SucursalesMarcas>().RemoveRange(marcasActuales);
@@ -267,7 +288,7 @@ namespace EstanciasCore.Endpoints
             });
         }
 
-        private async Task<SucursalesDTO> ArmarSucursalDTO(int sucursalId)
+        private async Task<SucursalesEndpointDTO> ArmarSucursalEndpointDTO(int sucursalId)
         {
             var sucursal = await _context.Sucursales
                 .AsNoTracking()
@@ -282,10 +303,20 @@ namespace EstanciasCore.Endpoints
                 .AsNoTracking()
                 .Include(sm => sm.Sucursales)
                 .Include(sm => sm.Marca)
-                .Where(sm => sm.Sucursales.Id == sucursalId)
+                .Where(sm => sm.Sucursales != null && sm.Sucursales.Id == sucursalId)
                 .ToListAsync();
 
-            return new SucursalesDTO
+            var nombresMarcas = relaciones
+                .Where(r => r.Marca != null)
+                .Select(r => r.Marca.Nombre)
+                .ToList();
+
+            var idsMarcas = relaciones
+                .Where(r => r.Marca != null)
+                .Select(r => r.Marca.Id)
+                .ToList();
+
+            return new SucursalesEndpointDTO
             {
                 Id = sucursal.Id,
                 name = sucursal.name,
@@ -295,19 +326,9 @@ namespace EstanciasCore.Endpoints
                 longitude = sucursal.longitude,
                 group = sucursal.group,
 
-                Marcas = relaciones
-                    .Where(r => r.Marca != null)
-                    .Select(r => new MarcaSucursalDTO
-                    {
-                        Id = r.Marca.Id,
-                        Nombre = r.Marca.Nombre
-                    })
-                    .ToList(),
-
-                MarcasId = relaciones
-                    .Where(r => r.Marca != null)
-                    .Select(r => r.Marca.Id)
-                    .ToList()
+                Marca = string.Join(", ", nombresMarcas),
+                Marcas = nombresMarcas,
+                MarcasId = idsMarcas
             };
         }
     }

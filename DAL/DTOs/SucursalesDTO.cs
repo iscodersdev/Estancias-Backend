@@ -20,14 +20,30 @@ namespace DAL.DTOs
         public string longitude { get; set; }
         public string group { get; set; }
 
-        public List<MarcaSucursalDTO> Marcas { get; set; }
-        public List<int> MarcasId { get; set; }
+        // Lo dejo como List<string> para que el código viejo no tenga problemas
+        // Ejemplo: ["Estancias", "Baciver"]
+        public List<string> Marcas { get; set; }
     }
 
-    public class MarcaSucursalDTO
+    // Esta clase aparte la usamos para el endpoint nuevo
+    public class SucursalesEndpointDTO
     {
         public int Id { get; set; }
-        public string Nombre { get; set; }
+        public string name { get; set; }
+        public string address { get; set; }
+        public string phone { get; set; }
+        public string latitude { get; set; }
+        public string longitude { get; set; }
+        public string group { get; set; }
+
+        // Para mostrar directo en la grilla: "Estancias, Baciver"
+        public string Marca { get; set; }
+
+        // Para devolver lista de nombres
+        public List<string> Marcas { get; set; }
+
+        // Para editar y tener seleccionadas las marcas
+        public List<int> MarcasId { get; set; }
     }
 
     public class SucursalCreateRequest
@@ -39,6 +55,7 @@ namespace DAL.DTOs
         public string longitude { get; set; }
         public string group { get; set; }
 
+        // IDs de las marcas seleccionadas
         public List<int> MarcasId { get; set; }
     }
 
@@ -51,6 +68,7 @@ namespace DAL.DTOs
         public string longitude { get; set; }
         public string group { get; set; }
 
+        // IDs de las marcas seleccionadas
         public List<int> MarcasId { get; set; }
     }
 }
