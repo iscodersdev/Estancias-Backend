@@ -301,7 +301,7 @@ namespace EstanciasCore.Areas.Core.Endpoints
                 banner.EsVideo = false;
 
                 _context.Banners.Add(banner);
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
 
                 return Ok(new BannerResponseDTO
                 {
