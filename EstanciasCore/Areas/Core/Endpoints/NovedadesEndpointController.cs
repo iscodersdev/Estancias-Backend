@@ -160,7 +160,7 @@ namespace EstanciasCore.Endpoints
                 var usuario = await _context.Usuarios
                     .Include(x => x.Clientes)
                         .ThenInclude(x => x.Empresa)
-                    .FirstOrDefaultAsync(x => x.Email == User.Identity.Name);
+                    .FirstOrDefaultAsync();
 
                 var novedad = new Novedades
                 {
@@ -361,7 +361,7 @@ namespace EstanciasCore.Endpoints
                 var usuario = await _context.Usuarios
                     .Include(x => x.Clientes)
                         .ThenInclude(x => x.Empresa)
-                    .FirstOrDefaultAsync(x => x.Email == User.Identity.Name);
+                    .FirstOrDefaultAsync();
 
                 HttpStatusCode resultStatusCode = HttpStatusCode.BadRequest;
 
