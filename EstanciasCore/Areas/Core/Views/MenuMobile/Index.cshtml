@@ -1,0 +1,109 @@
+@{
+    ViewData["Title"] = "Menu Mobile";
+}
+
+@model IEnumerable<DAL.Models.MenuMobile>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Opciones de Menú Móvil</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaOpcion()" class="btn btn-info btn-sm" title="Nueva Opción">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoOpciones" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>
+                        Nombre
+                    </th>
+                    <th>
+                        Codigo
+                    </th>
+                    <th>
+                        Descripción
+                    </th>
+                    <th>
+                        Estado
+                    </th>
+                    <th>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Nombre)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Codigo)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Descripcion)
+                        </td>
+                        <td class="text-center">
+                            @if (item.Activo)
+                            {
+                                <span class="label label-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="label label-danger">Inactivo</span>
+                            }
+                        </td>
+                        <td>
+                            <a onclick="editOpcion(@item.Id)" title="Editar Opción" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                            <a href="javascript:void(0);" title="@(item.Activo ? "Deshabilitar Opción" : "Habilitar Opción")" class="btn @(item.Activo ? "btn-danger" : "btn-success") btn-xs btn-estado" data-url="@Url.Action("Delete", new { id = item.Id })" data-msg="¿Está seguro de cambiar el estado de la opción @item.Nombre?"><i class="fa @(item.Activo ? "fa-ban" : "fa-check")"></i></a>
+                            <a title="Asignar Usuarios" href="@Url.Action("Usuarios", new { id = item.Id })" class="btn btn-warning btn-xs"><i class="fa fa-users"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Nueva Opción" callback-modal="true" function="nuevaOpcion" load-url="/Core/MenuMobile/_Create/" size="Medium"></modal>
+<modal title="Edición de Opción" callback-modal="true" function="editOpcion" load-url="/Core/MenuMobile/_Update/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoOpciones').DataTable({
+            "columnDefs": [
+                { "width": "20%", "targets": 0 },
+                { "width": "20%", "targets": 1 },
+                { "width": "30%", "targets": 2, class: "text-center" },
+                { "width": "20%", "targets": 3, "orderable": false, "searchable": false, class: "text-center" }
+            ],
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.19/i18n/Spanish.json"
+            }
+        });
+
+        $('.btn-estado').on('click', function (e) {
+            e.preventDefault();
+            var url = $(this).data('url');
+            var msg = $(this).data('msg');
+            
+            Swal.fire({
+                title: msg,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, cambiar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
+    });
+</script>

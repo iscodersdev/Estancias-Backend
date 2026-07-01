@@ -101,7 +101,8 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                     MenuHelpers.AddModule("Proveedor", "/Core/Proveedor"),
                     MenuHelpers.AddModule("Imagen de Intro", "/Core/ImagenIntro"),
                     MenuHelpers.AddModule("Catálogo", "/Core/Catalogo"),
-                    MenuHelpers.AddModule("Marcas", "/Core/Marcas/")
+                    MenuHelpers.AddModule("Marcas", "/Core/Marcas/"),
+                    MenuHelpers.AddModule("Menú Mobile", "/Core/MenuMobile/")
             };
                 //reportes.TreeChild = new List<SidebarMenu>()
                 //{

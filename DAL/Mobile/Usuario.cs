@@ -53,6 +53,7 @@ namespace DAL.Models
         public string CBUEmpresa { get; set; }
         public string CategoriaUsuario { get; set; }
         public string CategoriaColor { get; set; }
+        public List<MMenuHabilitados> MMenuHabilitados { get; set; }
     }
     public class MRegistraPersonaDTO
     {
@@ -259,5 +260,11 @@ namespace DAL.Models
         public string Mensaje { get; set; }
         public string UAT { get; set; }
         public bool RecibirResumen { get; set; }
+    }
+
+    public class MMenuHabilitados
+    {
+        public string Nombre { get; set; }
+        public string Codigo { get; set; }
     }
 }

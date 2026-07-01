@@ -1,0 +1,127 @@
+@model IEnumerable<DAL.Models.MenuMobileUsuariosHabilitados>
+
+@{
+    ViewData["Title"] = "Usuarios Asignados";
+    var menuMobile = ViewBag.MenuMobile as DAL.Models.MenuMobile;
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="box box-primary">
+            <div class="box-header with-border">
+                <h3 class="box-title">Asignar Nuevo Usuario</h3>
+            </div>
+
+            <div class="box-body">
+                <form asp-action="AddUsuarioByDni" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="MenuMobileId" value="@menuMobile?.Id" />
+
+                    <div class="form-group">
+                        <label>Ingrese DNI del usuario:</label>
+                        <input type="text"
+                               name="Dni"
+                               class="form-control"
+                               placeholder="Buscar por DNI..."
+                               required
+                               autocomplete="off" />
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fa fa-search"></i> Buscar y Asignar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="box box-info">
+            <div class="box-header with-border">
+                <h3 class="box-title">
+                    Usuarios habilitados para: @menuMobile?.Nombre
+                </h3>
+
+                <div class="box-tools pull-right">
+                    <a asp-action="Index" class="btn btn-default btn-sm">
+                        <i class="fa fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </div>
+
+            <div class="box-body">
+                <table id="tablaUsuarios" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre Completo</th>
+                            <th>Email</th>
+                            <th style="width:90px;" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var nombreCompleto = $"{item.Usuario?.Personas?.Nombres} {item.Usuario?.Personas?.Apellido}";
+
+                            <tr>
+                                <td>@nombreCompleto</td>
+                                <td>@item.Usuario?.Mail</td>
+                                <td class="text-center">
+                                    <a href="javascript:void(0);"
+                                    class="btn btn-danger btn-xs btn-eliminar"
+                                    data-url="@Url.Action("RemoveUsuario", "MenuMobile", new { id = item.Id })"
+                                    title="Quitar Asignación">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            if ($.fn.DataTable.isDataTable('#tablaUsuarios')) {
+                $('#tablaUsuarios').DataTable().destroy();
+            }
+
+            $('#tablaUsuarios').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.10.19/i18n/Spanish.json'
+                },
+                columnDefs: [
+                    {
+                        targets: 2,
+                        orderable: false,
+                        searchable: false
+                    }
+                ]
+            });
+
+            $('.btn-eliminar').on('click', function (e) {
+                e.preventDefault();
+                var url = $(this).data('url');
+                Swal.fire({
+                    title: "¿Desea quitar la asignación de este usuario?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, quitar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = url;
+                    }
+                });
+            });
+        });
+    </script>
+}
