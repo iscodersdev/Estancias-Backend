@@ -1,5 +1,3 @@
-@using Commons.Extensions
-
 @{
     ViewData["Title"] = "Usuarios";
     ViewData["BackArrow"] = "/Home/Index";
@@ -9,11 +7,27 @@
     <div class="box-header with-border filtro-grilla">
         <div class="container-fluid">
             <div class="row">
-                <div class="col-md-9 label-form"><label for="estadoId">Listado de Usuarios</label></div>
+                <div class="col-md-3 label-form"><label for="estadoId">Listado de Usuarios</label></div>
+                <div class="col-md-3">
+                    <select id="filtroIncobrable" class="form-control input-sm" onchange="$('#usersTable').DataTable().ajax.reload();">
+                        <option value="">Todos los cobros</option>
+                        <option value="1">Incobrables</option>
+                        <option value="0">Cobrables</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="filtroTipoUsuario" class="form-control input-sm" onchange="$('#usersTable').DataTable().ajax.reload();">
+                        <option value="">Todos los tipos</option>
+                        <option value="comun">Común</option>
+                        <option value="sucursal">Sucursal</option>
+                    </select>
+                </div>
                 <div class="col-md-3" style="text-align-last: right;">
                     <div class="col-md-12">
                       @*   <a onclick="NuevoUsuario()" title="Crear Usuario" class="btn btn-primary btn-sm"><i class="fa fa-user"></i>&nbsp Crear Usuario</a> *@
                         <a onclick="NuevoUsuario()" title="Nuevo Usuario" class="btn btn-primary btn-sm"><i class="fa fa-user"></i>&nbsp Nuevo Usuario</a>
+                        &nbsp
+                        <a onclick="NuevoUsuarioSucursal()" title="Nuevo Usuario Sucursal" class="btn btn-primary btn-sm"><i class="fa fa-building"></i>&nbsp Nuevo Usuario Sucursal</a>
                         &nbsp
                         <a href="/Administracion/Usuarios/BorrarUsuario" title="Borrar Usuario" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i>&nbsp Borrar Usuario</a>
                     </div>
@@ -33,6 +47,7 @@
 @* <modal callback-modal="true" title="Nuevo Usuario" load-url="/Administracion/Usuarios/Create" function="NuevoUsuario" size="Medium"></modal> *@
 
 <modal callback-modal="true" title="Nuevo Usuario" load-url="/Administracion/Usuarios/CreateUserEstancia" function="NuevoUsuario" size="Medium"></modal> 
+<modal callback-modal="true" title="Nuevo Usuario Sucursal" load-url="/Administracion/Usuarios/CreateUserSucursal" function="NuevoUsuarioSucursal" size="Medium"></modal>
 
 <modal title="Editar Usuario" callback-modal="true" function="editUser" load-url="/Administracion/Usuarios/Update/" size="Medium"></modal>
 <modal title="Modificar contraseña usuario" callback-modal="true" function="_ChangePassword" load-url="/Administracion/Usuarios/_ChangePassword/" size="Medium"></modal>
@@ -45,7 +60,11 @@
             processing: true,
             ajax: {
                 url: '@Url.Action("UsuariosDataTable")',
-                type: "POST"
+                type: "POST",
+                data: function (d) {
+                    d.filtroIncobrable = $('#filtroIncobrable').val();
+                    d.filtroTipoUsuario = $('#filtroTipoUsuario').val();
+                }
             },
             rowId: 'Id',
             columns: [
@@ -54,8 +73,23 @@
                 { data: "Usuario", title: "Usuario", responsivePriority: 2 },
                 { data: "Nombre", title: "Nombre", responsivePriority: 3 },
                 { data: "Categoria", title: "Categoría", responsivePriority: 4 },
-                //{ data: "Empresa", title: "Empresa", responsivePriority: 4 },
-                //{ data: "AdministradorTexto", title: "Lector de QR", responsivePriority: 5 },
+                {
+                    title: "Incobrable",
+                    data: "Incobrable",
+                    sortable: false,
+                    responsivePriority: 5,
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        var action = '';
+                        if (row['Incobrable']) {
+                            action += `<small class="label pull-center bg-red">Si</small>`;
+                        } else {
+                            action += `-`;
+                        }
+                        return action;
+                    }
+                },
+                { data: "TipoUsuario", title: "Tipo", responsivePriority: 5 },
                 {
                     title: "Actions",
                     sortable: false,
@@ -66,6 +100,11 @@
                         action += `<a onclick="editUser('${row['Id']}')" title="Editar Usuario" class="btn btn-info btn-xs"><i class="fa fa-pencil"></i></a> &nbsp`;
                         action += `<a onclick="_ChangePassword('${row['Id']}')" title="Modificar Contraseña Usuario" class="btn bg-green btn-xs"><i class="fa fa-lock"></i></a> &nbsp`;
                         action += `<a onclick="changeCategory('${row['Id']}')" title="Cambiar Categoría" class="btn btn-warning btn-xs"><i class="fa fa-tags"></i></a> &nbsp`;
+                        if (row['Incobrable']) {
+                            action += `<a onclick="toggleIncobrable('${row['Id']}')" title="Marcar como Cobrable" class="btn btn-success btn-xs"><i class="fa fa-money"></i></a> &nbsp`;
+                        } else {
+                            action += `<a onclick="toggleIncobrable('${row['Id']}')" title="Marcar como Incobrable" class="btn btn-danger btn-xs"><i class="fa fa-money"></i></a> &nbsp`;
+                        }
                         return action;
                     }
                 }
@@ -77,4 +116,36 @@
             responsive: true, // Enable responsive design
         });
     });
+
+    function toggleIncobrable(id) {
+        Swal.fire({
+            title: "¿Está seguro?",
+            text: "¿Desea cambiar el estado de Incobrable de este usuario?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Sí, cambiar estado",
+            cancelButtonText: "Cancelar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/Administracion/Usuarios/ToggleIncobrable',
+                    type: 'POST',
+                    data: { Id: id },
+                    success: function (res) {
+                        if (res.success) {
+                            Swal.fire("¡Actualizado!", res.mensaje, "success");
+                            $('#usersTable').DataTable().ajax.reload(null, false);
+                        } else {
+                            Swal.fire("Error", res.mensaje, "error");
+                        }
+                    },
+                    error: function () {
+                        Swal.fire("Error", "Ha ocurrido un error al procesar la solicitud.", "error");
+                    }
+                });
+            }
+        });
+    }
 </script>

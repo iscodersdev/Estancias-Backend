@@ -1,4 +1,4 @@
-﻿using DAL.Models;
+using DAL.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -35,5 +35,29 @@ namespace EstanciasCore.Areas.Administracion.ViewModels
         public string TarjetaEstancia { get; set; }
         public bool Error { get; set; }
         public string Mensaje { get; set; }
+    }
+
+    public class UsuarioSucursalVM
+    {
+        [Required(ErrorMessage = "Campo Requerido"), Display(Name = "Mail")]
+        [EmailAddress]
+        public string Mail { get; set; }
+
+        [Required(ErrorMessage = "Campo Requerido"), Display(Name = "Password")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; }
+
+        [Required(ErrorMessage = "Campo Requerido"), Display(Name = "Reingresar Password")]
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "Las contraseñas no coinciden.")]
+        public string ConfirmPassword { get; set; }
+
+        [Required(ErrorMessage = "Campo Requerido"), Display(Name = "Nombre")]
+        public string Nombre { get; set; }
+
+        [Required(ErrorMessage = "Campo Requerido"), Display(Name = "Sucursal")]
+        public int SucursalId { get; set; }
+
+        public IEnumerable<SelectListItem> Sucursales { get; set; }
     }
 }

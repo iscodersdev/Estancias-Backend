@@ -11,6 +11,8 @@ namespace EstanciasCore.Areas.Administracion.ViewModels
         public bool Administrador { get; set; }
         public string AdministradorTexto { get; set; }
         public string Categoria { get; set; }
-
+        public bool Incobrable { get; set; }
+        public string TipoUsuario { get; set; }
+        public string IncobrableText { get; set; }
     }
 }

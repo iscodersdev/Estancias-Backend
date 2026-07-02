@@ -44,10 +44,29 @@ namespace EstanciasCore.Controllers
             return View();
         }
 
-        public IActionResult UsuariosDataTable()
+        public IActionResult UsuariosDataTable(string filtroIncobrable, string filtroTipoUsuario)
         {
-            //var usuarios = _context.Users.ToList();
-            var query = from usu in _context.Users.Where(x=>x.UserName!="admin@admin.com")
+            var baseQuery = _context.Users.Where(x => x.UserName != "admin@admin.com");
+
+            if (!string.IsNullOrEmpty(filtroIncobrable))
+            {
+                bool isIncobrable = filtroIncobrable == "1";
+                baseQuery = baseQuery.Where(x => x.Incobrable == isIncobrable);
+            }
+
+            if (!string.IsNullOrEmpty(filtroTipoUsuario))
+            {
+                if (filtroTipoUsuario == "comun")
+                {
+                    baseQuery = baseQuery.Where(x => x.UsuarioSucursal == false);
+                }
+                else if (filtroTipoUsuario == "sucursal")
+                {
+                    baseQuery = baseQuery.Where(x => x.UsuarioSucursal == true);
+                }
+            }
+
+            var query = from usu in baseQuery
                 select new UserDTViewModel
                 {
                     Id = usu.Id,
@@ -58,17 +77,77 @@ namespace EstanciasCore.Controllers
                     Administrador = usu.Administradores,
                     AdministradorTexto = usu.Administradores==true ? "SI" : "NO",
                     NroDocumento =(usu.Personas!=null) ? usu.Personas.NroDocumento : " ",
-                    Categoria = usu.UsuariosCategorias != null ? usu.UsuariosCategorias.Nombre : "Sin Categoría"
+                    Categoria = usu.UsuariosCategorias != null ? usu.UsuariosCategorias.Nombre : "Sin Categoría",
+                    Incobrable = usu.Incobrable,
+                    IncobrableText = usu.Incobrable==true?"-": "<small class=\"label pull-right bg-red\">Si</small>",
+                    TipoUsuario = usu.UsuarioSucursal ? "Sucursal" : "Común"
                 };
 
             return DataTable<UserDTViewModel>(query.AsQueryable<UserDTViewModel>());
-            //return DataTable(query.AsQueryable());
         }
 
         [HttpGet]
         public async Task<IActionResult> CreateUserEstancia()
         {        
             return PartialView();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CreateUserSucursal()
+        {
+            var vm = new UsuarioSucursalVM();
+            vm.Sucursales = _context.Sucursales.Select(x => new SelectListItem { Text = x.name, Value = x.Id.ToString() }).ToList();
+            return PartialView(vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateUserSucursal(UsuarioSucursalVM vm)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var user = await _userService.FindByEmailAsync(vm.Mail.Trim());
+                    if (user != null)
+                    {
+                        AddPageAlerts(PageAlertType.Error, "El mail ya se encuentra registrado.");
+                        return RedirectToAction("Index");
+                    }
+
+                    Usuario nuevoUsuario = new Usuario()
+                    {
+                        UserName = vm.Mail.Trim(),
+                        Email = vm.Mail.Trim(),
+                        Mail = vm.Mail.Trim(),
+                        Password = vm.Password,
+                        Administradores = false,
+                        UsuarioSucursal = true,
+                        Sucursales = await _context.Sucursales.FindAsync(vm.SucursalId),
+                        EmailConfirmed = true
+                    };
+                    var result = await _userService.CreateAsync(nuevoUsuario, vm.Password);
+
+                    Persona nuevaPersona = new Persona()
+                    {
+                        NroDocumento = "",
+                        Nombres = vm.Nombre,
+                        Apellido = "",
+                        Email = vm.Mail.Trim()
+                    };
+                    await _context.Personas.AddAsync(nuevaPersona);
+                    nuevoUsuario.Personas = nuevaPersona;
+                    _context.Usuarios.Update(nuevoUsuario);
+                    await _context.SaveChangesAsync();
+
+                    AddPageAlerts(PageAlertType.Success, "Usuario Sucursal creado correctamente.");
+                    return RedirectToAction("Index");
+                }
+            }
+            catch (Exception ex)
+            {
+                AddPageAlerts(PageAlertType.Error, "Ocurrió un error al crear el Usuario Sucursal.");
+            }
+            return RedirectToAction("Index");
         }   
 
         [HttpPost]
@@ -787,6 +866,27 @@ namespace EstanciasCore.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleIncobrable(string Id)
+        {
+            try
+            {
+                var usuario = await _context.Usuarios.FindAsync(Id);
+                if (usuario != null)
+                {
+                    usuario.Incobrable = !usuario.Incobrable;
+                    _context.Usuarios.Update(usuario);
+                    await _context.SaveChangesAsync();
+                    return Json(new { success = true, incobrable = usuario.Incobrable, mensaje = "Estado Incobrable actualizado correctamente." });
+                }
+                return Json(new { success = false, mensaje = "Usuario no encontrado." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, mensaje = "Error al actualizar el estado Incobrable." });
+            }
         }
 
 

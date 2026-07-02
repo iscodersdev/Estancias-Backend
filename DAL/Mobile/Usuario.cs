@@ -53,7 +53,6 @@ namespace DAL.Models
         public string CBUEmpresa { get; set; }
         public string CategoriaUsuario { get; set; }
         public string CategoriaColor { get; set; }
-        public List<MMenuHabilitados> MMenuHabilitados { get; set; }
     }
     public class MRegistraPersonaDTO
     {

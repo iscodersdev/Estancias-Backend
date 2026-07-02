@@ -267,23 +267,7 @@ namespace EstanciasCore.Controllers
                     {
                         Login.Administrador=false;
                     }
-                }
-
-                //Trae menu habbilitados
-                // 1. Obtenemos directamente de la base de datos solo los menús que el usuario puede ver
-                var mMenuHabilitados = _context.MenuMobile
-                    .Where(item => item.Activo || _context.MenuMobileUsuariosHabilitados
-                        .Any(x => x.Usuario.Id == user.Id && x.MenuMobile.Id == item.Id)) // Verifica que el usuario tenga asignado ESTE menú específico
-                    .Select(item => new MMenuHabilitados
-                    {
-                        Nombre = item.Nombre,
-                        Codigo = item.Codigo
-                    })
-                    .ToList();
-
-                Login.MMenuHabilitados = mMenuHabilitados;
-
-
+                }              
 
                 /*
                 var datosEmpresa = _context.DatosEstructura.FirstOrDefault();

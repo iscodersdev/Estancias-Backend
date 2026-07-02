@@ -14,12 +14,15 @@ namespace DAL.Models
         public virtual Proveedor Proveedor { get; set; }
         public virtual Vendedores Vendedores { get; set; }
         public virtual Persona Personas { get; set; }
+        public bool Incobrable { get; set; } = false;
         public virtual UsuariosCategorias UsuariosCategorias { get; set; }
         public string UserIdNotification { get; set; }
         public bool Administradores { get; set; }
         public int Token { get; set; }
         public bool RecibirResumen { get; set; } = false;
         public bool activo { get; set; }
+        public bool UsuarioSucursal { get; set; }
+        public virtual Sucursales Sucursales { get; set; }
         public override string GetFirstName()
         {
             return "";

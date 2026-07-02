@@ -17,6 +17,8 @@ namespace DAL.DTOs
 
     public class ListCuponesDTO : RequestApi
     {
+        public bool Incobrable { get; set; }
+        public List<MMenuHabilitados> MenuHabilitados { get; set; }
         public List<CuponesDTO> Cupones { get; set; }
 
     }

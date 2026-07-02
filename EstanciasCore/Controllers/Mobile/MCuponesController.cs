@@ -53,7 +53,7 @@ namespace EstanciasCore.API.Controllers.Billetera
             {
                 var usuario = TraeUsuarioUAT(request.UAT);
                 if (usuario == null)
-                    return new ListCuponesDTO { Status = 500, UAT = request.UAT, Mensaje = $"no existe UAT de Usuario" };
+                    return new ListCuponesDTO { Status = 500, UAT = request.UAT, Mensaje = $"no existe UAT de Usuario" };                            
 
                 var cupones = await _context.Premios.Where(x => x.Activo).Select(x => new CuponesDTO()
                 {
@@ -72,13 +72,26 @@ namespace EstanciasCore.API.Controllers.Billetera
                     Fecha = x.Fecha,
                     Imagen = _context.FotosPremios.Where(f => f.Premio.Id == x.Id).Select(f => f.Foto).FirstOrDefault(),
                     Marca = x.Marcas.Nombre
-                    
                 }).ToListAsync();
 
                 request.UAT = request.UAT;
                 request.Status = 200;
                 request.Mensaje = "Exito al traer cupones";
                 request.Cupones = cupones.OrderBy(x => x.Fecha).ToList();
+                //Trae menu habbilitados
+                // 1. Obtenemos directamente de la base de datos solo los menús que el usuario puede ver
+                var mMenuHabilitados = _context.MenuMobile
+                    .Where(item => item.Activo || _context.MenuMobileUsuariosHabilitados
+                        .Any(x => x.Usuario.Id == usuario.Id && x.MenuMobile.Id == item.Id)) // Verifica que el usuario tenga asignado ESTE menú específico
+                    .Select(item => new MMenuHabilitados
+                    {
+                        Nombre = item.Nombre,
+                        Codigo = item.Codigo
+                    })
+                    .ToList();
+
+                request.MenuHabilitados = mMenuHabilitados;
+                request.Incobrable = usuario.Incobrable;
 
                 return request;
             }

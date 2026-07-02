@@ -1,0 +1,71 @@
+@using Commons.HtmlHelpers
+@using EstanciasCore.Areas.Administracion.ViewModels
+@model UsuarioSucursalVM
+@{
+    ViewData["Title"] = "Nuevo Usuario Sucursal";
+}
+<form method="post" asp-action="CreateUserSucursal" asp-controller="Usuarios" asp-area="Administracion" asp-antiforgery="true">
+    @Html.AntiForgeryToken()
+    @using (Html.BoxDefault(BoxColor.Info))
+    {
+        using (Html.BoxBody())
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Mail" class="control-label"></label>
+                        <input asp-for="Mail" class="form-control" />
+                        <span asp-validation-for="Mail" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Nombre" class="control-label"></label>
+                        <input asp-for="Nombre" class="form-control" />
+                        <span asp-validation-for="Nombre" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Password" class="control-label"></label>
+                        <input asp-for="Password" class="form-control" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="ConfirmPassword" class="control-label"></label>
+                        <input asp-for="ConfirmPassword" class="form-control" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="SucursalId" class="control-label"></label>
+                        <select asp-for="SucursalId" asp-items="Model.Sucursales" class="form-control">
+                            <option value="">Seleccione una Sucursal</option>
+                        </select>
+                        <span asp-validation-for="SucursalId" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        }
+        using (Html.BoxFooter())
+        {
+            <div class="col-md-6">
+                <a href="#" class="btn btn-default" data-dismiss="modal">Cancelar</a>
+            </div>
+            <div class="col-md-6">
+                <button type="submit" class="btn btn-info pull-right">Crear</button>
+            </div>
+        }
+    }
+</form>
