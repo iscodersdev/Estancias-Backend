@@ -122,7 +122,7 @@ public class EnvioDeResumenWorker : BackgroundService
         // Mantenemos la carga ligera y tomamos un único registro para tus pruebas locales seguras
         var resumenesLigeros = await context.ResumenTarjeta
             .AsNoTracking()
-            .Where(x => x.PeriodoId == periodo.Id).Where(x => x.Usuario.RecibirResumen == true)
+            .Where(x => x.PeriodoId == periodo.Id).Where(x => x.Usuario.RecibirResumen == true).Where(x => (x.Monto + x.MontoAdeudado) > 0)
             //.Where(x => x.Usuario.UserName == "rpoggio1@abc.gob.ar" || x.Usuario.UserName == "RAFAELKLAPPENBACH@GMAIL.COM" || x.Usuario.UserName == "marianelamerduch@gmail.com")
             .Select(x => new
             {
