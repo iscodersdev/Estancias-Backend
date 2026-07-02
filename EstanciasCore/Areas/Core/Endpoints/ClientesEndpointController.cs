@@ -6,7 +6,10 @@ using EstanciasCore.API.Filters;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -55,6 +58,129 @@ namespace EstanciasCore.Endpoints
                 ok = true,
                 data = data
             });
+        }
+
+        // POST: endpoint/clientes/exportar-excel
+        [HttpPost("exportar-excel")]
+        public async Task<IActionResult> ExportarExcel([FromBody] List<int> ids)
+        {
+            try
+            {
+                var query = _context.Clientes
+                    .AsNoTracking()
+                    .Where(x => x.FechaBaja == null)
+                    .AsQueryable();
+
+                if (ids != null && ids.Any())
+                {
+                    query = query.Where(x => ids.Contains(x.Id));
+                }
+
+                var clientesRaw = await query
+                    .OrderBy(x => x.Persona != null ? x.Persona.Apellido : "")
+                    .ThenBy(x => x.Persona != null ? x.Persona.Nombres : "")
+                    .Select(x => new
+                    {
+                        x.Id,
+
+                        TipoCliente = x.TipoCliente != null
+                            ? x.TipoCliente.Nombre
+                            : "---",
+
+                        Apellido = x.Persona != null
+                            ? x.Persona.Apellido
+                            : "",
+
+                        Nombres = x.Persona != null
+                            ? x.Persona.Nombres
+                            : "",
+
+                        CUIL = x.Persona != null
+                            ? x.Persona.Cuil
+                            : null,
+
+                        RazonSocial = x.RazonSocial,
+
+                        Empresa = x.Empresa != null
+                            ? x.Empresa.RazonSocial
+                            : "---",
+
+                        x.FechaIngreso,
+                        x.ClienteValidado
+                    })
+                    .ToListAsync();
+
+                if (!clientesRaw.Any())
+                {
+                    return NotFound(new
+                    {
+                        ok = false,
+                        message = "No se encontraron clientes para exportar."
+                    });
+                }
+
+                var clientesExcel = clientesRaw.Select(x => new ClienteExcelExportDTO
+                {
+                    TipoCliente = x.TipoCliente,
+                    NombreCompleto = ((x.Apellido ?? "") + " " + (x.Nombres ?? "")).Trim(),
+                    CUIL = x.CUIL != null ? x.CUIL.ToString() : "---",
+                    RazonSocial = !string.IsNullOrWhiteSpace(x.RazonSocial) ? x.RazonSocial : "---",
+                    Empresa = x.Empresa,
+                    FechaIngreso = x.FechaIngreso != DateTime.MinValue ? x.FechaIngreso.ToString("dd/MM/yyyy") : "",
+                    Estado = x.ClienteValidado ? "Validado" : "Pendiente"
+                }).ToList();
+
+                var excelBytes = GenerateClientesXlsxBytes(clientesExcel);
+                var excelName = $"Clientes_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+
+                return File(
+                    excelBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    excelName
+                );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    ok = false,
+                    message = "Hubo un error al exportar el Excel de clientes.",
+                    error = ex.Message,
+                    inner = ex.InnerException != null ? ex.InnerException.Message : null
+                });
+            }
+        }
+
+        private byte[] GenerateClientesXlsxBytes(List<ClienteExcelExportDTO> datos)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Clientes");
+
+                worksheet.Cells.LoadFromCollection(datos, true);
+
+                worksheet.Cells["A1"].Value = "Tipo Cliente";
+                worksheet.Cells["B1"].Value = "Nombre Completo";
+                worksheet.Cells["C1"].Value = "CUIL";
+                worksheet.Cells["D1"].Value = "Razón Social";
+                worksheet.Cells["E1"].Value = "Empresa";
+                worksheet.Cells["F1"].Value = "Fecha Ingreso";
+                worksheet.Cells["G1"].Value = "Estado";
+
+                worksheet.Row(1).Style.Font.Bold = true;
+
+                worksheet.Column(1).Width = 20;
+                worksheet.Column(2).Width = 35;
+                worksheet.Column(3).Width = 18;
+                worksheet.Column(4).Width = 35;
+                worksheet.Column(5).Width = 35;
+                worksheet.Column(6).Width = 18;
+                worksheet.Column(7).Width = 15;
+
+                worksheet.Column(3).Style.Numberformat.Format = "@";
+
+                return package.GetAsByteArray();
+            }
         }
 
         // GET: endpoint/clientes/{id}
@@ -1056,4 +1182,15 @@ namespace EstanciasCore.Endpoints
     {
         public string ValdiarClienteId { get; set; }
     }
+}
+
+public class ClienteExcelExportDTO
+{
+    public string TipoCliente { get; set; }
+    public string NombreCompleto { get; set; }
+    public string CUIL { get; set; }
+    public string RazonSocial { get; set; }
+    public string Empresa { get; set; }
+    public string FechaIngreso { get; set; }
+    public string Estado { get; set; }
 }
