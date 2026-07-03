@@ -33,7 +33,6 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             _viewEngine = viewEngine;
         }
 
-
         // GET: /reportes/endpoint/resumen-tarjeta-reportes/filtros
         [HttpGet("filtros")]
         public IActionResult Filtros()
@@ -41,7 +40,10 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             return Ok(new FiltroResumenTarjetaRequestDTO
             {
                 NroTarjetaFiltro = "",
-                NroDocumentoFiltro = ""
+                NroDocumentoFiltro = "",
+                Buscar = "",
+                Pagina = 1,
+                Cantidad = 50
             });
         }
 
@@ -87,6 +89,18 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     {
                         decimal montoTotal = x.Monto + x.Punitorios;
 
+                        string descargarResumenUrl =
+                            "/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id=" +
+                            x.PeriodoId + "," + x.UsuarioId;
+
+                        string descargarArchivoUrl =
+                            "/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id=" +
+                            x.PeriodoId + "," + x.UsuarioId;
+
+                        string verComprobanteUrl =
+                            "/reportes/endpoint/resumen-tarjeta-reportes/ver-comprobante?Id=" +
+                            x.PeriodoId + "," + x.UsuarioId;
+
                         return new ResumenTarjetaDTO
                         {
                             Id = x.PeriodoId,
@@ -95,19 +109,23 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                             PeriodoId = x.PeriodoId,
                             Periodo = x.Periodo ?? "",
                             FechaVencimiento = x.FechaVencimiento.ToString("dd/MM/yyyy"),
+
                             Monto = x.Monto,
                             Punitorios = x.Punitorios,
                             MontoTotal = montoTotal,
+
                             MontoTexto = x.Monto.ToString("C2"),
                             PunitoriosTexto = x.Punitorios.ToString("C2"),
                             MontoTotalTexto = montoTotal.ToString("C2"),
-                            DescargarResumenUrl = "/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id="
-                                + x.PeriodoId + "," + x.UsuarioId,
-                            DescargarResumenArchivoUrl = "/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id="
-                                + x.PeriodoId + "," + x.UsuarioId,
-                            Accion = "<a href=\"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id="
-                                + x.PeriodoId + "," + x.UsuarioId
-                                + "\" class=\"btn btn-warning btn-xs\" target=\"_blank\"><i class=\"fa fa-file-pdf-o\"></i></a>"
+
+                            DescargarResumenUrl = descargarResumenUrl,
+                            DescargarResumenArchivoUrl = descargarArchivoUrl,
+                            VerComprobanteUrl = verComprobanteUrl,
+
+                            Accion =
+                                "<a href=\"" + verComprobanteUrl +
+                                "\" class=\"btn btn-warning btn-xs\" target=\"_blank\">" +
+                                "<i class=\"fa fa-file-pdf-o\"></i></a>"
                         };
                     })
                     .ToList();
@@ -132,9 +150,34 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             }
         }
 
-        // POST: /reportes/endpoint/resumen-tarjeta-reportes/listado-resumenes
+        // POST JSON
         [HttpPost("listado-resumenes")]
-        public async Task<IActionResult> ListadoResumenes([FromForm] FiltroResumenTarjetaRequestDTO filtros)
+        [Consumes("application/json")]
+        public async Task<IActionResult> ListadoResumenesJson(
+            [FromBody] FiltroResumenTarjetaRequestDTO filtros)
+        {
+            return await ProcesarListadoResumenes(filtros);
+        }
+
+        // POST FORM
+        [HttpPost("listado-resumenes")]
+        [Consumes("application/x-www-form-urlencoded", "multipart/form-data")]
+        public async Task<IActionResult> ListadoResumenesForm(
+            [FromForm] FiltroResumenTarjetaRequestDTO filtros)
+        {
+            return await ProcesarListadoResumenes(filtros);
+        }
+
+        // GET QUERY
+        [HttpGet("listado-resumenes")]
+        public async Task<IActionResult> ListadoResumenesGet(
+            [FromQuery] FiltroResumenTarjetaRequestDTO filtros)
+        {
+            return await ProcesarListadoResumenes(filtros);
+        }
+
+        private async Task<IActionResult> ProcesarListadoResumenes(
+            FiltroResumenTarjetaRequestDTO filtros)
         {
             try
             {
@@ -143,10 +186,35 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     filtros = new FiltroResumenTarjetaRequestDTO();
                 }
 
-                string nroTarjetaFiltro = filtros.NroTarjetaFiltro ?? "";
-                string nroDocumentoFiltro = filtros.NroDocumentoFiltro ?? "";
+                string nroTarjetaFiltro = PrimerValor(
+                    filtros.NroTarjetaFiltro,
+                    filtros.NroTarjeta,
+                    filtros.Tarjeta
+                );
 
-                if (string.IsNullOrWhiteSpace(nroTarjetaFiltro) && string.IsNullOrWhiteSpace(nroDocumentoFiltro))
+                string nroDocumentoFiltro = PrimerValor(
+                    filtros.NroDocumentoFiltro,
+                    filtros.NroDocumento,
+                    filtros.Documento,
+                    filtros.Dni,
+                    filtros.DNI,
+                    filtros.Cuit,
+                    filtros.CUIT,
+                    filtros.Cuil,
+                    filtros.CUIL
+                );
+
+                string busquedaGeneral = PrimerValor(
+                    filtros.Buscar,
+                    filtros.Busqueda
+                );
+
+                bool sinFiltros =
+                    string.IsNullOrWhiteSpace(nroTarjetaFiltro) &&
+                    string.IsNullOrWhiteSpace(nroDocumentoFiltro) &&
+                    string.IsNullOrWhiteSpace(busquedaGeneral);
+
+                if (sinFiltros)
                 {
                     return Ok(new ResumenTarjetaListadoResponseDTO
                     {
@@ -163,18 +231,21 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
 
                 if (!string.IsNullOrWhiteSpace(nroTarjetaFiltro))
                 {
-                    query = query.Where(x =>
-                        x.Personas != null &&
-                        x.Personas.NroTarjeta == nroTarjetaFiltro
-                    );
+                    query = AplicarFiltroTarjeta(query, nroTarjetaFiltro);
                 }
 
                 if (!string.IsNullOrWhiteSpace(nroDocumentoFiltro))
                 {
-                    query = query.Where(x =>
-                        x.Personas != null &&
-                        x.Personas.NroDocumento == nroDocumentoFiltro
-                    );
+                    query = AplicarFiltroDocumento(query, nroDocumentoFiltro);
+                }
+
+                if (
+                    !string.IsNullOrWhiteSpace(busquedaGeneral) &&
+                    string.IsNullOrWhiteSpace(nroTarjetaFiltro) &&
+                    string.IsNullOrWhiteSpace(nroDocumentoFiltro)
+                )
+                {
+                    query = AplicarBusquedaGeneral(query, busquedaGeneral);
                 }
 
                 Usuario usuario = await query.FirstOrDefaultAsync();
@@ -193,46 +264,70 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                 DateTime fechaActual = DateTime.Now.AddMonths(1);
 
                 List<ResumenTarjeta> movimientos = await _context.ResumenTarjeta
-                    .Include(x => x.Usuario)
                     .Include(x => x.Periodo)
                     .Where(x =>
-                        x.Usuario.Id == usuario.Id &&
+                        x.UsuarioId == usuario.Id &&
                         x.Periodo != null &&
                         x.Periodo.FechaHasta < fechaActual
                     )
                     .ToListAsync();
 
                 List<ResumenTarjetaDTO> resumenes = movimientos
-                    .GroupBy(g => g.Periodo)
+                    .Where(x => x.Periodo != null)
+                    .GroupBy(x => new
+                    {
+                        x.Periodo.Id,
+                        x.Periodo.Descripcion,
+                        x.Periodo.FechaVencimiento
+                    })
+                    .OrderByDescending(g => g.Key.FechaVencimiento)
                     .Select(g =>
                     {
                         decimal monto = g.Sum(m => m.Monto);
                         decimal punitorios = g.Sum(m => m.MontoAdeudado);
                         decimal montoTotal = monto + punitorios;
 
-                        int periodoId = g.Key != null ? g.Key.Id : 0;
+                        int periodoId = g.Key.Id;
                         string usuarioId = usuario.Id;
+
+                        string descargarResumenUrl =
+                            $"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id={periodoId},{usuarioId}";
+
+                        string descargarArchivoUrl =
+                            $"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id={periodoId},{usuarioId}";
+
+                        string verComprobanteUrl =
+                            $"/reportes/endpoint/resumen-tarjeta-reportes/ver-comprobante?Id={periodoId},{usuarioId}";
 
                         return new ResumenTarjetaDTO
                         {
                             Id = periodoId,
-                            NroTarjeta = usuario.Personas != null ? usuario.Personas.NroTarjeta ?? "" : "",
+                            NroTarjeta = usuario.Personas != null
+                                ? usuario.Personas.NroTarjeta ?? ""
+                                : "",
+
                             UsuarioId = usuarioId,
                             PeriodoId = periodoId,
-                            Periodo = g.Key != null ? g.Key.Descripcion ?? "" : "",
-                            FechaVencimiento = g.Key != null ? g.Key.FechaVencimiento.ToString("dd/MM/yyyy") : "",
+                            Periodo = g.Key.Descripcion ?? "",
+                            FechaVencimiento = g.Key.FechaVencimiento.ToString("dd/MM/yyyy"),
+
                             Monto = monto,
                             Punitorios = punitorios,
                             MontoTotal = montoTotal,
+
                             MontoTexto = monto.ToString("C2"),
                             PunitoriosTexto = punitorios.ToString("C2"),
                             MontoTotalTexto = montoTotal.ToString("C2"),
-                            DescargarResumenUrl = $"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id={periodoId},{usuarioId}",
-                            DescargarResumenArchivoUrl = $"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id={periodoId},{usuarioId}",
-                            Accion = $"<a href=\"/reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id={periodoId},{usuarioId}\" class=\"btn btn-warning btn-xs\" target=\"_blank\"><i class=\"fa fa-file-pdf-o\"></i></a>"
+
+                            DescargarResumenUrl = descargarResumenUrl,
+                            DescargarResumenArchivoUrl = descargarArchivoUrl,
+                            VerComprobanteUrl = verComprobanteUrl,
+
+                            Accion =
+                                $"<a href=\"{verComprobanteUrl}\" class=\"btn btn-warning btn-xs\" target=\"_blank\">" +
+                                "<i class=\"fa fa-file-pdf-o\"></i></a>"
                         };
                     })
-                    .OrderByDescending(r => r.FechaVencimiento)
                     .ToList();
 
                 return Ok(new ResumenTarjetaListadoResponseDTO
@@ -256,17 +351,28 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
         }
 
         // GET: /reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen?Id=PeriodoId,UsuarioId
-        // Replica el comportamiento original que devolvía la partial _VerResumen con el base64.
-        // En API devuelve JSON con el base64.
         [HttpGet("descargar-resumen")]
         public async Task<IActionResult> DescargarResumen(string Id)
         {
-            if (string.IsNullOrWhiteSpace(Id))
+            int periodoIdFinal;
+            string usuarioIdFinal;
+            string error;
+
+            bool idValido = ResolverIdResumen(
+                Id,
+                null,
+                null,
+                out periodoIdFinal,
+                out usuarioIdFinal,
+                out error
+            );
+
+            if (!idValido)
             {
                 return BadRequest(new ResumenArchivoDTO
                 {
                     Status = 400,
-                    Mensaje = "El ID no puede ser nulo o vacío.",
+                    Mensaje = error,
                     PeriodoId = 0,
                     UsuarioId = "",
                     Base64 = "",
@@ -274,43 +380,16 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     FileName = ""
                 });
             }
-
-            string[] partes = Id.Split(',');
-
-            if (partes.Length != 2)
-            {
-                return BadRequest(new ResumenArchivoDTO
-                {
-                    Status = 400,
-                    Mensaje = "El formato del ID es incorrecto. Se esperaba 'PeriodoId,UsuarioId'.",
-                    PeriodoId = 0,
-                    UsuarioId = "",
-                    Base64 = "",
-                    ContentType = "",
-                    FileName = ""
-                });
-            }
-
-            if (!int.TryParse(partes[0], out int periodoId))
-            {
-                return BadRequest(new ResumenArchivoDTO
-                {
-                    Status = 400,
-                    Mensaje = "El PeriodoId proporcionado no es un número válido.",
-                    PeriodoId = 0,
-                    UsuarioId = "",
-                    Base64 = "",
-                    ContentType = "",
-                    FileName = ""
-                });
-            }
-
-            string usuarioId = partes[1];
 
             try
             {
                 ResumenTarjeta resumen = await _context.ResumenTarjeta
-                    .FirstOrDefaultAsync(x => x.UsuarioId == usuarioId && x.PeriodoId == periodoId);
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x =>
+                        x.UsuarioId == usuarioIdFinal &&
+                        x.PeriodoId == periodoIdFinal &&
+                        x.Adjunto != null
+                    );
 
                 if (resumen == null)
                 {
@@ -318,8 +397,8 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     {
                         Status = 404,
                         Mensaje = "No se encontró un resumen para el período y usuario especificados.",
-                        PeriodoId = periodoId,
-                        UsuarioId = usuarioId,
+                        PeriodoId = periodoIdFinal,
+                        UsuarioId = usuarioIdFinal,
                         Base64 = "",
                         ContentType = "",
                         FileName = ""
@@ -332,35 +411,33 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     {
                         Status = 404,
                         Mensaje = "El resumen fue encontrado pero no contiene un archivo adjunto.",
-                        PeriodoId = periodoId,
-                        UsuarioId = usuarioId,
+                        PeriodoId = periodoIdFinal,
+                        UsuarioId = usuarioIdFinal,
                         Base64 = "",
                         ContentType = "",
                         FileName = ""
                     });
                 }
 
-                string base64String = Convert.ToBase64String(resumen.Adjunto);
-
                 return Ok(new ResumenArchivoDTO
                 {
                     Status = 200,
                     Mensaje = "",
-                    PeriodoId = periodoId,
-                    UsuarioId = usuarioId,
-                    Base64 = base64String,
+                    PeriodoId = periodoIdFinal,
+                    UsuarioId = usuarioIdFinal,
+                    Base64 = Convert.ToBase64String(resumen.Adjunto),
                     ContentType = "application/pdf",
-                    FileName = $"ResumenTarjeta_{periodoId}_{usuarioId}.pdf"
+                    FileName = $"ResumenTarjeta_{periodoIdFinal}_{usuarioIdFinal}.pdf"
                 });
             }
-            catch
+            catch (Exception ex)
             {
                 return StatusCode(500, new ResumenArchivoDTO
                 {
                     Status = 500,
-                    Mensaje = "Ocurrió un error interno al procesar la solicitud.",
-                    PeriodoId = periodoId,
-                    UsuarioId = usuarioId,
+                    Mensaje = "Ocurrió un error interno al procesar la solicitud: " + ex.Message,
+                    PeriodoId = periodoIdFinal,
+                    UsuarioId = usuarioIdFinal,
                     Base64 = "",
                     ContentType = "",
                     FileName = ""
@@ -368,48 +445,340 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             }
         }
 
+        // GET: /reportes/endpoint/resumen-tarjeta-reportes/ver-comprobante?Id=PeriodoId,UsuarioId
+        [HttpGet("ver-comprobante")]
+        public async Task<IActionResult> VerComprobante(
+            [FromQuery] string Id,
+            [FromQuery] int? periodoId,
+            [FromQuery] string usuarioId)
+        {
+            int periodoIdFinal;
+            string usuarioIdFinal;
+            string error;
+
+            bool idValido = ResolverIdResumen(
+                Id,
+                periodoId,
+                usuarioId,
+                out periodoIdFinal,
+                out usuarioIdFinal,
+                out error
+            );
+
+            if (!idValido)
+            {
+                return BadRequest(error);
+            }
+
+            return await DevolverComprobantePdf(
+                periodoIdFinal,
+                usuarioIdFinal,
+                true
+            );
+        }
+
+        // GET: /reportes/endpoint/resumen-tarjeta-reportes/ver-comprobante/PeriodoId/UsuarioId
+        [HttpGet("ver-comprobante/{periodoId:int}/{usuarioId}")]
+        public async Task<IActionResult> VerComprobanteRuta(
+            int periodoId,
+            string usuarioId)
+        {
+            return await DevolverComprobantePdf(periodoId, usuarioId, true);
+        }
+
         // GET: /reportes/endpoint/resumen-tarjeta-reportes/descargar-resumen-archivo?Id=PeriodoId,UsuarioId
-        // Endpoint extra para descargar directamente el archivo.
         [HttpGet("descargar-resumen-archivo")]
         public async Task<IActionResult> DescargarResumenArchivo(string Id)
         {
-            if (string.IsNullOrWhiteSpace(Id))
-            {
-                return BadRequest("El ID no puede ser nulo o vacío.");
-            }
+            int periodoIdFinal;
+            string usuarioIdFinal;
+            string error;
 
-            string[] partes = Id.Split(',');
-
-            if (partes.Length != 2)
-            {
-                return BadRequest("El formato del ID es incorrecto. Se esperaba 'PeriodoId,UsuarioId'.");
-            }
-
-            if (!int.TryParse(partes[0], out int periodoId))
-            {
-                return BadRequest("El PeriodoId proporcionado no es un número válido.");
-            }
-
-            string usuarioId = partes[1];
-
-            ResumenTarjeta resumen = await _context.ResumenTarjeta
-                .FirstOrDefaultAsync(x => x.UsuarioId == usuarioId && x.PeriodoId == periodoId);
-
-            if (resumen == null)
-            {
-                return NotFound("No se encontró un resumen para el período y usuario especificados.");
-            }
-
-            if (resumen.Adjunto == null || resumen.Adjunto.Length == 0)
-            {
-                return NotFound("El resumen fue encontrado pero no contiene un archivo adjunto.");
-            }
-
-            return File(
-                resumen.Adjunto,
-                "application/pdf",
-                $"ResumenTarjeta_{periodoId}_{usuarioId}.pdf"
+            bool idValido = ResolverIdResumen(
+                Id,
+                null,
+                null,
+                out periodoIdFinal,
+                out usuarioIdFinal,
+                out error
             );
+
+            if (!idValido)
+            {
+                return BadRequest(error);
+            }
+
+            return await DevolverComprobantePdf(
+                periodoIdFinal,
+                usuarioIdFinal,
+                false
+            );
+        }
+
+        private async Task<IActionResult> DevolverComprobantePdf(
+            int periodoId,
+            string usuarioId,
+            bool inline)
+        {
+            try
+            {
+                ResumenTarjeta resumen = await _context.ResumenTarjeta
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x =>
+                        x.UsuarioId == usuarioId &&
+                        x.PeriodoId == periodoId &&
+                        x.Adjunto != null
+                    );
+
+                if (resumen == null)
+                {
+                    return NotFound("No se encontró un comprobante para el período y usuario especificados.");
+                }
+
+                if (resumen.Adjunto == null || resumen.Adjunto.Length == 0)
+                {
+                    return NotFound("El comprobante fue encontrado pero no contiene archivo adjunto.");
+                }
+
+                string fileName = $"ResumenTarjeta_{periodoId}_{usuarioId}.pdf";
+
+                if (inline)
+                {
+                    Response.Headers["Content-Disposition"] =
+                        $"inline; filename=\"{fileName}\"";
+
+                    return File(resumen.Adjunto, "application/pdf");
+                }
+
+                return File(
+                    resumen.Adjunto,
+                    "application/pdf",
+                    fileName
+                );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    500,
+                    "Ocurrió un error interno al obtener el comprobante: " + ex.Message
+                );
+            }
+        }
+
+        private static IQueryable<Usuario> AplicarFiltroTarjeta(
+            IQueryable<Usuario> query,
+            string nroTarjetaFiltro)
+        {
+            string tarjetaRaw = nroTarjetaFiltro.Trim();
+            string tarjetaNumerica = SoloNumeros(tarjetaRaw);
+
+            if (!string.IsNullOrWhiteSpace(tarjetaNumerica))
+            {
+                return query.Where(x =>
+                    x.Personas != null &&
+                    (
+                        (x.Personas.NroTarjeta ?? "").Contains(tarjetaRaw) ||
+
+                        (x.Personas.NroTarjeta ?? "")
+                            .Replace(" ", "")
+                            .Replace(".", "")
+                            .Replace("-", "")
+                            .Replace("/", "")
+                            .Contains(tarjetaNumerica)
+                    )
+                );
+            }
+
+            return query.Where(x =>
+                x.Personas != null &&
+                (x.Personas.NroTarjeta ?? "").Contains(tarjetaRaw)
+            );
+        }
+
+        private static IQueryable<Usuario> AplicarFiltroDocumento(
+            IQueryable<Usuario> query,
+            string nroDocumentoFiltro)
+        {
+            string documentoRaw = nroDocumentoFiltro.Trim();
+            string documentoNumerico = SoloNumeros(documentoRaw);
+            string documentoCentral = DocumentoCentralDesdeCuil(documentoRaw);
+
+            if (!string.IsNullOrWhiteSpace(documentoNumerico))
+            {
+                return query.Where(x =>
+                    x.Personas != null &&
+                    (
+                        (x.Personas.NroDocumento ?? "").Contains(documentoRaw) ||
+
+                        (x.Personas.NroDocumento ?? "")
+                            .Replace(" ", "")
+                            .Replace(".", "")
+                            .Replace("-", "")
+                            .Replace("/", "")
+                            .Contains(documentoNumerico) ||
+
+                        (x.Personas.NroDocumento ?? "")
+                            .Replace(" ", "")
+                            .Replace(".", "")
+                            .Replace("-", "")
+                            .Replace("/", "")
+                            .Contains(documentoCentral)
+                    )
+                );
+            }
+
+            return query.Where(x =>
+                x.Personas != null &&
+                (x.Personas.NroDocumento ?? "").Contains(documentoRaw)
+            );
+        }
+
+        private static IQueryable<Usuario> AplicarBusquedaGeneral(
+            IQueryable<Usuario> query,
+            string busquedaGeneral)
+        {
+            string buscarRaw = busquedaGeneral.Trim();
+            string buscarNumerico = SoloNumeros(buscarRaw);
+            string buscarDocumentoCentral = DocumentoCentralDesdeCuil(buscarRaw);
+
+            if (!string.IsNullOrWhiteSpace(buscarNumerico))
+            {
+                return query.Where(x =>
+                    x.Personas != null &&
+                    (
+                        (x.Personas.NroTarjeta ?? "").Contains(buscarRaw) ||
+                        (x.Personas.NroDocumento ?? "").Contains(buscarRaw) ||
+
+                        (x.Personas.NroTarjeta ?? "")
+                            .Replace(" ", "")
+                            .Replace(".", "")
+                            .Replace("-", "")
+                            .Replace("/", "")
+                            .Contains(buscarNumerico) ||
+
+                        (x.Personas.NroDocumento ?? "")
+                            .Replace(" ", "")
+                            .Replace(".", "")
+                            .Replace("-", "")
+                            .Replace("/", "")
+                            .Contains(buscarNumerico) ||
+
+                        (x.Personas.NroDocumento ?? "")
+                            .Replace(" ", "")
+                            .Replace(".", "")
+                            .Replace("-", "")
+                            .Replace("/", "")
+                            .Contains(buscarDocumentoCentral)
+                    )
+                );
+            }
+
+            return query.Where(x =>
+                x.Personas != null &&
+                (
+                    (x.Personas.NroTarjeta ?? "").Contains(buscarRaw) ||
+                    (x.Personas.NroDocumento ?? "").Contains(buscarRaw)
+                )
+            );
+        }
+
+        private static bool ResolverIdResumen(
+            string Id,
+            int? periodoId,
+            string usuarioId,
+            out int periodoIdFinal,
+            out string usuarioIdFinal,
+            out string error)
+        {
+            periodoIdFinal = 0;
+            usuarioIdFinal = "";
+            error = "";
+
+            if (!string.IsNullOrWhiteSpace(Id))
+            {
+                string[] partes = Id.Split(',');
+
+                if (partes.Length != 2)
+                {
+                    error = "El formato del ID es incorrecto. Se esperaba 'PeriodoId,UsuarioId'.";
+                    return false;
+                }
+
+                if (!int.TryParse(partes[0], out periodoIdFinal))
+                {
+                    error = "El PeriodoId proporcionado no es un número válido.";
+                    return false;
+                }
+
+                usuarioIdFinal = partes[1];
+
+                if (string.IsNullOrWhiteSpace(usuarioIdFinal))
+                {
+                    error = "El UsuarioId no puede ser nulo o vacío.";
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (!periodoId.HasValue || periodoId.Value <= 0)
+            {
+                error = "Debe enviar un PeriodoId válido.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(usuarioId))
+            {
+                error = "Debe enviar un UsuarioId válido.";
+                return false;
+            }
+
+            periodoIdFinal = periodoId.Value;
+            usuarioIdFinal = usuarioId.Trim();
+
+            return true;
+        }
+
+        private static string PrimerValor(params string[] valores)
+        {
+            if (valores == null)
+            {
+                return "";
+            }
+
+            foreach (string valor in valores)
+            {
+                if (!string.IsNullOrWhiteSpace(valor))
+                {
+                    return valor.Trim();
+                }
+            }
+
+            return "";
+        }
+
+        private static string SoloNumeros(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return "";
+            }
+
+            return new string(valor.Where(char.IsDigit).ToArray());
+        }
+
+        private static string DocumentoCentralDesdeCuil(string valor)
+        {
+            string soloNumeros = SoloNumeros(valor);
+
+            // Si viene CUIT / CUIL tipo 20-12345678-9,
+            // devuelve solamente el DNI del medio.
+            if (soloNumeros.Length == 11)
+            {
+                return soloNumeros.Substring(2, 8);
+            }
+
+            return soloNumeros;
         }
     }
 }

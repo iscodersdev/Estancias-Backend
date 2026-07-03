@@ -1,5 +1,4 @@
 ﻿using DAL.DTOs.Servicios;
-using System;
 using System.Collections.Generic;
 
 namespace DAL.DTOs.Reportes
@@ -7,20 +6,27 @@ namespace DAL.DTOs.Reportes
     public class ResumenTarjetaDTO
     {
         public int Id { get; set; }
+
         public string NroTarjeta { get; set; } = "";
         public string Periodo { get; set; } = "";
+
         public int PeriodoId { get; set; }
         public string UsuarioId { get; set; } = "";
+
         public string FechaVencimiento { get; set; } = "";
+
         public decimal Monto { get; set; }
         public decimal Punitorios { get; set; }
-
         public decimal MontoTotal { get; set; }
+
         public string MontoTexto { get; set; } = "";
         public string PunitoriosTexto { get; set; } = "";
         public string MontoTotalTexto { get; set; } = "";
+
         public string DescargarResumenUrl { get; set; } = "";
         public string DescargarResumenArchivoUrl { get; set; } = "";
+        public string VerComprobanteUrl { get; set; } = "";
+
         public string Accion { get; set; } = "";
     }
 
@@ -31,6 +37,7 @@ namespace DAL.DTOs.Reportes
         public string NroSolicitud { get; set; } = "";
         public string NroCuota { get; set; } = "";
         public string TotalDeCuotas { get; set; } = "";
+
         public decimal Monto { get; set; }
     }
 
@@ -54,9 +61,14 @@ namespace DAL.DTOs.Reportes
         public string PeriodoHasta { get; set; } = "";
         public string Vencimiento { get; set; } = "";
 
-        public List<DetallesCuotasResumenDTO> DetallesCuotas { get; set; } = new List<DetallesCuotasResumenDTO>();
-        public List<ResultadoCuotasDTO> ConsumosAnteriores { get; set; } = new List<ResultadoCuotasDTO>();
-        public List<ResultadoCuotasDTO> ConsumosDelMes { get; set; } = new List<ResultadoCuotasDTO>();
+        public List<DetallesCuotasResumenDTO> DetallesCuotas { get; set; } =
+            new List<DetallesCuotasResumenDTO>();
+
+        public List<ResultadoCuotasDTO> ConsumosAnteriores { get; set; } =
+            new List<ResultadoCuotasDTO>();
+
+        public List<ResultadoCuotasDTO> ConsumosDelMes { get; set; } =
+            new List<ResultadoCuotasDTO>();
     }
 
     public class FiltroResumenTarjetaRequestDTO
@@ -64,11 +76,28 @@ namespace DAL.DTOs.Reportes
         public string NroTarjetaFiltro { get; set; } = "";
         public string NroDocumentoFiltro { get; set; } = "";
 
-        // Nuevos campos para endpoints paginados.
-        // No rompen el uso anterior porque tienen valores por defecto.
+        // Alias para tarjeta
+        public string NroTarjeta { get; set; } = "";
+        public string Tarjeta { get; set; } = "";
+
+        // Alias para documento
+        public string NroDocumento { get; set; } = "";
+        public string Documento { get; set; } = "";
+        public string Dni { get; set; } = "";
+        public string DNI { get; set; } = "";
+
+        // Alias para CUIT / CUIL
+        public string Cuit { get; set; } = "";
+        public string CUIT { get; set; } = "";
+        public string Cuil { get; set; } = "";
+        public string CUIL { get; set; } = "";
+
+        // Búsqueda general
+        public string Buscar { get; set; } = "";
+        public string Busqueda { get; set; } = "";
+
         public int Pagina { get; set; } = 1;
         public int Cantidad { get; set; } = 50;
-        public string Buscar { get; set; } = "";
     }
 
     public class ResumenTarjetaListadoResponseDTO
@@ -76,15 +105,19 @@ namespace DAL.DTOs.Reportes
         public int Status { get; set; }
         public string Mensaje { get; set; } = "";
         public string UsuarioId { get; set; } = "";
-        public List<ResumenTarjetaDTO> Data { get; set; } = new List<ResumenTarjetaDTO>();
+
+        public List<ResumenTarjetaDTO> Data { get; set; } =
+            new List<ResumenTarjetaDTO>();
     }
 
     public class ResumenArchivoDTO
     {
         public int Status { get; set; }
         public string Mensaje { get; set; } = "";
+
         public int PeriodoId { get; set; }
         public string UsuarioId { get; set; } = "";
+
         public string Base64 { get; set; } = "";
         public string ContentType { get; set; } = "";
         public string FileName { get; set; } = "";
@@ -118,8 +151,11 @@ namespace DAL.DTOs.Reportes
         public string FechaVencimiento { get; set; } = "";
         public decimal MontoPunitoriosTotal { get; set; }
 
-        public List<MovimientoResumenDeudaDTO> Movimientos { get; set; } = new List<MovimientoResumenDeudaDTO>();
-        public List<DetalleCuotaConSolicitudDTO> DetallesCuotas { get; set; } = new List<DetalleCuotaConSolicitudDTO>();
+        public List<MovimientoResumenDeudaDTO> Movimientos { get; set; } =
+            new List<MovimientoResumenDeudaDTO>();
+
+        public List<DetalleCuotaConSolicitudDTO> DetallesCuotas { get; set; } =
+            new List<DetalleCuotaConSolicitudDTO>();
     }
 
     public class ResumenDeudaListadoResponseDTO
@@ -132,6 +168,7 @@ namespace DAL.DTOs.Reportes
         public int CantidadPorPagina { get; set; }
         public int TotalPaginas { get; set; }
 
-        public List<ResumenDeudaResponseDTO> Data { get; set; } = new List<ResumenDeudaResponseDTO>();
+        public List<ResumenDeudaResponseDTO> Data { get; set; } =
+            new List<ResumenDeudaResponseDTO>();
     }
 }
