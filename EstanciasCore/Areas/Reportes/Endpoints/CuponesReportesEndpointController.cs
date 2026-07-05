@@ -35,11 +35,12 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             try
             {
                 List<HistorialCanje> cupones = await GetBaseQuery()
+                    .AsNoTracking()
                     .OrderByDescending(p => p.Fecha)
                     .ToListAsync();
 
                 List<CuponesReportesDTO> data = cupones
-                    .Select(c => MapCuponReporteDTO(c))
+                    .Select(MapCuponReporteDTO)
                     .ToList();
 
                 return Ok(new
@@ -47,7 +48,7 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     status = 200,
                     mensaje = "Listado completo de cupones obtenido correctamente.",
                     totalRegistros = data.Count,
-                    data = data
+                    data
                 });
             }
             catch (Exception ex)
@@ -87,8 +88,12 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
         {
             try
             {
-                string draw = Request.Form["draw"].FirstOrDefault() ?? "1";
+                if (model == null)
+                {
+                    model = new FiltroCuponesReportesViewModel();
+                }
 
+                string draw = Request.Form["draw"].FirstOrDefault() ?? "1";
                 string startRaw = Request.Form["start"].FirstOrDefault() ?? "";
                 string lengthRaw = Request.Form["length"].FirstOrDefault() ?? "";
 
@@ -102,24 +107,38 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     model.Length = length;
                 }
 
+                if (model.Start < 0)
+                {
+                    model.Start = 0;
+                }
+
                 if (model.Length <= 0)
                 {
                     model.Length = 10;
                 }
 
-                string searchValue = Request.Form["search[value]"].FirstOrDefault() ?? model.SearchValue ?? "";
+                string searchValue = Request.Form["search[value]"].FirstOrDefault()
+                    ?? model.SearchValue
+                    ?? "";
+
                 string sortColumnIndex = Request.Form["order[0][column]"].FirstOrDefault() ?? "";
-                string sortColumnDirection = Request.Form["order[0][dir]"].FirstOrDefault() ?? model.SortDirection ?? "";
+                string sortColumnDirection = Request.Form["order[0][dir]"].FirstOrDefault()
+                    ?? model.SortDirection
+                    ?? "";
+
                 string sortColumnName = "";
 
                 if (!string.IsNullOrWhiteSpace(sortColumnIndex))
                 {
-                    sortColumnName = Request.Form[$"columns[{sortColumnIndex}][name]"].FirstOrDefault() ?? "";
+                    sortColumnName = Request.Form[$"columns[{sortColumnIndex}][name]"]
+                        .FirstOrDefault() ?? "";
                 }
 
-                if (string.IsNullOrWhiteSpace(sortColumnName) && !string.IsNullOrWhiteSpace(sortColumnIndex))
+                if (string.IsNullOrWhiteSpace(sortColumnName) &&
+                    !string.IsNullOrWhiteSpace(sortColumnIndex))
                 {
-                    sortColumnName = Request.Form[$"columns[{sortColumnIndex}][data]"].FirstOrDefault() ?? "";
+                    sortColumnName = Request.Form[$"columns[{sortColumnIndex}][data]"]
+                        .FirstOrDefault() ?? "";
                 }
 
                 if (string.IsNullOrWhiteSpace(sortColumnName))
@@ -127,7 +146,8 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     sortColumnName = model.SortColumn ?? "";
                 }
 
-                IQueryable<HistorialCanje> query = GetBaseQuery();
+                IQueryable<HistorialCanje> query = GetBaseQuery()
+                    .AsNoTracking();
 
                 int recordsTotal = await query.CountAsync();
 
@@ -144,7 +164,7 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     .ToListAsync();
 
                 List<CuponesReportesDTO> data = cupones
-                    .Select(c => MapCuponReporteDTO(c))
+                    .Select(MapCuponReporteDTO)
                     .ToList();
 
                 return Ok(new CuponesReportesDataTableResponseDTO
@@ -167,151 +187,48 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             }
         }
 
-        // GET: /reportes/endpoint/cupones-reportes/exportar?formato=xlsx
-        // GET: /reportes/endpoint/cupones-reportes/exportar?formato=csv
-        // GET: /reportes/endpoint/cupones-reportes/exportar?formato=txt
+        // GET unificado:
+        // /reportes/endpoint/cupones-reportes/exportar?formato=xlsx
+        // /reportes/endpoint/cupones-reportes/exportar?formato=csv
+        // /reportes/endpoint/cupones-reportes/exportar?formato=txt
+        //
+        // Alias compatibles:
+        // /reportes/endpoint/cupones-reportes/exportar-excel
+        // /reportes/endpoint/cupones-reportes/exportar-csv
+        // /reportes/endpoint/cupones-reportes/exportar-txt
         [HttpGet("exportar")]
-        public async Task<IActionResult> Exportar([FromQuery] FiltroCuponesReportesViewModel filtros, string formato, string downloadToken)
+        [HttpGet("exportar-{tipo}")]
+        public Task<IActionResult> ExportarGet(
+            [FromQuery] FiltroCuponesReportesViewModel filtros,
+            [FromRoute] string tipo = "",
+            [FromQuery] string formato = "xlsx",
+            [FromQuery] string downloadToken = "")
         {
-            IQueryable<HistorialCanje> query = GetBaseQuery();
+            string formatoFinal = !string.IsNullOrWhiteSpace(tipo)
+                ? tipo
+                : formato;
 
-            query = ApplyFilters(query, filtros);
-
-            if (!string.IsNullOrWhiteSpace(filtros.SearchValue))
-            {
-                query = ApplyGlobalSearch(query, filtros.SearchValue);
-            }
-
-            List<HistorialCanje> datos = await query
-                .OrderByDescending(p => p.Fecha)
-                .ToListAsync();
-
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string fileName = "CuponesCanjeados_" + timestamp;
-
-            if (!string.IsNullOrEmpty(downloadToken))
-            {
-                Response.Cookies.Append(downloadToken, "true", new CookieOptions
-                {
-                    Path = "/",
-                    HttpOnly = false
-                });
-            }
-
-            switch ((formato ?? "xlsx").ToLower())
-            {
-                case "csv":
-                    return File(
-                        GenerateCsvBytes(datos),
-                        "text/csv",
-                        fileName + ".csv"
-                    );
-
-                case "txt":
-                    return File(
-                        GenerateTxtBytes(datos),
-                        "text/plain",
-                        fileName + ".txt"
-                    );
-
-                case "xlsx":
-                default:
-                    return File(
-                        GenerateXlsxBytes(datos),
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        fileName + ".xlsx"
-                    );
-            }
+            return ExportarArchivo(filtros, formatoFinal, downloadToken);
         }
 
-        // Alias opcional para Excel
-        // GET: /reportes/endpoint/cupones-reportes/exportar-excel
-        [HttpGet("exportar-excel")]
-        public async Task<IActionResult> ExportarExcel(string fechaDesde, string fechaHasta, int personaId)
+        // POST unificado, compatible con multipart/form-data o x-www-form-urlencoded:
+        // /reportes/endpoint/cupones-reportes/exportar
+        // /reportes/endpoint/cupones-reportes/exportar-excel
+        // /reportes/endpoint/cupones-reportes/exportar-csv
+        // /reportes/endpoint/cupones-reportes/exportar-txt
+        [HttpPost("exportar")]
+        [HttpPost("exportar-{tipo}")]
+        public Task<IActionResult> ExportarPost(
+            [FromForm] FiltroCuponesReportesViewModel filtros,
+            [FromRoute] string tipo = "",
+            [FromForm] string formato = "xlsx",
+            [FromForm] string downloadToken = "")
         {
-            var filtros = new FiltroCuponesReportesViewModel
-            {
-                FechaDesde = fechaDesde ?? "",
-                FechaHasta = fechaHasta ?? "",
-                PersonaId = personaId,
-                NombrePersona = "",
-                SearchValue = ""
-            };
+            string formatoFinal = !string.IsNullOrWhiteSpace(tipo)
+                ? tipo
+                : formato;
 
-            IQueryable<HistorialCanje> query = GetBaseQuery();
-            query = ApplyFilters(query, filtros);
-
-            List<HistorialCanje> datos = await query
-                .OrderByDescending(p => p.Fecha)
-                .ToListAsync();
-
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-
-            return File(
-                GenerateXlsxBytes(datos),
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "CuponesCanjeados_" + timestamp + ".xlsx"
-            );
-        }
-
-        // Alias opcional para CSV
-        // GET: /reportes/endpoint/cupones-reportes/exportar-csv
-        [HttpGet("exportar-csv")]
-        public async Task<IActionResult> ExportarCsv(string fechaDesde, string fechaHasta, int personaId)
-        {
-            var filtros = new FiltroCuponesReportesViewModel
-            {
-                FechaDesde = fechaDesde ?? "",
-                FechaHasta = fechaHasta ?? "",
-                PersonaId = personaId,
-                NombrePersona = "",
-                SearchValue = ""
-            };
-
-            IQueryable<HistorialCanje> query = GetBaseQuery();
-            query = ApplyFilters(query, filtros);
-
-            List<HistorialCanje> datos = await query
-                .OrderByDescending(p => p.Fecha)
-                .ToListAsync();
-
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-
-            return File(
-                GenerateCsvBytes(datos),
-                "text/csv",
-                "CuponesCanjeados_" + timestamp + ".csv"
-            );
-        }
-
-        // Alias opcional para TXT
-        // GET: /reportes/endpoint/cupones-reportes/exportar-txt
-        [HttpGet("exportar-txt")]
-        public async Task<IActionResult> ExportarTxt(string fechaDesde, string fechaHasta, int personaId)
-        {
-            var filtros = new FiltroCuponesReportesViewModel
-            {
-                FechaDesde = fechaDesde ?? "",
-                FechaHasta = fechaHasta ?? "",
-                PersonaId = personaId,
-                NombrePersona = "",
-                SearchValue = ""
-            };
-
-            IQueryable<HistorialCanje> query = GetBaseQuery();
-            query = ApplyFilters(query, filtros);
-
-            List<HistorialCanje> datos = await query
-                .OrderByDescending(p => p.Fecha)
-                .ToListAsync();
-
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-
-            return File(
-                GenerateTxtBytes(datos),
-                "text/plain",
-                "CuponesCanjeados_" + timestamp + ".txt"
-            );
+            return ExportarArchivo(filtros, formatoFinal, downloadToken);
         }
 
         // GET: /reportes/endpoint/cupones-reportes/nombre-apellido-combo-json?q=texto
@@ -320,7 +237,8 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
         {
             string texto = q ?? "";
 
-            var items = _context.Usuarios
+            PersonaComboReporteDTO[] items = _context.Usuarios
+                .AsNoTracking()
                 .Where(x =>
                     x.Personas != null &&
                     (
@@ -342,6 +260,107 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             return Ok(items);
         }
 
+        private async Task<IActionResult> ExportarArchivo(
+            FiltroCuponesReportesViewModel filtros,
+            string formato,
+            string downloadToken)
+        {
+            try
+            {
+                if (filtros == null)
+                {
+                    filtros = new FiltroCuponesReportesViewModel();
+                }
+
+                string formatoNormalizado = NormalizeExportFormat(formato);
+
+                if (string.IsNullOrWhiteSpace(formatoNormalizado))
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        mensaje = "El formato solicitado no es válido.",
+                        formatosPermitidos = new[]
+                        {
+                            "xlsx",
+                            "excel",
+                            "csv",
+                            "txt"
+                        }
+                    });
+                }
+
+                IQueryable<HistorialCanje> query = GetBaseQuery()
+                    .AsNoTracking();
+
+                query = ApplyFilters(query, filtros);
+
+                if (!string.IsNullOrWhiteSpace(filtros.SearchValue))
+                {
+                    query = ApplyGlobalSearch(query, filtros.SearchValue);
+                }
+
+                List<HistorialCanje> datos = await query
+                    .OrderByDescending(p => p.Fecha)
+                    .ToListAsync();
+
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string nombreBase = "CuponesCanjeados_" + timestamp;
+
+                byte[] archivo;
+                string contentType;
+                string extension;
+
+                switch (formatoNormalizado)
+                {
+                    case "csv":
+                        archivo = GenerateCsvBytes(datos);
+                        contentType = "text/csv; charset=utf-8";
+                        extension = ".csv";
+                        break;
+
+                    case "txt":
+                        archivo = GenerateTxtBytes(datos);
+                        contentType = "text/plain; charset=utf-8";
+                        extension = ".txt";
+                        break;
+
+                    case "xlsx":
+                        archivo = GenerateXlsxBytes(datos);
+                        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        extension = ".xlsx";
+                        break;
+
+                    default:
+                        return BadRequest(new
+                        {
+                            status = 400,
+                            mensaje = "Formato de exportación no válido."
+                        });
+                }
+
+                SetDownloadToken(downloadToken);
+
+                Response.Headers["X-Total-Registros"] = datos.Count.ToString();
+                Response.Headers["X-Formato-Exportacion"] = formatoNormalizado;
+
+                return File(
+                    archivo,
+                    contentType,
+                    nombreBase + extension
+                );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    mensaje = "Se produjo un error al exportar el reporte de cupones.",
+                    error = ex.Message
+                });
+            }
+        }
+
         private IQueryable<HistorialCanje> GetBaseQuery()
         {
             return _context.HistorialCanje
@@ -351,7 +370,9 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                 .AsQueryable();
         }
 
-        private IQueryable<HistorialCanje> ApplyFilters(IQueryable<HistorialCanje> query, FiltroCuponesReportesViewModel filtros)
+        private IQueryable<HistorialCanje> ApplyFilters(
+            IQueryable<HistorialCanje> query,
+            FiltroCuponesReportesViewModel filtros)
         {
             if (filtros == null)
             {
@@ -360,12 +381,14 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
 
             if (DateTime.TryParse(filtros.FechaDesde, out DateTime fechaDesde))
             {
-                query = query.Where(p => p.Fecha.Date >= fechaDesde.Date);
+                DateTime desde = fechaDesde.Date;
+                query = query.Where(p => p.Fecha >= desde);
             }
 
             if (DateTime.TryParse(filtros.FechaHasta, out DateTime fechaHasta))
             {
-                query = query.Where(p => p.Fecha.Date <= fechaHasta.Date);
+                DateTime hastaExclusivo = fechaHasta.Date.AddDays(1);
+                query = query.Where(p => p.Fecha < hastaExclusivo);
             }
 
             if (filtros.PersonaId > 0)
@@ -385,9 +408,19 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                     p.Cliente != null &&
                     p.Cliente.Persona != null &&
                     (
-                        ((p.Cliente.Persona.Apellido ?? "") + " " + (p.Cliente.Persona.Nombres ?? "")).ToLower().Contains(textoPersona) ||
-                        ((p.Cliente.Persona.Nombres ?? "") + " " + (p.Cliente.Persona.Apellido ?? "")).ToLower().Contains(textoPersona) ||
-                        (p.Cliente.Persona.NroDocumento ?? "").ToLower().Contains(textoPersona)
+                        ((p.Cliente.Persona.Apellido ?? "") + " " +
+                         (p.Cliente.Persona.Nombres ?? ""))
+                            .ToLower()
+                            .Contains(textoPersona) ||
+
+                        ((p.Cliente.Persona.Nombres ?? "") + " " +
+                         (p.Cliente.Persona.Apellido ?? ""))
+                            .ToLower()
+                            .Contains(textoPersona) ||
+
+                        (p.Cliente.Persona.NroDocumento ?? "")
+                            .ToLower()
+                            .Contains(textoPersona)
                     )
                 );
             }
@@ -395,7 +428,9 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
             return query;
         }
 
-        private IQueryable<HistorialCanje> ApplyGlobalSearch(IQueryable<HistorialCanje> query, string searchValue)
+        private IQueryable<HistorialCanje> ApplyGlobalSearch(
+            IQueryable<HistorialCanje> query,
+            string searchValue)
         {
             if (string.IsNullOrWhiteSpace(searchValue))
             {
@@ -404,26 +439,39 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
 
             string texto = searchValue.Trim().ToLower();
 
-            query = query.Where(p =>
+            return query.Where(p =>
                 (
                     p.Cliente != null &&
                     p.Cliente.Persona != null &&
                     (
-                        ((p.Cliente.Persona.Apellido ?? "") + " " + (p.Cliente.Persona.Nombres ?? "")).ToLower().Contains(texto) ||
-                        ((p.Cliente.Persona.Nombres ?? "") + " " + (p.Cliente.Persona.Apellido ?? "")).ToLower().Contains(texto) ||
-                        (p.Cliente.Persona.NroDocumento ?? "").ToLower().Contains(texto)
+                        ((p.Cliente.Persona.Apellido ?? "") + " " +
+                         (p.Cliente.Persona.Nombres ?? ""))
+                            .ToLower()
+                            .Contains(texto) ||
+
+                        ((p.Cliente.Persona.Nombres ?? "") + " " +
+                         (p.Cliente.Persona.Apellido ?? ""))
+                            .ToLower()
+                            .Contains(texto) ||
+
+                        (p.Cliente.Persona.NroDocumento ?? "")
+                            .ToLower()
+                            .Contains(texto)
                     )
                 ) ||
                 (
                     p.Premio != null &&
-                    (p.Premio.Nombre ?? "").ToLower().Contains(texto)
+                    (p.Premio.Nombre ?? "")
+                        .ToLower()
+                        .Contains(texto)
                 )
             );
-
-            return query;
         }
 
-        private IQueryable<HistorialCanje> ApplyOrder(IQueryable<HistorialCanje> query, string sortColumn, string sortDirection)
+        private IQueryable<HistorialCanje> ApplyOrder(
+            IQueryable<HistorialCanje> query,
+            string sortColumn,
+            string sortDirection)
         {
             bool ascending = (sortDirection ?? "").ToLower() == "asc";
             string column = NormalizeColumnName(sortColumn);
@@ -435,8 +483,10 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                 case "personaapellido":
                 case "cliente.persona.apellido":
                     return ascending
-                        ? query.OrderBy(p => p.Cliente.Persona.Apellido).ThenBy(p => p.Cliente.Persona.Nombres)
-                        : query.OrderByDescending(p => p.Cliente.Persona.Apellido).ThenByDescending(p => p.Cliente.Persona.Nombres);
+                        ? query.OrderBy(p => p.Cliente.Persona.Apellido)
+                            .ThenBy(p => p.Cliente.Persona.Nombres)
+                        : query.OrderByDescending(p => p.Cliente.Persona.Apellido)
+                            .ThenByDescending(p => p.Cliente.Persona.Nombres);
 
                 case "nrodocumento":
                 case "documento":
@@ -478,6 +528,54 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
                 .Replace("_", "")
                 .Replace("-", "")
                 .ToLower();
+        }
+
+        private string NormalizeExportFormat(string formato)
+        {
+            string valor = (formato ?? "")
+                .Trim()
+                .TrimStart('.')
+                .ToLower();
+
+            switch (valor)
+            {
+                case "":
+                case "excel":
+                case "xlsx":
+                    return "xlsx";
+
+                case "csv":
+                    return "csv";
+
+                case "txt":
+                case "texto":
+                    return "txt";
+
+                default:
+                    return "";
+            }
+        }
+
+        private void SetDownloadToken(string downloadToken)
+        {
+            if (string.IsNullOrWhiteSpace(downloadToken))
+            {
+                return;
+            }
+
+            Response.Cookies.Append(
+                downloadToken,
+                "true",
+                new CookieOptions
+                {
+                    Path = "/",
+                    HttpOnly = false,
+                    SameSite = SameSiteMode.Lax,
+                    Secure = Request.IsHttps
+                }
+            );
+
+            Response.Headers["X-Download-Token"] = downloadToken;
         }
 
         private CuponesReportesDTO MapCuponReporteDTO(HistorialCanje historial)
@@ -536,17 +634,29 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
         {
             using (var package = new ExcelPackage())
             {
-                var worksheet = package.Workbook.Worksheets.Add("Cupones");
+                ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Cupones");
 
-                var dataToExport = datos.Select(p => new CuponesReportesExportDTO
+                worksheet.Cells[1, 1].Value = "Cliente";
+                worksheet.Cells[1, 2].Value = "Nro Documento";
+                worksheet.Cells[1, 3].Value = "Fecha";
+                worksheet.Cells[1, 4].Value = "Cupón";
+
+                worksheet.Cells[1, 1, 1, 4].Style.Font.Bold = true;
+
+                int fila = 2;
+
+                foreach (HistorialCanje cupon in datos)
                 {
-                    Cliente = GetCliente(p),
-                    NroDocumento = GetNroDocumento(p),
-                    Fecha = p.Fecha.ToString("dd/MM/yyyy"),
-                    Cupon = GetCupon(p)
-                }).ToList();
+                    worksheet.Cells[fila, 1].Value = GetCliente(cupon);
+                    worksheet.Cells[fila, 2].Value = GetNroDocumento(cupon);
+                    worksheet.Cells[fila, 3].Value = cupon.Fecha;
+                    worksheet.Cells[fila, 3].Style.Numberformat.Format = "dd/MM/yyyy";
+                    worksheet.Cells[fila, 4].Value = GetCupon(cupon);
 
-                worksheet.Cells.LoadFromCollection(dataToExport, true);
+                    fila++;
+                }
+
+                worksheet.View.FreezePanes(2, 1);
 
                 if (worksheet.Dimension != null)
                 {
@@ -560,47 +670,96 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
         private byte[] GenerateCsvBytes(List<HistorialCanje> datos)
         {
             var sb = new StringBuilder();
-            char delimitador = ';';
+            const char delimitador = ';';
 
-            sb.AppendLine($"Cliente{delimitador}Nro Documento{delimitador}Fecha{delimitador}Cupon");
-
-            foreach (HistorialCanje p in datos)
+            string[] encabezados =
             {
-                string[] line =
+                EscapeCsv("Cliente"),
+                EscapeCsv("Nro Documento"),
+                EscapeCsv("Fecha"),
+                EscapeCsv("Cupón")
+            };
+
+            sb.AppendLine(string.Join(
+                delimitador.ToString(),
+                encabezados
+            ));
+
+            foreach (HistorialCanje cupon in datos)
+            {
+                string[] linea =
                 {
-                    EscapeCsv(GetCliente(p)),
-                    EscapeCsv(GetNroDocumento(p)),
-                    p.Fecha.ToString("dd/MM/yyyy"),
-                    EscapeCsv(GetCupon(p))
+                    EscapeCsv(GetCliente(cupon)),
+                    EscapeCsv(GetNroDocumento(cupon)),
+                    EscapeCsv(cupon.Fecha.ToString("dd/MM/yyyy")),
+                    EscapeCsv(GetCupon(cupon))
                 };
 
-                sb.AppendLine(string.Join(delimitador.ToString(), line));
+                sb.AppendLine(string.Join(
+                    delimitador.ToString(),
+                    linea
+                ));
             }
 
-            return Encoding.UTF8.GetBytes(sb.ToString());
+            return GenerateUtf8BomBytes(sb.ToString());
         }
 
         private byte[] GenerateTxtBytes(List<HistorialCanje> datos)
         {
             var sb = new StringBuilder();
-            char delimitador = '\t';
+            const char delimitador = '\t';
 
-            sb.AppendLine($"Cliente{delimitador}Nro Documento{delimitador}Fecha{delimitador}Cupon");
+            sb.AppendLine(
+                "Cliente" + delimitador +
+                "Nro Documento" + delimitador +
+                "Fecha" + delimitador +
+                "Cupón"
+            );
 
-            foreach (HistorialCanje p in datos)
+            foreach (HistorialCanje cupon in datos)
             {
-                string[] line =
+                string[] linea =
                 {
-                    GetCliente(p),
-                    GetNroDocumento(p),
-                    p.Fecha.ToString("dd/MM/yyyy"),
-                    GetCupon(p)
+                    SanitizeTxt(GetCliente(cupon)),
+                    SanitizeTxt(GetNroDocumento(cupon)),
+                    cupon.Fecha.ToString("dd/MM/yyyy"),
+                    SanitizeTxt(GetCupon(cupon))
                 };
 
-                sb.AppendLine(string.Join(delimitador.ToString(), line));
+                sb.AppendLine(string.Join(
+                    delimitador.ToString(),
+                    linea
+                ));
             }
 
-            return Encoding.UTF8.GetBytes(sb.ToString());
+            return GenerateUtf8BomBytes(sb.ToString());
+        }
+
+        private byte[] GenerateUtf8BomBytes(string contenido)
+        {
+            var encoding = new UTF8Encoding(true);
+
+            byte[] preambulo = encoding.GetPreamble();
+            byte[] contenidoBytes = encoding.GetBytes(contenido ?? "");
+            byte[] resultado = new byte[preambulo.Length + contenidoBytes.Length];
+
+            Buffer.BlockCopy(
+                preambulo,
+                0,
+                resultado,
+                0,
+                preambulo.Length
+            );
+
+            Buffer.BlockCopy(
+                contenidoBytes,
+                0,
+                resultado,
+                preambulo.Length,
+                contenidoBytes.Length
+            );
+
+            return resultado;
         }
 
         private string GetCliente(HistorialCanje historial)
@@ -634,7 +793,8 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
 
         private string GetCupon(HistorialCanje historial)
         {
-            if (historial.Premio != null && !string.IsNullOrWhiteSpace(historial.Premio.Nombre))
+            if (historial.Premio != null &&
+                !string.IsNullOrWhiteSpace(historial.Premio.Nombre))
             {
                 return historial.Premio.Nombre;
             }
@@ -646,7 +806,17 @@ namespace EstanciasCore.Areas.Reportes.Endpoints
         {
             string texto = value ?? "";
             texto = texto.Replace("\"", "\"\"");
+
             return "\"" + texto + "\"";
+        }
+
+        private string SanitizeTxt(string value)
+        {
+            return (value ?? "")
+                .Replace("\t", " ")
+                .Replace("\r", " ")
+                .Replace("\n", " ")
+                .Trim();
         }
     }
 }
