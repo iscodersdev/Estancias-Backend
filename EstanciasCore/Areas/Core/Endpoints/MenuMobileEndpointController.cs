@@ -23,6 +23,55 @@ namespace EstanciasCore.Endpoints
             _context = context;
         }
 
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var opcion = await _context.MenuMobile
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (opcion == null)
+                {
+                    return NotFound(new
+                    {
+                        Mensaje = "No se encontró la opción del menú mobile."
+                    });
+                }
+
+                var asignaciones = await _context.MenuMobileUsuariosHabilitados
+                    .Where(x => x.MenuMobile.Id == id)
+                    .ToListAsync();
+
+                if (asignaciones.Any())
+                {
+                    _context.MenuMobileUsuariosHabilitados.RemoveRange(asignaciones);
+                }
+
+                _context.MenuMobile.Remove(opcion);
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Mensaje = "La opción del menú mobile se eliminó correctamente.",
+                    OpcionEliminada = new
+                    {
+                        opcion.Id,
+                        opcion.Nombre,
+                        CantidadAsignacionesEliminadas = asignaciones.Count
+                    }
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    Mensaje = "Hubo un error al eliminar la opción del menú mobile."
+                });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
