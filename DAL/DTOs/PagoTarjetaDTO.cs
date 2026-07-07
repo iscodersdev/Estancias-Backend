@@ -21,7 +21,6 @@ namespace DAL.DTOs
         public byte[] ComprobantePago { get; set; }
     }
 
-
     public class PagoTarjetaDataTableDTO
     {
         public int Id { get; set; }
@@ -45,6 +44,7 @@ namespace DAL.DTOs
     public class RechazarComprobanteDTO
     {
         public int Id { get; set; }
+
         [JsonPropertyName("observacion")]
         public string Observacion { get; set; }
     }
@@ -53,5 +53,41 @@ namespace DAL.DTOs
     {
         public List<int> Ids { get; set; }
         public string Observacion { get; set; }
+    }
+
+    public class ExportarPagoTarjetaExcelRequestDTO
+    {
+        /// <summary>
+        /// Si es true, exporta todos los registros encontrados
+        /// utilizando los filtros enviados.
+        /// </summary>
+        public bool ExportarTodos { get; set; }
+
+        /// <summary>
+        /// IDs seleccionados manualmente.
+        /// Se utiliza cuando ExportarTodos es false.
+        /// </summary>
+        public List<int> Ids { get; set; } = new List<int>();
+
+        public string Buscar { get; set; }
+
+        public int? Estado { get; set; }
+
+        public DateTime? Fecha { get; set; }
+    }
+
+    public class PagoTarjetaExcelFilaDTO
+    {
+        public string Cliente { get; set; }
+
+        public string NroDocumento { get; set; }
+
+        public DateTime? FechaInformada { get; set; }
+
+        public DateTime? FechaDeCarga { get; set; }
+
+        public decimal MontoInformado { get; set; }
+
+        public int EstadoPagoId { get; set; }
     }
 }

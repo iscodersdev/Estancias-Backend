@@ -10,7 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace EstanciasCore.Endpoints
@@ -34,11 +36,11 @@ namespace EstanciasCore.Endpoints
         // GET: endpoint/pago-tarjeta
         [HttpGet]
         public async Task<IActionResult> GetAll(
-        [FromQuery] string buscar = null,
-        [FromQuery] int? estado = null,
-        [FromQuery] DateTime? fecha = null,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+            [FromQuery] string buscar = null,
+            [FromQuery] int? estado = null,
+            [FromQuery] DateTime? fecha = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
             if (page < 1)
                 page = 1;
@@ -295,7 +297,8 @@ namespace EstanciasCore.Endpoints
 
         // PUT: endpoint/pago-tarjeta/rechazar
         [HttpPut("rechazar")]
-        public async Task<IActionResult> RechazarComprobante([FromBody] RechazarComprobanteDTO dto)
+        public async Task<IActionResult> RechazarComprobante(
+            [FromBody] RechazarComprobanteDTO dto)
         {
             if (dto == null)
             {
@@ -410,7 +413,8 @@ namespace EstanciasCore.Endpoints
 
                 _context.NotificacionesPersonas.Add(notificacionPersona);
 
-                if (cliente.Usuario != null && !string.IsNullOrEmpty(cliente.Usuario.DeviceId))
+                if (cliente.Usuario != null &&
+                    !string.IsNullOrEmpty(cliente.Usuario.DeviceId))
                 {
                     installationIds.Add(cliente.Usuario.DeviceId);
                 }
@@ -429,7 +433,8 @@ namespace EstanciasCore.Endpoints
 
         // POST: endpoint/pago-tarjeta/rechazar-masivo
         [HttpPost("rechazar-masivo")]
-        public async Task<IActionResult> RechazarMasivo([FromBody] RechazarComprobanteMasivoDTO dto)
+        public async Task<IActionResult> RechazarMasivo(
+            [FromBody] RechazarComprobanteMasivoDTO dto)
         {
             if (dto == null || dto.Ids == null || !dto.Ids.Any())
             {
@@ -478,14 +483,17 @@ namespace EstanciasCore.Endpoints
                 {
                     Cliente = cliente,
                     Titulo = "Pago Rechazado",
-                    Descripcion = "Se rechazó su comprobante de Pago. Motivo: " + dto.Observacion,
+                    Descripcion =
+                        "Se rechazó su comprobante de Pago. Motivo: " +
+                        dto.Observacion,
                     FechaHora = DateTime.Now,
                     TomaConocimiento = null
                 };
 
                 _context.NotificacionesPersonas.Add(notificacionPersona);
 
-                if (cliente.Usuario != null && !string.IsNullOrEmpty(cliente.Usuario.DeviceId))
+                if (cliente.Usuario != null &&
+                    !string.IsNullOrEmpty(cliente.Usuario.DeviceId))
                 {
                     installationIds.Add(cliente.Usuario.DeviceId);
                 }
@@ -514,24 +522,81 @@ namespace EstanciasCore.Endpoints
 
         // POST: endpoint/pago-tarjeta/exportar-excel
         [HttpPost("exportar-excel")]
-        public async Task<IActionResult> ExportarExcel([FromBody] List<int> ids)
+        public async Task<IActionResult> ExportarExcel(
+            [FromBody] ExportarPagoTarjetaExcelRequestDTO request,
+            CancellationToken cancellationToken)
         {
-            if (ids == null || !ids.Any())
+            if (request == null)
             {
                 return BadRequest(new
                 {
                     ok = false,
-                    message = "Debe enviar al menos un pago para exportar."
+                    message = "Debe enviar los datos de la exportación."
                 });
             }
 
-            var pagos = await _context.PagoTarjeta
-                .Include(p => p.Persona)
-                .Where(p => ids.Contains(p.Id))
-                .OrderBy(p => p.FechaComprobante)
-                .ToListAsync();
+            var ids = request.Ids == null
+                ? new List<int>()
+                : request.Ids
+                    .Where(x => x > 0)
+                    .Distinct()
+                    .ToList();
 
-            if (!pagos.Any())
+            if (!request.ExportarTodos && !ids.Any())
+            {
+                return BadRequest(new
+                {
+                    ok = false,
+                    message =
+                        "Debe seleccionar al menos un pago o indicar ExportarTodos."
+                });
+            }
+
+            IQueryable<PagoTarjeta> query = _context.PagoTarjeta
+                .AsNoTracking();
+
+            var datos = new List<PagoTarjetaExcelFilaDTO>();
+
+            if (request.ExportarTodos)
+            {
+                query = AplicarFiltrosExportacion(query, request);
+
+                datos = await SeleccionarColumnasExcel(query)
+                    .OrderBy(x => x.FechaDeCarga)
+                    .ToListAsync(cancellationToken);
+            }
+            else
+            {
+                /*
+                 * Los IDs se procesan en lotes para evitar una consulta
+                 * con miles de parámetros.
+                 */
+                const int tamanoLote = 1000;
+
+                for (var posicion = 0;
+                     posicion < ids.Count;
+                     posicion += tamanoLote)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var loteIds = ids
+                        .Skip(posicion)
+                        .Take(tamanoLote)
+                        .ToList();
+
+                    var datosLote = await SeleccionarColumnasExcel(
+                            query.Where(p => loteIds.Contains(p.Id)))
+                        .ToListAsync(cancellationToken);
+
+                    datos.AddRange(datosLote);
+                }
+
+                datos = datos
+                    .OrderBy(x => x.FechaDeCarga)
+                    .ToList();
+            }
+
+            if (!datos.Any())
             {
                 return NotFound(new
                 {
@@ -540,34 +605,254 @@ namespace EstanciasCore.Endpoints
                 });
             }
 
-            var excelBytes = GenerateXlsxBytes(pagos);
-            var excelName = $"Comprobantes_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+            var excelStream = GenerarExcelStream(datos);
+
+            var excelName =
+                $"Comprobantes_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+            Response.Headers["X-Total-Registros"] =
+                datos.Count.ToString();
 
             return File(
-                excelBytes,
+                excelStream,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 excelName
             );
         }
 
-        private async Task EnviarPushSiCorresponde(Clientes cliente, string codigoNotificacion)
+        private IQueryable<PagoTarjeta> AplicarFiltrosExportacion(
+            IQueryable<PagoTarjeta> query,
+            ExportarPagoTarjetaExcelRequestDTO request)
         {
-            if (cliente == null || cliente.Usuario == null || string.IsNullOrEmpty(cliente.Usuario.DeviceId))
+            if (!string.IsNullOrWhiteSpace(request.Buscar))
+            {
+                var texto = request.Buscar.Trim().ToLower();
+
+                query = query.Where(p =>
+                    p.Persona != null &&
+                    (
+                        (
+                            (p.Persona.Apellido ?? "") + " " +
+                            (p.Persona.Nombres ?? "")
+                        )
+                        .ToLower()
+                        .Contains(texto)
+
+                        ||
+
+                        (
+                            (p.Persona.Nombres ?? "") + " " +
+                            (p.Persona.Apellido ?? "")
+                        )
+                        .ToLower()
+                        .Contains(texto)
+
+                        ||
+
+                        (p.Persona.NroDocumento ?? "")
+                        .ToLower()
+                        .Contains(texto)
+                    )
+                );
+            }
+
+            if (request.Estado.HasValue)
+            {
+                query = query.Where(p =>
+                    (int)p.EstadoPago == request.Estado.Value
+                );
+            }
+
+            if (request.Fecha.HasValue)
+            {
+                var desde = request.Fecha.Value.Date;
+                var hasta = desde.AddDays(1);
+
+                query = query.Where(p =>
+                    p.FechaComprobante.HasValue &&
+                    p.FechaComprobante.Value >= desde &&
+                    p.FechaComprobante.Value < hasta
+                );
+            }
+
+            return query;
+        }
+
+        private IQueryable<PagoTarjetaExcelFilaDTO> SeleccionarColumnasExcel(
+            IQueryable<PagoTarjeta> query)
+        {
+            /*
+             * No se utiliza Include.
+             *
+             * Entity Framework genera el JOIN con Persona, pero selecciona
+             * solamente las columnas utilizadas en este DTO.
+             *
+             * ComprobantePago no se descarga desde la base.
+             */
+            return query.Select(p => new PagoTarjetaExcelFilaDTO
+            {
+                Cliente = p.Persona != null
+                    ? (p.Persona.Apellido ?? "") + ", " +
+                      (p.Persona.Nombres ?? "")
+                    : "",
+
+                NroDocumento = p.Persona != null
+                    ? p.Persona.NroDocumento ?? ""
+                    : "",
+
+                FechaInformada = p.FechaDePago,
+
+                FechaDeCarga = p.FechaComprobante,
+
+                MontoInformado = p.MontoInformado,
+
+                EstadoPagoId = (int)p.EstadoPago
+            });
+        }
+
+        private MemoryStream GenerarExcelStream(
+            List<PagoTarjetaExcelFilaDTO> datos)
+        {
+            var stream = new MemoryStream();
+
+            using (var package = new ExcelPackage())
+            {
+                var worksheet =
+                    package.Workbook.Worksheets.Add("Pagos");
+
+                worksheet.Cells[1, 1].Value = "Cliente";
+                worksheet.Cells[1, 2].Value = "NroDocumento";
+                worksheet.Cells[1, 3].Value = "Fecha Informada";
+                worksheet.Cells[1, 4].Value = "Fecha de Carga";
+                worksheet.Cells[1, 5].Value = "Monto Informado";
+                worksheet.Cells[1, 6].Value = "Estado";
+
+                /*
+                 * Se carga una matriz completa en lugar de escribir
+                 * las celdas una por una.
+                 */
+                var valores = new object[datos.Count, 6];
+
+                for (var i = 0; i < datos.Count; i++)
+                {
+                    var fila = datos[i];
+
+                    valores[i, 0] = fila.Cliente;
+                    valores[i, 1] = fila.NroDocumento;
+
+                    valores[i, 2] = fila.FechaInformada.HasValue
+                        ? (object)fila.FechaInformada.Value
+                        : null;
+
+                    valores[i, 3] = fila.FechaDeCarga.HasValue
+                        ? (object)fila.FechaDeCarga.Value
+                        : null;
+
+                    valores[i, 4] = fila.MontoInformado;
+
+                    valores[i, 5] =
+                        ((EstadoPago)fila.EstadoPagoId).ToString();
+                }
+
+                worksheet.Cells[
+                    2,
+                    1,
+                    datos.Count + 1,
+                    6
+                ].Value = valores;
+
+                worksheet.Cells[
+                    1,
+                    1,
+                    1,
+                    6
+                ].Style.Font.Bold = true;
+
+                worksheet.Cells[
+                    2,
+                    3,
+                    datos.Count + 1,
+                    3
+                ].Style.Numberformat.Format = "dd/MM/yyyy";
+
+                worksheet.Cells[
+                    2,
+                    4,
+                    datos.Count + 1,
+                    4
+                ].Style.Numberformat.Format = "dd/MM/yyyy HH:mm";
+
+                worksheet.Cells[
+                    2,
+                    5,
+                    datos.Count + 1,
+                    5
+                ].Style.Numberformat.Format = "$ #,##0.00";
+
+                /*
+                 * No se utiliza AutoFitColumns porque sobre miles
+                 * de registros puede tardar bastante.
+                 */
+                worksheet.Column(1).Width = 35;
+                worksheet.Column(2).Width = 18;
+                worksheet.Column(3).Width = 18;
+                worksheet.Column(4).Width = 21;
+                worksheet.Column(5).Width = 20;
+                worksheet.Column(6).Width = 18;
+
+                worksheet.View.FreezePanes(2, 1);
+
+                worksheet.Cells[
+                    1,
+                    1,
+                    datos.Count + 1,
+                    6
+                ].AutoFilter = true;
+
+                package.SaveAs(stream);
+            }
+
+            stream.Position = 0;
+
+            return stream;
+        }
+
+        private async Task EnviarPushSiCorresponde(
+            Clientes cliente,
+            string codigoNotificacion)
+        {
+            if (cliente == null ||
+                cliente.Usuario == null ||
+                string.IsNullOrEmpty(cliente.Usuario.DeviceId))
+            {
                 return;
+            }
 
             var notificacion = await _context.Notificaciones
                 .Include(n => n.NotificacionesPlantillas)
-                .FirstOrDefaultAsync(n => n.Codigo == codigoNotificacion);
+                .FirstOrDefaultAsync(
+                    n => n.Codigo == codigoNotificacion
+                );
 
-            if (notificacion == null || notificacion.NotificacionesPlantillas == null)
+            if (notificacion == null ||
+                notificacion.NotificacionesPlantillas == null)
+            {
                 return;
+            }
 
             var notificacionDto = new NotificacionViewModelDTO
             {
-                Titulo = notificacion.NotificacionesPlantillas.Titulo,
-                Mensaje = notificacion.NotificacionesPlantillas.Mensaje,
-                ImagenUrl = notificacion.NotificacionesPlantillas.ImagenUrl,
-                DeepLink = notificacion.NotificacionesPlantillas.DeepLink
+                Titulo =
+                    notificacion.NotificacionesPlantillas.Titulo,
+
+                Mensaje =
+                    notificacion.NotificacionesPlantillas.Mensaje,
+
+                ImagenUrl =
+                    notificacion.NotificacionesPlantillas.ImagenUrl,
+
+                DeepLink =
+                    notificacion.NotificacionesPlantillas.DeepLink
             };
 
             var installationIds = new List<string>
@@ -575,75 +860,50 @@ namespace EstanciasCore.Endpoints
                 cliente.Usuario.DeviceId
             };
 
-            await _wonderPushService.EnviarNotificacionAIds(notificacionDto, installationIds);
+            await _wonderPushService.EnviarNotificacionAIds(
+                notificacionDto,
+                installationIds
+            );
         }
 
-        private async Task EnviarPushMasivoSiCorresponde(List<string> installationIds, string codigoNotificacion)
+        private async Task EnviarPushMasivoSiCorresponde(
+            List<string> installationIds,
+            string codigoNotificacion)
         {
             if (installationIds == null || !installationIds.Any())
                 return;
 
             var notificacion = await _context.Notificaciones
                 .Include(n => n.NotificacionesPlantillas)
-                .FirstOrDefaultAsync(n => n.Codigo == codigoNotificacion);
+                .FirstOrDefaultAsync(
+                    n => n.Codigo == codigoNotificacion
+                );
 
-            if (notificacion == null || notificacion.NotificacionesPlantillas == null)
+            if (notificacion == null ||
+                notificacion.NotificacionesPlantillas == null)
+            {
                 return;
+            }
 
             var notificacionDto = new NotificacionViewModelDTO
             {
-                Titulo = notificacion.NotificacionesPlantillas.Titulo,
-                Mensaje = notificacion.NotificacionesPlantillas.Mensaje,
-                ImagenUrl = notificacion.NotificacionesPlantillas.ImagenUrl,
-                DeepLink = notificacion.NotificacionesPlantillas.DeepLink
+                Titulo =
+                    notificacion.NotificacionesPlantillas.Titulo,
+
+                Mensaje =
+                    notificacion.NotificacionesPlantillas.Mensaje,
+
+                ImagenUrl =
+                    notificacion.NotificacionesPlantillas.ImagenUrl,
+
+                DeepLink =
+                    notificacion.NotificacionesPlantillas.DeepLink
             };
 
-            await _wonderPushService.EnviarNotificacionAIds(notificacionDto, installationIds);
-        }
-
-        private byte[] GenerateXlsxBytes(List<PagoTarjeta> datos)
-        {
-            using (var package = new ExcelPackage())
-            {
-                var worksheet = package.Workbook.Worksheets.Add("Pagos");
-
-                var dataToExport = datos.Select(p => new
-                {
-                    Cliente = p.Persona != null
-                        ? $"{p.Persona.Apellido}, {p.Persona.Nombres}"
-                        : "",
-
-                    NroDocumento = p.Persona != null
-                        ? p.Persona.NroDocumento
-                        : "",
-
-                    FechaInformada = p.FechaDePago.HasValue
-                        ? p.FechaDePago.Value.ToString("dd/MM/yyyy")
-                        : "",
-
-                    FechaDeCarga = p.FechaComprobante.HasValue
-                        ? p.FechaComprobante.Value.ToString("dd/MM/yyyy HH:mm")
-                        : "",
-
-                    MontoInformado = p.MontoInformado,
-
-                    Estado = p.EstadoPago.ToString()
-                }).ToList();
-
-                worksheet.Cells.LoadFromCollection(dataToExport, true);
-
-                worksheet.Cells["A1"].Value = "Cliente";
-                worksheet.Cells["B1"].Value = "NroDocumento";
-                worksheet.Cells["C1"].Value = "Fecha Informada";
-                worksheet.Cells["D1"].Value = "Fecha de Carga";
-                worksheet.Cells["E1"].Value = "Monto Informado";
-                worksheet.Cells["F1"].Value = "Estado";
-
-                worksheet.Column(5).Style.Numberformat.Format = "$ #,##0.00";
-                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-
-                return package.GetAsByteArray();
-            }
+            await _wonderPushService.EnviarNotificacionAIds(
+                notificacionDto,
+                installationIds
+            );
         }
     }
 }
