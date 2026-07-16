@@ -34,7 +34,7 @@
                         Stock
                     </th>
                     <th>
-                        Canjes Totales
+                        Stock Actual
                     </th>
                     <th>
                         Puntos
@@ -49,7 +49,7 @@
                         Días de Venc.
                     </th>
                     <th>
-                        Fecha
+                        Fecha Vencimiento
                     </th>
                     <th>
                         Activo
@@ -88,7 +88,7 @@
                             @Html.DisplayFor(modelItem => item.DiasDeVencimiento)
                         </td>
                         <td>
-                            @Html.DisplayFor(modelItem => item.Fecha)
+                            @Html.DisplayFor(modelItem => item.FechaVencimiento)
                         </td>
                         <td>
                             @Html.DisplayFor(modelItem => item.Activo)
@@ -121,7 +121,7 @@
 
         $('#marcaFiltroPremios').on('change', function () {
             var val = $(this).val();
-            // The Marca column is index 6 (0: Nombre, 1: Descripción, 2: Stock, 3: Canjes Totales, 4: Puntos, 5: Categoría, 6: Marca)
+            // The Marca column is index 6 (0: Nombre, 1: Descripción, 2: Stock, 3: Stock Actual, 4: Puntos, 5: Categoría, 6: Marca)
             table.column(6).search(val ? '^' + $.fn.dataTable.util.escapeRegex(val) + '$' : '', true, false).draw();
         });
     });

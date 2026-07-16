@@ -1,0 +1,93 @@
+@{
+    ViewData["Title"] = "Funciones de Seguridad";
+}
+
+@using Commons.Identity
+@model IEnumerable<CommonsFunction>
+
+@functions {
+    public List<string> GetRoutes(string routesJson)
+    {
+        if (string.IsNullOrEmpty(routesJson)) return new List<string>();
+        routesJson = routesJson.Trim();
+        if (routesJson.StartsWith("[") && routesJson.EndsWith("]"))
+        {
+            try
+            {
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(routesJson);
+            }
+            catch
+            {
+                // Fallback to splitting if JSON parsing fails
+            }
+        }
+        
+        return routesJson.Split(new[] { ',', ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                         .Select(r => r.Trim())
+                         .Where(r => !string.IsNullOrEmpty(r))
+                         .ToList();
+    }
+}
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Funciones de Seguridad</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevaFuncion()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nueva Función</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoFunciones" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>Nombre de Función</th>
+                    <th>Descripción</th>
+                    <th>Rutas Habilitadas</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Name</td>
+                        <td>@item.Description</td>
+                        <td>
+                            @foreach (var route in GetRoutes(item.RoutesJson))
+                            {
+                                <span class="label label-default" style="margin-right: 4px; display: inline-block; margin-bottom: 4px; font-size: 0.95em;">
+                                    @route
+                                </span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <a onclick="editFuncion('@item.Id')" title="Editar Función" class="btn btn-info btn-xs"><i class="fa fa-pencil"></i></a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Está seguro de borrar esta Función?" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Nueva Función" callback-modal="true" function="nuevaFuncion" load-url="/SecurityFunctions/_Create" size="Medium"></modal>
+<modal title="Editar Función" callback-modal="true" function="editFuncion" load-url="/SecurityFunctions/_Update/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoFunciones').DataTable({
+            "columnDefs": [
+                { "width": "20%", "targets": 0 },
+                { "width": "30%", "targets": 1 },
+                { "width": "40%", "targets": 2 },
+                { "width": "10%", "class": "text-center", "searchable": false, "orderable": false, "targets": 3 }
+            ],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

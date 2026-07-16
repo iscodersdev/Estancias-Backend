@@ -1,4 +1,4 @@
-﻿using Commons.Extensions;
+using Commons.Extensions;
 using Commons.Identity.DummyData;
 using Commons.Identity.Services;
 using DAL.Data;
@@ -80,13 +80,14 @@ namespace EstanciasCore
             services.AddTransient<IMailService, MailService>();
 
             //Genera Resumen Mensual
-            services.AddHostedService<ResumenMensualWorker>();
-            services.AddHostedService<EnvioDeResumenWorker>();
-            services.AddHostedService<WonderPushWorker>();
+            //services.AddHostedService<ResumenMensualWorker>();
+            //services.AddHostedService<EnvioDeResumenWorker>();
+            //services.AddHostedService<WonderPushWorker>();
 
             services.AddSession();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddMvcOptions(options => {
+                    options.Conventions.Add(new EstanciasCore.Services.DisableLibraryControllersConvention());
                     options.MaxModelValidationErrors = 50;
                     options.ModelBindingMessageProvider.SetValueMustNotBeNullAccessor(
                         _ => "El campo es obligatorio.");

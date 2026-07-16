@@ -1,0 +1,36 @@
+@using Commons.HtmlHelpers
+@model Commons.Identity.CommonsRole
+@{
+    ViewData["Title"] = "Crear Rol";
+}
+<form asp-action="_Create" asp-controller="SecurityRoles">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        
+        <div class="form-group">
+            <label asp-for="ShowName" class="control-label">Nombre a Mostrar</label>
+            <input asp-for="ShowName" class="form-control" required />
+            <span asp-validation-for="ShowName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Name" class="control-label">Nombre de Sistema (sin espacios)</label>
+            <input asp-for="Name" class="form-control" required pattern="^[a-zA-Z0-9_]+$" title="Solo letras, números y guión bajo." />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description" class="control-label">Descripción</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+
+</form>

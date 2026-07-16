@@ -1,0 +1,84 @@
+@using Commons.HtmlHelpers
+@using Commons.Identity
+@{
+    ViewData["Title"] = "Modificar Funciones de Rol";
+    var role = ViewBag.Role as CommonsRole;
+    var functions = ViewBag.Functions as List<CommonsFunction> ?? new List<CommonsFunction>();
+    var assignedFuncIds = ViewBag.AssignedFuncIds as List<string> ?? new List<string>();
+}
+
+<form asp-action="_AssignFunctions" asp-controller="SecurityRoles" method="post">
+    @using (Html.BoxBody())
+    {
+        <input type="hidden" name="roleId" value="@role.Id" />
+        
+        <div class="well">
+            <h4>Rol: <strong>@role.ShowName</strong></h4>
+            <p>Seleccione las funciones (permisos) habilitadas para este rol.</p>
+        </div>
+
+        <div class="row">
+            <div class="col-xs-12" style="max-height: 400px; overflow-y: auto;">
+                @if (functions.Count == 0)
+                {
+                    <div class="alert alert-warning">
+                        No hay funciones registradas en el sistema.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group">
+                        @foreach (var func in functions)
+                        {
+                            var isChecked = assignedFuncIds.Contains(func.Id) ? "checked" : "";
+                            <div class="list-group-item">
+                                <div class="checkbox" style="margin-top: 0; margin-bottom: 0;">
+                                    <label style="width: 100%; cursor: pointer;">
+                                        <input type="checkbox" name="selectedFunctionIds" value="@func.Id" @isChecked />
+                                        <strong>@func.Name</strong>
+                                        @if (!string.IsNullOrEmpty(func.Description))
+                                        {
+                                            <span class="text-muted" style="display: block; font-size: 0.9em; margin-top: 4px;">@func.Description</span>
+                                        }
+                                        @{
+                                            var routesList = new List<string>();
+                                            if (!string.IsNullOrEmpty(func.RoutesJson))
+                                            {
+                                                var raw = func.RoutesJson.Trim();
+                                                if (raw.StartsWith("[") && raw.EndsWith("]"))
+                                                {
+                                                    try { routesList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(raw); } catch {}
+                                                }
+                                                if (!routesList.Any())
+                                                {
+                                                    routesList = raw.Split(new[] { ',', ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                                                     .Select(r => r.Trim())
+                                                                     .Where(r => !string.IsNullOrEmpty(r))
+                                                                     .ToList();
+                                                }
+                                            }
+                                            if (routesList.Any())
+                                            {
+                                                <div style="margin-top: 6px;">
+                                                    @foreach (var route in routesList)
+                                                    {
+                                                        <span class="label label-default" style="font-size: 0.85em; margin-right: 2px; display: inline-block; margin-bottom: 2px;">@route</span>
+                                                    }
+                                                </div>
+                                            }
+                                        }
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary pull-right">Guardar Cambios</button>
+    }
+</form>

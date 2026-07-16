@@ -60,7 +60,10 @@ namespace EstanciasCore.Controllers
                     premio.Categoria=categoria;
                     Marcas marca = _context.Marcas.Where(x=>x.Id==premio.Marcas.Id).FirstOrDefault();
                     premio.Marcas=marca;
-                    premio.StockActual=premio.Stock;
+                    if (premio.StockActual == 0)
+                    {
+                        premio.StockActual = premio.Stock;
+                    }
                     premio.Fecha=DateTime.Now;
                     premio.Activo=true;
                     await _context.Premios.AddAsync(premio);
@@ -107,6 +110,7 @@ namespace EstanciasCore.Controllers
                     premioDB.Nombre = premio.Nombre;
                     premioDB.Descripcion = premio.Descripcion;
                     premioDB.Stock = premio.Stock;
+                    premioDB.StockActual = premio.StockActual;
                     premioDB.Puntos = premio.Puntos;
                     premioDB.TerminosCondiciones = premio.TerminosCondiciones;
                     premioDB.FechaVencimiento = premio.FechaVencimiento;

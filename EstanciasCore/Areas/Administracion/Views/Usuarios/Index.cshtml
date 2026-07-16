@@ -6,31 +6,28 @@
 <div class="box box-info">
     <div class="box-header with-border filtro-grilla">
         <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-3 label-form"><label for="estadoId">Listado de Usuarios</label></div>
-                <div class="col-md-3">
+            <div class="row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                <div class="col-md-2 label-form" style="margin-bottom: 5px;"><label for="estadoId" style="margin-bottom: 0;">Listado de Usuarios</label></div>
+                <div class="col-md-2" style="margin-bottom: 5px;">
                     <select id="filtroIncobrable" class="form-control input-sm" onchange="$('#usersTable').DataTable().ajax.reload();">
                         <option value="">Todos los cobros</option>
                         <option value="1">Incobrables</option>
                         <option value="0">Cobrables</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2" style="margin-bottom: 5px;">
                     <select id="filtroTipoUsuario" class="form-control input-sm" onchange="$('#usersTable').DataTable().ajax.reload();">
                         <option value="">Todos los tipos</option>
                         <option value="comun">Común</option>
                         <option value="sucursal">Sucursal</option>
                     </select>
                 </div>
-                <div class="col-md-3" style="text-align-last: right;">
-                    <div class="col-md-12">
-                      @*   <a onclick="NuevoUsuario()" title="Crear Usuario" class="btn btn-primary btn-sm"><i class="fa fa-user"></i>&nbsp Crear Usuario</a> *@
-                        <a onclick="NuevoUsuario()" title="Nuevo Usuario" class="btn btn-primary btn-sm"><i class="fa fa-user"></i>&nbsp Nuevo Usuario</a>
-                        &nbsp
-                        <a onclick="NuevoUsuarioSucursal()" title="Nuevo Usuario Sucursal" class="btn btn-primary btn-sm"><i class="fa fa-building"></i>&nbsp Nuevo Usuario Sucursal</a>
-                        &nbsp
-                        <a href="/Administracion/Usuarios/BorrarUsuario" title="Borrar Usuario" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i>&nbsp Borrar Usuario</a>
-                    </div>
+                <div class="col-md-6 text-right" style="margin-bottom: 5px;">
+                    <a onclick="NuevoUsuario()" title="Nuevo Usuario" class="btn btn-primary btn-sm"><i class="fa fa-user"></i>&nbsp Nuevo Usuario</a>
+                    &nbsp;
+                    <a onclick="NuevoUsuarioSucursal()" title="Nuevo Usuario Sucursal" class="btn btn-primary btn-sm"><i class="fa fa-building"></i>&nbsp Nuevo Usuario Sucursal</a>
+                    &nbsp;
+                    <a href="/Administracion/Usuarios/BorrarUsuario" title="Borrar Usuario" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i>&nbsp Borrar Usuario</a>
                 </div>
             </div>
         </div>

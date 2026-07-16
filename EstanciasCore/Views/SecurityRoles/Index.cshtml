@@ -1,0 +1,90 @@
+@{
+    ViewData["Title"] = "Roles de Seguridad";
+}
+
+@using Commons.Identity
+@model IEnumerable<CommonsRole>
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Roles de Seguridad</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="nuevoRole()" class="btn btn-info btn-sm">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo Rol</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+        <table id="listadoRoles" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>Nombre a Mostrar</th>
+                    <th>Nombre de Sistema</th>
+                    <th>Descripción</th>
+                    <th>Funciones Asignadas</th>
+                    <th>Habilitado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.ShowName</td>
+                        <td>@item.Name</td>
+                        <td>@item.Description</td>
+                        <td>
+                            @{
+                                var roleFuncs = ViewBag.RoleFunctions as Dictionary<string, List<string>>;
+                                if (roleFuncs != null && roleFuncs.TryGetValue(item.Id, out var funcNames))
+                                {
+                                    foreach (var name in funcNames)
+                                    {
+                                        <span class="label label-primary" style="margin-right: 4px; display: inline-block; margin-bottom: 4px;">@name</span>
+                                    }
+                                }
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (item.Enabled)
+                            {
+                                <span class="label label-success">Sí</span>
+                            }
+                            else
+                            {
+                                <span class="label label-danger">No</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <a onclick="editRole('@item.Id')" title="Editar Rol" class="btn btn-info btn-xs"><i class="fa fa-pencil"></i></a>
+                            <a onclick="assignFunctions('@item.Id')" title="Asignar Funciones" class="btn btn-primary btn-xs"><i class="fa fa-key"></i></a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" confirm-icon="Danger" confirm-no="Cancelar" confirm-yes="Borrar" confirm="¿Está seguro de borrar este Rol?" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Nuevo Rol" callback-modal="true" function="nuevoRole" load-url="/SecurityRoles/_Create" size="Medium"></modal>
+<modal title="Editar Rol" callback-modal="true" function="editRole" load-url="/SecurityRoles/_Update/" size="Medium"></modal>
+<modal title="Asignar Funciones al Rol" callback-modal="true" function="assignFunctions" load-url="/SecurityRoles/_AssignFunctions/" size="Medium"></modal>
+
+<script>
+    $(document).ready(function () {
+        $('#listadoRoles').DataTable({
+            "columnDefs": [
+                { "width": "15%", "targets": 0 },
+                { "width": "15%", "targets": 1 },
+                { "width": "30%", "targets": 2 },
+                { "width": "20%", "targets": 3 },
+                { "width": "10%", "class": "text-center", "targets": 4 },
+                { "width": "10%", "class": "text-center", "searchable": false, "orderable": false, "targets": 5 }
+            ],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

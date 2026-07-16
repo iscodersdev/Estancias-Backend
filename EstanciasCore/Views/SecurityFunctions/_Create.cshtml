@@ -1,0 +1,124 @@
+@using Commons.HtmlHelpers
+@model Commons.Identity.CommonsFunction
+@{
+    ViewData["Title"] = "Crear Función de Seguridad";
+    var routeGroups = ViewBag.RouteGroups as List<EstanciasCore.Controllers.SecurityFunctionsController.RouteGroup> ?? new List<EstanciasCore.Controllers.SecurityFunctionsController.RouteGroup>();
+    var allRoutesFlat = ViewBag.AllRoutesFlat as List<string> ?? new List<string>();
+    var selectedRoutes = ViewBag.SelectedRoutes as List<string> ?? new List<string>();
+}
+<form asp-action="_Create" asp-controller="SecurityFunctions">
+
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        
+        <div class="form-group">
+            <label asp-for="Name" class="control-label">Nombre de Función</label>
+            <input asp-for="Name" class="form-control" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description" class="control-label">Descripción</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label">Rutas Habilitadas</label>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <div style="flex-grow: 1;">
+                    <input type="text" id="routeFilter" class="form-control" placeholder="Buscar / filtrar por controlador o ruta..." />
+                </div>
+            </div>
+
+            <div style="max-height: 350px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px; background-color: #ffffff;" id="routesContainer">
+
+                @if (routeGroups.Count == 0)
+                {
+                    <div class="text-muted">No se encontraron rutas activas en la aplicación.</div>
+                }
+                else
+                {
+                    foreach (var group in routeGroups)
+                    {
+                        var groupHeaderId = $"group_{group.AreaName}_{group.ControllerName}".Replace(".", "_");
+                        var areaText = !string.IsNullOrEmpty(group.AreaName) ? $"[{group.AreaName}] " : "";
+                        
+                        <div class="controller-group" style="margin-bottom: 15px; border-bottom: 1px solid #f4f4f4; padding-bottom: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; background-color: #f9f9f9; padding: 4px 8px; border-radius: 3px; border-left: 3px solid #3c8dbc;">
+                                <h5 style="margin: 0; font-size: 1.05em;"><strong>@areaText@group.ControllerName</strong></h5>
+                                <label style="margin: 0; font-weight: normal; cursor: pointer; font-size: 0.9em;">
+                                    <input type="checkbox" class="select-all-controller" data-target="@groupHeaderId" /> Seleccionar Todo
+                                </label>
+                            </div>
+                            
+                            <div id="@groupHeaderId" class="controller-routes" style="padding-left: 15px; margin-top: 5px;">
+                                @foreach (var route in group.Routes)
+                                {
+                                    var isChecked = selectedRoutes.Contains(route) ? "checked" : "";
+                                    <div class="checkbox route-item" style="margin-top: 5px; margin-bottom: 5px;">
+                                        <label style="width: 100%; cursor: pointer; font-size: 0.95em;">
+                                            <input type="checkbox" name="selectedRoutes" class="individual-route" value="@route" @isChecked />
+                                            <span class="route-path">@route</span>
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" asp-action="Index">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+
+</form>
+
+<script>
+    $(document).ready(function () {
+
+
+        // Seleccionar todo en un controlador
+        $('.select-all-controller').off('change').on('change', function () {
+            var targetId = $(this).data('target');
+            var isChecked = $(this).prop('checked');
+            $('#' + targetId).find('.individual-route').prop('checked', isChecked);
+        });
+
+        // Filtrar controladores y rutas
+        $('#routeFilter').off('keyup').on('keyup', function () {
+            var query = $(this).val().toLowerCase();
+            $('.controller-group').each(function () {
+                var controllerText = $(this).find('h5').text().toLowerCase();
+                var hasVisibleRoute = false;
+                
+                $(this).find('.route-item').each(function () {
+                    var routeText = $(this).find('.route-path').text().toLowerCase();
+                    if (routeText.indexOf(query) > -1 || controllerText.indexOf(query) > -1) {
+                        $(this).show();
+                        hasVisibleRoute = true;
+                    } else {
+                        $(this).hide();
+                    }
+                });
+                
+                if (hasVisibleRoute || controllerText.indexOf(query) > -1) {
+                    $(this).show();
+                    if (controllerText.indexOf(query) > -1) {
+                        $(this).find('.route-item').show();
+                    }
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+
+    });
+</script>

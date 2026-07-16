@@ -1,0 +1,58 @@
+@using Commons.HtmlHelpers
+@using Commons.Identity
+@using DAL.Models
+@{
+    ViewData["Title"] = "Modificar Roles de Usuario";
+    var user = ViewBag.User as Usuario;
+    var roles = ViewBag.Roles as List<CommonsRole> ?? new List<CommonsRole>();
+    var assignedRoleIds = ViewBag.AssignedRoleIds as List<string> ?? new List<string>();
+}
+
+<form asp-action="_Assign" asp-controller="SecurityRoles" method="post">
+    @using (Html.BoxBody())
+    {
+        <input type="hidden" name="userId" value="@user.Id" />
+        
+        <div class="well">
+            <h4>Usuario: <strong>@user.UserName</strong></h4>
+            <p>Seleccione los roles que desea asignar a este usuario.</p>
+        </div>
+
+        <div class="row">
+            <div class="col-xs-12">
+                @if (roles.Count == 0)
+                {
+                    <div class="alert alert-warning">
+                        No hay roles habilitados en el sistema.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group">
+                        @foreach (var role in roles)
+                        {
+                            var isChecked = assignedRoleIds.Contains(role.Id) ? "checked" : "";
+                            <div class="list-group-item">
+                                <div class="checkbox" style="margin-top: 0; margin-bottom: 0;">
+                                    <label style="width: 100%; cursor: pointer;">
+                                        <input type="checkbox" name="selectedRoleIds" value="@role.Id" @isChecked />
+                                        <strong>@role.ShowName</strong>
+                                        @if (!string.IsNullOrEmpty(role.Description))
+                                        {
+                                            <span class="text-muted" style="display: block; font-size: 0.9em; margin-top: 4px;">@role.Description</span>
+                                        }
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    @using (Html.BoxFooter())
+    {
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary pull-right">Guardar Cambios</button>
+    }
+</form>

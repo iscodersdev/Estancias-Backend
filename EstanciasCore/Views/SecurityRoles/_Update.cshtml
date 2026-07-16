@@ -1,0 +1,53 @@
+@using Commons.HtmlHelpers
+@model Commons.Identity.CommonsRole
+@{
+    ViewData["Title"] = "Editar Rol: " + Model.ShowName;
+}
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="_Update" asp-controller="SecurityRoles">
+            @using (Html.BoxDefault(BoxColor.Info))
+            {
+                using (Html.BoxHeader("Información del Rol")) { }
+                using (Html.BoxBody())
+                {
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+                    
+                    <div class="form-group">
+                        <label asp-for="ShowName" class="control-label">Nombre a Mostrar</label>
+                        <input asp-for="ShowName" class="control-label form-control" required />
+                        <span asp-validation-for="ShowName" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Name" class="control-label">Nombre de Sistema (sin espacios)</label>
+                        <input asp-for="Name" class="form-control" required pattern="^[a-zA-Z0-9_]+$" title="Solo letras, números y guión bajo." />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Description" class="control-label">Descripción</label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox">
+                            <label>
+                                <input asp-for="Enabled" /> ¿Habilitado?
+                            </label>
+                        </div>
+                    </div>
+
+                    <input type="hidden" asp-for="Show" />
+                }
+                using (Html.BoxFooter())
+                {
+                    <a asp-action="Index" class="btn btn-default">Cancelar</a>
+                    <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+                }
+            }
+        </form>
+    </div>
+</div>
