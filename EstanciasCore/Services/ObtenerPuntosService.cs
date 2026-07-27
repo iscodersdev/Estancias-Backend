@@ -39,7 +39,7 @@ namespace EstanciasCore.Services
         private readonly IDatosTarjetaService _datosTarjetaService;
         private readonly ILogger<ObtenerPuntosService> _logger;
         private readonly HttpClient _httpClient;
-        private readonly DateTime FiltroFecha = new DateTime(2026, 1, 1);
+        private readonly DateTime FiltroFecha = new DateTime(2026, 7, 1);
         private static readonly (int Id, string Nombre)[] Tiendas = new[]
         {
             (141, "KEVINGSTON FORMOSA"),
