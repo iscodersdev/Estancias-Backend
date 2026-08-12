@@ -114,6 +114,9 @@ namespace DAL.Data
         public DbSet<ResumenTarjeta> ResumenTarjeta { get; set; }
         public DbSet<DistribucionResumen> DistribucionResumen { get; set; }
 
+        //Pre Resgitro de Categorias
+        public DbSet<PreRegistroCategorias> PreRegistroCategorias { get; set; }
+
         //MAIL
         public DbSet<MailConfig> MailConfig { get; set; }
 

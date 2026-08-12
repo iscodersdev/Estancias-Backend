@@ -1,0 +1,44 @@
+@using Commons.HtmlHelpers
+@model DAL.Models.PreRegistroCategorias
+
+@{
+    Layout = null;
+}
+
+<form asp-action="_Edit" asp-area="Core" asp-antiforgery="true">
+    <input type="hidden" asp-for="Id" />
+    
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        
+        <div class="form-group">
+            <label asp-for="DNI" class="control-label"></label>
+            <input asp-for="DNI" class="form-control" placeholder="Ingrese el DNI" required />
+            <span asp-validation-for="DNI" class="text-danger"></span>
+            <small class="form-text text-muted">Cambiar el DNI de un registro existente modificará la validación para futuros imports.</small>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="NombreCompleto" class="control-label"></label>
+            <input asp-for="NombreCompleto" class="form-control" placeholder="Ingrese el Nombre y Apellido" required />
+            <span asp-validation-for="NombreCompleto" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Categoria" class="control-label"></label>
+            <input asp-for="Categoria" class="form-control" placeholder="Ingrese la Categoría" required />
+            <span asp-validation-for="Categoria" class="text-danger"></span>
+        </div>
+    }
+    
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" data-dismiss="modal">Cancelar</a>
+        <input type="submit" value="Guardar Cambios" class="btn btn-primary pull-right" />
+    }
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

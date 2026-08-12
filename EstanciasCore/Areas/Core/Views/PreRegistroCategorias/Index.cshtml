@@ -1,0 +1,93 @@
+@model IEnumerable<DAL.Models.PreRegistroCategorias>
+
+@{
+    ViewData["Title"] = "Categorías de Pre-Registro";
+}
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Categorías de Pre-Registro</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="importarCategorias()" class="btn btn-success btn-sm" title="Importar Archivo" style="margin-right: 5px;">
+                <i class="fa fa-upload"><span class="hidden-xs"> Importar</span></i>
+            </a>
+            <a onclick="nuevaCategoria()" class="btn btn-info btn-sm" title="Nueva Categoría">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+
+        <table id="listadoPreRegistro" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>DNI</th>
+                    <th>Nombre y Apellido</th>
+                    <th>Categoría</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@Html.DisplayFor(modelItem => item.DNI)</td>
+                        <td>@Html.DisplayFor(modelItem => item.NombreCompleto)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Categoria)</td>
+                        <td>
+                            <a onclick="editarCategoria(@item.Id)" title="Editar" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                            <a title="Borrar" href="#" onclick="confirmarEliminar(event, '/Core/PreRegistroCategorias/Delete/@item.Id')" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Nueva Categoría" callback-modal="true" function="nuevaCategoria" load-url="/Core/PreRegistroCategorias/_Create/" size="Medium"></modal>
+<modal title="Edición de Categoría" callback-modal="true" function="editarCategoria" load-url="/Core/PreRegistroCategorias/_Edit/" size="Medium"></modal>
+<modal title="Importar Categorías" callback-modal="true" function="importarCategorias" load-url="/Core/PreRegistroCategorias/_Importar/" size="Medium"></modal>
+
+<script>
+    function confirmarEliminar(e, url) {
+        e.preventDefault();
+        Swal.fire({
+            title: "¿Está seguro?",
+            text: "¿Desea borrar este registro?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Borrar",
+            cancelButtonText: "Cancelar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $('#listadoPreRegistro').DataTable({
+            "columnDefs": [
+                { "width": "20%", "targets": 0 },
+                { "width": "40%", "targets": 1 },
+                { "width": "30%", "targets": 2 },
+                { "width": "10%", "targets": 3, "orderable": false, "searchable": false, class: "text-center" }
+            ],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

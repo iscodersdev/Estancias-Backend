@@ -1,0 +1,41 @@
+@using Commons.HtmlHelpers
+@model DAL.Models.PreRegistroCategorias
+
+@{
+    Layout = null; // Important for partial views used in modals
+}
+
+<form asp-action="_Create" asp-area="Core" asp-antiforgery="true">
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        
+        <div class="form-group">
+            <label asp-for="DNI" class="control-label"></label>
+            <input asp-for="DNI" class="form-control" placeholder="Ingrese el DNI" required />
+            <span asp-validation-for="DNI" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="NombreCompleto" class="control-label"></label>
+            <input asp-for="NombreCompleto" class="form-control" placeholder="Ingrese el Nombre y Apellido" required />
+            <span asp-validation-for="NombreCompleto" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Categoria" class="control-label"></label>
+            <input asp-for="Categoria" class="form-control" placeholder="Ingrese la Categoría" required />
+            <span asp-validation-for="Categoria" class="text-danger"></span>
+        </div>
+    }
+    
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" data-dismiss="modal">Cancelar</a>
+        <input type="submit" value="Guardar" class="btn btn-primary pull-right" />
+    }
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
