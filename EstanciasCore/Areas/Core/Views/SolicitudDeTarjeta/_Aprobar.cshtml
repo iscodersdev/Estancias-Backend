@@ -1,0 +1,30 @@
+@using Commons.HtmlHelpers
+@model DAL.DTOs.AprobarSolicitudDTO
+
+@{
+    Layout = null;
+}
+
+<form asp-action="_Aprobar" asp-area="Core" asp-antiforgery="true">
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="Id" />
+        
+        <div class="form-group">
+            <label asp-for="NumeroTarjeta" class="control-label"></label>
+            <input asp-for="NumeroTarjeta" class="form-control" placeholder="Ingrese el número de tarjeta asignado" required autofocus />
+            <span asp-validation-for="NumeroTarjeta" class="text-danger"></span>
+        </div>
+    }
+    
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" data-dismiss="modal">Cancelar</a>
+        <input type="submit" value="Aprobar y Enviar Mail" class="btn btn-success pull-right" />
+    }
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

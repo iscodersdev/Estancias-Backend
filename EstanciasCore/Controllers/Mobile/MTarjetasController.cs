@@ -911,7 +911,39 @@ namespace EstanciasCore.API.Controllers.Billetera
                 Log.Error($"Error en creacion de tarjeta - {e.Message}");
                 return new JsonResult(new RespuestaAPI { Status = 500, UAT = pagotarjetaDTO.UAT, Mensaje = $"Error al obtener los comprobantes" });
             }
-        }       
+        }
+
+
+        [HttpPost("Solicitar")]
+        [OmitirChequeaUat]
+        public async Task<IActionResult> Solicitar([FromBody] DAL.DTOs.API.SolicitarTarjetaDTO solicitudDTO)
+        {
+            try
+            {
+                SolicitudDeTarjeta solicitudDeTarjeta = new SolicitudDeTarjeta
+                {
+                    Nombre = solicitudDTO.Nombre,
+                    Apellido = solicitudDTO.Apellido,
+                    DNI = solicitudDTO.DNI,
+                    Email = solicitudDTO.Email,
+                    FechaNacimiento = solicitudDTO.FechaNacimiento,
+                    Domicilio = solicitudDTO.Domicilio,
+                    FechaSolicitud = DateTime.Now,
+                    Estado = _context.EstadoSolicitudDeTarjeta.Where(e => e.Id == 1).FirstOrDefault()
+                };
+
+                _context.SolicitudDeTarjeta.Add(solicitudDeTarjeta);              
+                await _context.SaveChangesAsync();
+
+                return new JsonResult(new RespuestaAPI { Status = 200, Mensaje = "Tarjeta solicitada con exito" });
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error en creacion de tarjeta - {e.Message}");
+                return new JsonResult(new RespuestaAPI { Status = 500, Mensaje = $"Error al solicitar la tarjeta" });
+            }
+
+        }
 
 
         private bool VerificarVencimiento(string fecha)

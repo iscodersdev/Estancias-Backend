@@ -143,5 +143,16 @@ namespace DAL.DTOs.API
         public TipoMedioPago TipoMedioPago { get; set; }
     }
 
+    public class SolicitarTarjetaDTO : RespuestaAPI
+    {
+        public string Nombre { get; set; }
+        public string Apellido { get; set; }
+        public string DNI { get; set; }
+        public string Email { get; set; }
+        public DateTime FechaNacimiento { get; set; }
+        public string Domicilio { get; set; }
+
+    }
+
 
 }

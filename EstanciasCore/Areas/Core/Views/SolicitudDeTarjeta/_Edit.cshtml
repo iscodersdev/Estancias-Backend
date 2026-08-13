@@ -1,0 +1,61 @@
+@using Commons.HtmlHelpers
+@model DAL.DTOs.SolicitudDeTarjetaDTO
+
+@{
+    Layout = null;
+}
+
+<form asp-action="_Edit" asp-area="Core" asp-antiforgery="true">
+    @using (Html.BoxBody())
+    {
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="FechaSolicitud" />
+        
+        <div class="form-group">
+            <label asp-for="Nombre" class="control-label"></label>
+            <input asp-for="Nombre" class="form-control" placeholder="Ingrese el Nombre" required />
+            <span asp-validation-for="Nombre" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Apellido" class="control-label"></label>
+            <input asp-for="Apellido" class="form-control" placeholder="Ingrese el Apellido" required />
+            <span asp-validation-for="Apellido" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DNI" class="control-label"></label>
+            <input asp-for="DNI" class="form-control" placeholder="Ingrese el DNI" required />
+            <span asp-validation-for="DNI" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Email" class="control-label"></label>
+            <input asp-for="Email" type="email" class="form-control" placeholder="Ingrese el Email" required />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="FechaNacimiento" class="control-label"></label>
+            <input asp-for="FechaNacimiento" type="date" class="form-control" required />
+            <span asp-validation-for="FechaNacimiento" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Domicilio" class="control-label"></label>
+            <input asp-for="Domicilio" class="form-control" placeholder="Ingrese el Domicilio" required />
+            <span asp-validation-for="Domicilio" class="text-danger"></span>
+        </div>
+    }
+    
+    @using (Html.BoxFooter())
+    {
+        <a class="btn btn-default" data-dismiss="modal">Cancelar</a>
+        <input type="submit" value="Guardar Cambios" class="btn btn-primary pull-right" />
+    }
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

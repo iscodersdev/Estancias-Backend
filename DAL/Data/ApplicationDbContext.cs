@@ -117,6 +117,8 @@ namespace DAL.Data
         //Pre Resgitro de Categorias
         public DbSet<PreRegistroCategorias> PreRegistroCategorias { get; set; }
         public DbSet<Morosos> Morosos { get; set; }
+        public DbSet<SolicitudDeTarjeta> SolicitudDeTarjeta { get; set; }
+        public DbSet<EstadoSolicitudDeTarjeta> EstadoSolicitudDeTarjeta { get; set; }
 
         //MAIL
         public DbSet<MailConfig> MailConfig { get; set; }

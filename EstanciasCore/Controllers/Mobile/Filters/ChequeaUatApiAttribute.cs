@@ -13,6 +13,11 @@ using System.Threading.Tasks;
 
 namespace EstanciasCore.API.Filters
 {
+    [AttributeUsage(AttributeTargets.Method)]
+    public class OmitirChequeaUatAttribute : Attribute
+    {
+    }
+
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class ChequeaUatApiAttribute : Attribute, IAsyncActionFilter
     {
@@ -24,6 +29,16 @@ namespace EstanciasCore.API.Filters
 
         async Task IAsyncActionFilter.OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
+            var omitirFiltro = context.ActionDescriptor.EndpointMetadata
+            .OfType<OmitirChequeaUatAttribute>()
+            .Any();
+
+            if (omitirFiltro)
+            {
+                await next(); // Salta toda la validación de UAT y ejecuta la acción directa
+                return;
+            }
+
             var bodyStr = "";
             var req = context.HttpContext.Request;
             var jsonBody = new JObject();

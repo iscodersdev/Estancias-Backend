@@ -1,11 +1,10 @@
-﻿<header class="main-header" >
+<header class="main-header">
     <!-- Logo -->
     <a asp-area="" asp-controller="Home" asp-action="Index" class="logo" style="background-color: #0326a0;">
         <!-- mini logo for sidebar mini 50x50 pixels -->
         <span class="logo-mini" style="background-color: #0326a0;"><b>EsT</b></span>
         <!-- logo for regular state and mobile devices -->
         <span class="logo-lg" style="background-color: #0326a0;"><b>Estancias</b></span>
-        
     </a>
     <!-- Header Navbar -->
     <nav class="navbar navbar-static-top" role="navigation" style="background-color: #0326a0;">
@@ -16,24 +15,101 @@
         <!-- Navbar Right Menu -->
         <div class="navbar-custom-menu">
             <ul class="nav navbar-nav">
-                <!-- Messages: style can be found in dropdown.less-->
-                @*  @await Component.InvokeAsync("MenuMessage")*@
-                <!-- /.messages-menu -->
-                <!-- Notifications Menu -->
-                @*@await Component.InvokeAsync("MenuNotification")*@
-                <!-- Tasks Menu -->
-                @*@await Component.InvokeAsync("MenuTask")*@
+                
+                <!-- Notificaciones: Solicitudes de Tarjeta Pendientes -->
+                <li class="dropdown notifications-menu" id="headerNavSolicitudes">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Solicitudes de Tarjeta Pendientes">
+                        <i class="fa fa-id-card-o"></i>
+                        <span class="label label-warning" id="headerBadgeSolicitudes" style="display:none; font-size: 11px;">0</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="header" id="headerTitleSolicitudes">No hay solicitudes pendientes</li>
+                        <li>
+                            <ul class="menu" id="headerListSolicitudes">
+                                <li><a href="/Core/SolicitudDeTarjeta"><i class="fa fa-check text-green"></i> Sin pendientes</a></li>
+                            </ul>
+                        </li>
+                        <li class="footer"><a href="/Core/SolicitudDeTarjeta">Ver todas las solicitudes</a></li>
+                    </ul>
+                </li>
+
                 <!-- User Account Menu -->
                 @await Component.InvokeAsync("MenuUser")
-                <!-- ASP Login Menu -->
-                @*<li>
-                        <partial name="_LoginPartial"/>
-                    </li>*@
-                <!-- Control Sidebar Toggle Button -->
-                @*<li>
-                    <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
-                </li>*@
             </ul>
         </div>
     </nav>
 </header>
+
+<!-- Polling Global de Notificaciones y Alerta Toast -->
+<script>
+    (function () {
+        var lastPendingCount = null;
+
+        function checkSolicitudesPendientesGlobal() {
+            $.ajax({
+                url: '/Core/SolicitudDeTarjeta/ObtenerCantidadPendientes',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    var count = data.pendientes || 0;
+                    var ultimas = data.ultimas || [];
+                    
+                    var $badge = $('#headerBadgeSolicitudes');
+                    var $title = $('#headerTitleSolicitudes');
+                    var $list = $('#headerListSolicitudes');
+
+                    if (count > 0) {
+                        $badge.text(count).show();
+                        $title.html('Tienes <strong>' + count + '</strong> solicitud(es) pendiente(s)');
+                        
+                        var itemsHtml = '';
+                        $.each(ultimas, function(i, item) {
+                            var nombre = item.nombreCompleto || item.NombreCompleto || 'Solicitante';
+                            var fecha = item.fecha || item.Fecha || '';
+                            itemsHtml += '<li><a href="/Core/SolicitudDeTarjeta"><i class="fa fa-id-card text-aqua"></i> ' + nombre + ' <small class="pull-right text-muted">' + fecha + '</small></a></li>';
+                        });
+                        $list.html(itemsHtml);
+                    } else {
+                        $badge.hide();
+                        $title.text('No hay solicitudes pendientes');
+                        $list.html('<li><a href="/Core/SolicitudDeTarjeta"><i class="fa fa-check text-green"></i> Sin pendientes</a></li>');
+                    }
+
+                    // Lanzar Alerta Flotante (Toast Notification) si hay un incremento en solicitudes pendientes
+                    if (lastPendingCount !== null && count > lastPendingCount) {
+                        var diff = count - lastPendingCount;
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'info',
+                                title: '¡Nueva Solicitud de Tarjeta!',
+                                text: 'Se ha recibido ' + (diff === 1 ? '1 nueva solicitud' : diff + ' nuevas solicitudes') + '.',
+                                showConfirmButton: true,
+                                confirmButtonText: 'Ver Solicitudes',
+                                confirmButtonColor: '#3085d6',
+                                timer: 8000,
+                                timerProgressBar: true
+                            }).then(function (result) {
+                                if (result.isConfirmed) {
+                                    window.location.href = '/Core/SolicitudDeTarjeta';
+                                }
+                            });
+                        }
+                    }
+
+                    lastPendingCount = count;
+                },
+                error: function () {
+                    // Silencioso si falla
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            checkSolicitudesPendientesGlobal();
+            // Polling cada 20 segundos
+            setInterval(checkSolicitudesPendientesGlobal, 20000);
+        });
+    })();
+</script>

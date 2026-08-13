@@ -1,8 +1,11 @@
-﻿using Commons.Identity.Services;
+using Commons.Extensions;
+using Commons.Identity.Extensions;
+using Commons.Identity.Services;
 using DAL.Data;
 using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
 using DAL.Models;
+using DAL.Models.Core;
 using EstanciasCore.Interface;
 using EstanciasCore.Services;
 using iText.Html2pdf;
@@ -15,6 +18,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OfficeOpenXml.FormulaParsing.Utilities;
 using System;
@@ -23,6 +27,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using static EstanciasCore.Services.common;
 
@@ -47,18 +52,129 @@ namespace EstanciasCore.Controllers
             _serviceProvider = serviceProvider;
             _mailService = mailService;
         }
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
             AddPageAlerts(PageAlertType.Success, $"Bienvenido {User.Identity.Name}!");
-            var usuario = _context.Usuarios.FirstOrDefault(x => x.Email == User.Identity.Name);
-            ViewBag.title1 = "Socios Con App";
-            ViewBag.title4 = "Cantidad Socios Nuevos del Mes";
-
-            @ViewBag.Uno = _context.Clientes.Count().ToString();
-            @ViewBag.Cuatro = _context.Clientes.Where(x => x.FechaIngreso.Date >= DateTime.Today.AddDays(-30).Date).Count();
-
             return View();
         }
+
+        private bool TienePermisoModulo(bool isAdmin, string rutaAcceso)
+        {
+            if (isAdmin) return true;
+            return HttpContext.UserHasRoute(rutaAcceso);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerMetricasDashboard()
+        {
+            var rolesusuario = _context.Users.FirstOrDefault(x => x.UserName == User.Identity.Name);
+            bool isAdmin = ((ClaimsPrincipal)User).IsAdmin() || (rolesusuario != null && rolesusuario.Administradores == true);
+
+            bool puedeVerClientes = TienePermisoModulo(isAdmin, "/Clientes/Index");
+            bool puedeVerPagos = TienePermisoModulo(isAdmin, "/PagoTarjeta/Index");
+            bool puedeVerSolicitudes = TienePermisoModulo(isAdmin, "/Core/SolicitudDeTarjeta/Index") || TienePermisoModulo(isAdmin, "/SolicitudDeTarjeta/Index");
+            bool puedeVerMorosos = TienePermisoModulo(isAdmin, "/Core/Morosos/Index") || TienePermisoModulo(isAdmin, "/Morosos/Index");
+
+            var hoy = DateTime.Today;
+
+            // Clientes
+            int sociosConApp = 0;
+            int sociosNuevosMes = 0;
+            if (puedeVerClientes)
+            {
+                sociosConApp = await _context.Clientes.CountAsync();
+                sociosNuevosMes = await _context.Clientes.Where(x => x.FechaIngreso.Date >= hoy.AddDays(-30).Date).CountAsync();
+            }
+
+            // Pagos
+            int pagosHoyCantidad = 0;
+            decimal pagosHoyMonto = 0;
+            var ultimosPagosList = new List<object>();
+
+            if (puedeVerPagos)
+            {
+                var pagosHoyQuery = await _context.PagoTarjeta
+                    .Include(x => x.Persona)
+                    .Where(x => x.EstadoPago == EstadoPago.Pagado &&
+                                ((x.FechaDePago.HasValue && x.FechaDePago.Value.Date == hoy) ||
+                                 (x.FechaComprobante.HasValue && x.FechaComprobante.Value.Date == hoy)))
+                    .OrderByDescending(x => x.FechaDePago ?? x.FechaComprobante)
+                    .ToListAsync();
+
+                pagosHoyCantidad = pagosHoyQuery.Count;
+                pagosHoyMonto = pagosHoyQuery.Sum(x => x.MontoInformado);
+
+                ultimosPagosList = pagosHoyQuery.Take(5).Select(p => new
+                {
+                    PersonaNombre = p.Persona != null ? p.Persona.GetNombreCompleto() : "-",
+                    NroTarjeta = p.NroTarjeta ?? "-",
+                    MontoInformado = p.MontoInformado,
+                    Fecha = p.FechaDePago.HasValue ? p.FechaDePago.Value.ToString("dd/MM/yyyy HH:mm") : "-"
+                }).Cast<object>().ToList();
+            }
+
+            // Solicitudes
+            int solicitudesPendientes = 0;
+            int solicitudesAprobadas = 0;
+            int solicitudesRechazadas = 0;
+            var ultimasSolicitudesList = new List<object>();
+
+            if (puedeVerSolicitudes)
+            {
+                solicitudesPendientes = await _context.SolicitudDeTarjeta
+                    .Where(x => x.Estado == null || x.Estado.Id == 1)
+                    .CountAsync();
+
+                solicitudesAprobadas = await _context.SolicitudDeTarjeta
+                    .Where(x => x.Estado != null && x.Estado.Id == 2)
+                    .CountAsync();
+
+                solicitudesRechazadas = await _context.SolicitudDeTarjeta
+                    .Where(x => x.Estado != null && x.Estado.Id == 3)
+                    .CountAsync();
+
+                var solList = await _context.SolicitudDeTarjeta
+                    .OrderByDescending(x => x.FechaSolicitud)
+                    .Take(5)
+                    .ToListAsync();
+
+                ultimasSolicitudesList = solList.Select(s => new
+                {
+                    NombreCompleto = $"{s.Nombre} {s.Apellido}",
+                    DNI = s.DNI ?? "-",
+                    Fecha = s.FechaSolicitud.ToString("dd/MM/yyyy HH:mm"),
+                    EstadoId = s.Estado != null ? s.Estado.Id : 1
+                }).Cast<object>().ToList();
+            }
+
+            // Morosos
+            int morososCount = 0;
+            if (puedeVerMorosos)
+            {
+                morososCount = await _context.Morosos.CountAsync();
+            }
+
+            return Json(new
+            {
+                puedeVerClientes,
+                puedeVerPagos,
+                puedeVerSolicitudes,
+                puedeVerMorosos,
+                sociosConApp,
+                sociosNuevosMes,
+                pagosHoyCantidad,
+                pagosHoyMonto,
+                ultimosPagos = ultimosPagosList,
+                solicitudesPendientes,
+                solicitudesAprobadas,
+                solicitudesRechazadas,
+                ultimasSolicitudes = ultimasSolicitudesList,
+                morososCount
+            });
+        }
+
+
+
 
         public async Task<IActionResult> DescargarResumen(string dni)
         {
