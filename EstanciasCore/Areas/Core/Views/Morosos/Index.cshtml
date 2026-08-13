@@ -1,0 +1,93 @@
+@model List<DAL.Models.Morosos>
+
+@{
+    ViewData["Title"] = "Listado de Morosos";
+}
+
+<div class="box box-info">
+    <div class="box-header with-border filtro-grilla">
+        <span class="txt-titulo-box">Listado de Morosos</span>
+        <div class="input-group input-group-sm pull-right" style="max-width: 300px;">
+            <a onclick="importarMorosos()" class="btn btn-success btn-sm" title="Importar Archivo" style="margin-right: 5px;">
+                <i class="fa fa-upload"><span class="hidden-xs"> Importar</span></i>
+            </a>
+            <a onclick="nuevoMoroso()" class="btn btn-info btn-sm" title="Nuevo Moroso">
+                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
+            </a>
+        </div>
+    </div>
+    <div class="box-body">
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+
+        <table id="listadoMorosos" class="table table-hover table-bordered table-responsive borde_interno">
+            <thead>
+                <tr>
+                    <th>DNI</th>
+                    <th>Nombre y Apellido</th>
+                    <th>Fecha de Carga</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@Html.DisplayFor(modelItem => item.DNI)</td>
+                        <td>@Html.DisplayFor(modelItem => item.NombreCompleto)</td>
+                        <td>@item.FechaCarga.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            <a onclick="editarMoroso(@item.Id)" title="Editar" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
+                            <a title="Borrar" href="#" onclick="confirmarEliminar(event, '/Core/Morosos/Delete/@item.Id')" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<modal title="Nuevo Moroso" callback-modal="true" function="nuevoMoroso" load-url="/Core/Morosos/_Create/" size="Medium"></modal>
+<modal title="Edición de Moroso" callback-modal="true" function="editarMoroso" load-url="/Core/Morosos/_Edit/" size="Medium"></modal>
+<modal title="Importar Morosos" callback-modal="true" function="importarMorosos" load-url="/Core/Morosos/_Importar/" size="Medium"></modal>
+
+<script>
+    function confirmarEliminar(e, url) {
+        e.preventDefault();
+        Swal.fire({
+            title: "¿Está seguro?",
+            text: "¿Desea borrar este registro?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Borrar",
+            cancelButtonText: "Cancelar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $('#listadoMorosos').DataTable({
+            "columnDefs": [
+                { "width": "20%", "targets": 0 },
+                { "width": "45%", "targets": 1 },
+                { "width": "25%", "targets": 2 },
+                { "width": "10%", "targets": 3, "orderable": false, "searchable": false, class: "text-center" }
+            ],
+            "language": {
+                'url': '@Url.Content("~/lib/arg.json")'
+            }
+        });
+    });
+</script>

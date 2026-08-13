@@ -1,0 +1,23 @@
+@{
+    Layout = null;
+}
+
+<form asp-action="Importar" asp-area="Core" asp-antiforgery="true" enctype="multipart/form-data" method="post">
+    <div class="modal-body">
+        <div class="form-group">
+            <label>Seleccionar archivo (Excel/CSV)</label>
+            <input type="file" name="archivo" class="form-control" accept=".xlsx,.csv" required />
+            <small class="text-muted">Formato esperado: Columnas DNI y NombreCompleto.</small>
+        </div>
+        <div class="form-group mt-3">
+            <a href="#" onclick="window.location.href='/Core/Morosos/DescargarPlantilla'; return false;" class="btn btn-link">
+                <i class="fa fa-download"></i> Descargar plantilla de ejemplo
+            </a>
+        </div>
+    </div>
+    
+    <div class="modal-footer">
+        <a class="btn btn-default" data-dismiss="modal">Cancelar</a>
+        <input type="submit" value="Importar" class="btn btn-success pull-right" />
+    </div>
+</form>
