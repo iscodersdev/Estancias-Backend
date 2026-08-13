@@ -11,9 +11,6 @@
             <a onclick="importarMorosos()" class="btn btn-success btn-sm" title="Importar Archivo" style="margin-right: 5px;">
                 <i class="fa fa-upload"><span class="hidden-xs"> Importar</span></i>
             </a>
-            <a onclick="nuevoMoroso()" class="btn btn-info btn-sm" title="Nuevo Moroso">
-                <i class="fa fa-plus"><span class="hidden-xs"> Nuevo</span></i>
-            </a>
         </div>
     </div>
     <div class="box-body">
@@ -33,7 +30,6 @@
                     <th>DNI</th>
                     <th>Nombre y Apellido</th>
                     <th>Fecha de Carga</th>
-                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,10 +39,6 @@
                         <td>@Html.DisplayFor(modelItem => item.DNI)</td>
                         <td>@Html.DisplayFor(modelItem => item.NombreCompleto)</td>
                         <td>@item.FechaCarga.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>
-                            <a onclick="editarMoroso(@item.Id)" title="Editar" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
-                            <a title="Borrar" href="#" onclick="confirmarEliminar(event, '/Core/Morosos/Delete/@item.Id')" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
-                        </td>
                     </tr>
                 }
             </tbody>

@@ -96,12 +96,7 @@
                         action += `<a onclick="Roles('${row['Id']}')" title="Asignar Roles" class="btn btn-primary btn-xs"><i class="fa fa-plus"></i></a> &nbsp`;
                         action += `<a onclick="editUser('${row['Id']}')" title="Editar Usuario" class="btn btn-info btn-xs"><i class="fa fa-pencil"></i></a> &nbsp`;
                         action += `<a onclick="_ChangePassword('${row['Id']}')" title="Modificar Contraseña Usuario" class="btn bg-green btn-xs"><i class="fa fa-lock"></i></a> &nbsp`;
-                        action += `<a onclick="changeCategory('${row['Id']}')" title="Cambiar Categoría" class="btn btn-warning btn-xs"><i class="fa fa-tags"></i></a> &nbsp`;
-                        if (row['Incobrable']) {
-                            action += `<a onclick="toggleIncobrable('${row['Id']}')" title="Marcar como Cobrable" class="btn btn-success btn-xs"><i class="fa fa-money"></i></a> &nbsp`;
-                        } else {
-                            action += `<a onclick="toggleIncobrable('${row['Id']}')" title="Marcar como Incobrable" class="btn btn-danger btn-xs"><i class="fa fa-money"></i></a> &nbsp`;
-                        }
+                        action += `<a onclick="changeCategory('${row['Id']}')" title="Cambiar Categoría" class="btn btn-warning btn-xs"><i class="fa fa-tags"></i></a> &nbsp`;                        
                         return action;
                     }
                 }

@@ -1546,7 +1546,15 @@ namespace EstanciasCore.Controllers
                     // 6/10
                     user.Token = token;
                     user.activo = false;
-                    user.UsuariosCategorias = _context.UsuariosCategorias.Where(x => x.Id==5).FirstOrDefault();
+                    var preCategoria = _context.PreRegistroCategorias.Where(x => x.DNI==user.Personas.NroDocumento).FirstOrDefault();
+                    if (preCategoria!=null)
+                    {
+                        user.UsuariosCategorias = _context.UsuariosCategorias.Where(x => x.Nombre==preCategoria.Categoria).FirstOrDefault();
+                    }
+                    else
+                    {
+                        user.UsuariosCategorias = _context.UsuariosCategorias.Where(x => x.Id==5).FirstOrDefault();
+                    }
                     _context.Usuarios.Update(user);
                     _context.SaveChanges();
                     Registro.Status = 200;
