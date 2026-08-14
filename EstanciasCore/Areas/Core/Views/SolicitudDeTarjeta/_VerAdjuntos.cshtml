@@ -1,0 +1,79 @@
+@model DAL.DTOs.AdjuntosSolicitudDTO
+
+<div class="row" style="margin-bottom: 15px;">
+    <div class="col-md-12">
+        <div class="well well-sm text-center" style="margin-bottom: 10px; font-size: 14px;">
+            <strong>Solicitante:</strong> @Model.NombreCompleto &nbsp;&nbsp;|&nbsp;&nbsp; <strong>DNI:</strong> @Model.DNI
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="nav-tabs-custom">
+            <ul class="nav nav-tabs" id="adjuntosModalTabs">
+                <li class="active"><a href="javascript:void(0)" onclick="cambiarTabAdjunto(event, 'tab_frente')"><i class="fa fa-id-card-o"></i> Frente DNI</a></li>
+                <li><a href="javascript:void(0)" onclick="cambiarTabAdjunto(event, 'tab_dorso')"><i class="fa fa-id-card"></i> Dorso DNI</a></li>
+                <li><a href="javascript:void(0)" onclick="cambiarTabAdjunto(event, 'tab_selfie')"><i class="fa fa-user-circle-o"></i> Selfie</a></li>
+            </ul>
+            <div class="tab-content" style="min-height: 350px;">
+                <div class="tab-pane active" id="tab_frente" style="display: block;">
+                    <div class="text-center" style="padding: 15px;">
+                        @if (!string.IsNullOrEmpty(Model.FrenteDNIBase64))
+                        {
+                            <img src="data:image/jpeg;base64,@Model.FrenteDNIBase64" alt="Frente DNI" class="img-responsive img-thumbnail center-block" style="max-height: 450px; margin: 0 auto;" />
+                        }
+                        else
+                        {
+                            <div class="alert alert-info text-center" style="margin: 20px;">
+                                <i class="fa fa-info-circle"></i> No se adjuntó la imagen de Frente DNI.
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="tab-pane" id="tab_dorso" style="display: none;">
+                    <div class="text-center" style="padding: 15px;">
+                        @if (!string.IsNullOrEmpty(Model.DorsoDNIBase64))
+                        {
+                            <img src="data:image/jpeg;base64,@Model.DorsoDNIBase64" alt="Dorso DNI" class="img-responsive img-thumbnail center-block" style="max-height: 450px; margin: 0 auto;" />
+                        }
+                        else
+                        {
+                            <div class="alert alert-info text-center" style="margin: 20px;">
+                                <i class="fa fa-info-circle"></i> No se adjuntó la imagen de Dorso DNI.
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="tab-pane" id="tab_selfie" style="display: none;">
+                    <div class="text-center" style="padding: 15px;">
+                        @if (!string.IsNullOrEmpty(Model.SelfieBase64))
+                        {
+                            <img src="data:image/jpeg;base64,@Model.SelfieBase64" alt="Selfie" class="img-responsive img-thumbnail center-block" style="max-height: 450px; margin: 0 auto;" />
+                        }
+                        else
+                        {
+                            <div class="alert alert-info text-center" style="margin: 20px;">
+                                <i class="fa fa-info-circle"></i> No se adjuntó la imagen de Selfie.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function cambiarTabAdjunto(e, tabId) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        $('#adjuntosModalTabs li').removeClass('active');
+        $(e.currentTarget).parent().addClass('active');
+
+        $('#tab_frente, #tab_dorso, #tab_selfie').removeClass('active').hide();
+        $('#' + tabId).addClass('active').show();
+    }
+</script>

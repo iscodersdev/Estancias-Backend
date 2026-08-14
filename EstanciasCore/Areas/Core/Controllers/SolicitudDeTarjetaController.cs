@@ -307,6 +307,33 @@ namespace EstanciasCore.Areas.Core.Controllers
             return Json(new { pendientes = cantidad, ultimas });
         }
 
+        // GET: Core/SolicitudDeTarjeta/_VerAdjuntos/5
+        public async Task<IActionResult> _VerAdjuntos(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var entity = await _context.SolicitudDeTarjeta.FindAsync(id);
+            if (entity == null)
+            {
+                return NotFound();
+            }
+
+            var model = new AdjuntosSolicitudDTO
+            {
+                Id = entity.Id,
+                NombreCompleto = $"{entity.Nombre} {entity.Apellido}",
+                DNI = entity.DNI,
+                FrenteDNIBase64 = entity.FrenteDNI != null && entity.FrenteDNI.Length > 0 ? Convert.ToBase64String(entity.FrenteDNI) : null,
+                DorsoDNIBase64 = entity.DorsoDNI != null && entity.DorsoDNI.Length > 0 ? Convert.ToBase64String(entity.DorsoDNI) : null,
+                SelfieBase64 = entity.Selfie != null && entity.Selfie.Length > 0 ? Convert.ToBase64String(entity.Selfie) : null
+            };
+
+            return PartialView("_VerAdjuntos", model);
+        }
+
         private bool SolicitudDeTarjetaExists(int id)
         {
             return _context.SolicitudDeTarjeta.Any(e => e.Id == id);

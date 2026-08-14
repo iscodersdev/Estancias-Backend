@@ -10,6 +10,9 @@ namespace DAL.Models
         public string DNI { get; set; }
         public string NumeroTarjeta { get; set; }
         public string Email { get; set; }
+        public byte[] FrenteDNI { get; set; }
+        public byte[] DorsoDNI { get; set; }
+        public byte[] Selfie { get; set; }
         public DateTime FechaNacimiento { get; set; }
         public string Domicilio { get; set; }
         public DateTime FechaSolicitud { get; set; } = DateTime.Now;

@@ -76,16 +76,13 @@
                             @(string.IsNullOrEmpty(item.NumeroTarjeta) ? "-" : item.NumeroTarjeta)
                         </td>
                         <td class="text-center">
+                            <a href="javascript:void(0)" onclick="verAdjuntos(@item.Id)" title="Ver Adjuntos" class="btn btn-info btn-xs"><i class="fa fa-image"></i></a>
                             @if (estadoId == 1)
                             {
                                 <a href="javascript:void(0)" onclick="editarSolicitud(@item.Id)" title="Editar" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i></a>
                                 <a href="javascript:void(0)" onclick="aprobarSolicitud(@item.Id)" title="Aprobar y Asignar Tarjeta" class="btn btn-success btn-xs"><i class="fa fa-check"></i></a>
                                 <a href="javascript:void(0)" onclick="confirmarRechazar(event, '/Core/SolicitudDeTarjeta/Rechazar/@item.Id')" title="Rechazar Solicitud" class="btn btn-warning btn-xs"><i class="fa fa-times"></i></a>
                                 <a href="javascript:void(0)" onclick="confirmarEliminar(event, '/Core/SolicitudDeTarjeta/Delete/@item.Id')" title="Borrar" class="btn btn-danger btn-xs"><i class="fa fa-trash-o"></i></a>
-                            }
-                            else
-                            {
-                                @Html.Raw("---")
                             }
                         </td>
                     </tr>
@@ -98,6 +95,7 @@
 <modal title="Nueva Solicitud de Tarjeta" callback-modal="true" function="nuevaSolicitud" load-url="/Core/SolicitudDeTarjeta/_Create/" size="Medium"></modal>
 <modal title="Edición de Solicitud de Tarjeta" callback-modal="true" function="editarSolicitud" load-url="/Core/SolicitudDeTarjeta/_Edit/" size="Medium"></modal>
 <modal title="Aprobar Solicitud de Tarjeta" callback-modal="true" function="aprobarSolicitud" load-url="/Core/SolicitudDeTarjeta/_Aprobar/" size="Medium"></modal>
+<modal title="Adjuntos de Solicitud de Tarjeta" callback-modal="true" function="verAdjuntos" load-url="/Core/SolicitudDeTarjeta/_VerAdjuntos/" size="Large"></modal>
 
 <script>
     function confirmarRechazar(e, url) {

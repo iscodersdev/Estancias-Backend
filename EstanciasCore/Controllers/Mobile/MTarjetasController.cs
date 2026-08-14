@@ -929,6 +929,9 @@ namespace EstanciasCore.API.Controllers.Billetera
                     FechaNacimiento = solicitudDTO.FechaNacimiento,
                     Domicilio = solicitudDTO.Domicilio,
                     FechaSolicitud = DateTime.Now,
+                    FrenteDNI = solicitudDTO.FrenteDNI,
+                    DorsoDNI = solicitudDTO.DorsoDNI,
+                    Selfie = solicitudDTO.Selfie,
                     Estado = _context.EstadoSolicitudDeTarjeta.Where(e => e.Id == 1).FirstOrDefault()
                 };
 

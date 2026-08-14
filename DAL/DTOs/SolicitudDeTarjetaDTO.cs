@@ -58,4 +58,14 @@ namespace DAL.DTOs
         [Display(Name = "Número de Tarjeta")]
         public string NumeroTarjeta { get; set; }
     }
+
+    public class AdjuntosSolicitudDTO
+    {
+        public int Id { get; set; }
+        public string NombreCompleto { get; set; }
+        public string DNI { get; set; }
+        public string FrenteDNIBase64 { get; set; }
+        public string DorsoDNIBase64 { get; set; }
+        public string SelfieBase64 { get; set; }
+    }
 }
