@@ -6,6 +6,7 @@ using DAL.DTOs;
 using DAL.Models;
 using EstanciasCore.Interface;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using static EstanciasCore.Services.common;
 
@@ -23,15 +24,44 @@ namespace EstanciasCore.Areas.Core.Controllers
             _mailService = mailService;
         }
 
+        private void CargarViewBags(int? provinciaId = null)
+        {
+            var provincias = _context.Provincia.OrderBy(p => string.IsNullOrEmpty(p.DescripcionCompleta) ? p.Descripcion : p.DescripcionCompleta).ToList();
+            ViewBag.Provincias = provincias.Select(g => new SelectListItem 
+            { 
+                Text = string.IsNullOrEmpty(g.DescripcionCompleta) ? g.Descripcion : g.DescripcionCompleta, 
+                Value = g.Id.ToString() 
+            });
+
+            if (provinciaId.HasValue && provinciaId.Value > 0)
+            {
+                ViewBag.Localidades = _context.Localidad.Where(x => x.IdProvincia == provinciaId.Value).OrderBy(l => l.Descripcion).Select(g => new SelectListItem { Text = g.Descripcion, Value = g.Id.ToString() });
+            }
+            else if (provincias.Any())
+            {
+                var primeraProvinciaId = provincias.First().Id;
+                ViewBag.Localidades = _context.Localidad.Where(x => x.IdProvincia == primeraProvinciaId).OrderBy(l => l.Descripcion).Select(g => new SelectListItem { Text = g.Descripcion, Value = g.Id.ToString() });
+            }
+            else
+            {
+                ViewBag.Localidades = _context.Localidad.OrderBy(l => l.Descripcion).Select(g => new SelectListItem { Text = g.Descripcion, Value = g.Id.ToString() });
+            }
+        }
+
         // GET: Core/SolicitudDeTarjeta
         public async Task<IActionResult> Index()
         {
-            return View(await _context.SolicitudDeTarjeta.OrderByDescending(s => s.FechaSolicitud).ToListAsync());
+            return View(await _context.SolicitudDeTarjeta
+                .Include(s => s.Localidad)
+                .Include(s => s.Provincia)
+                .Include(s => s.Estado)
+                .OrderByDescending(s => s.FechaSolicitud).ToListAsync());
         }
 
         // GET: Core/SolicitudDeTarjeta/_Create
         public IActionResult _Create()
         {
+            CargarViewBags();
             var model = new SolicitudDeTarjetaDTO
             {
                 FechaNacimiento = DateTime.Today.AddYears(-18)
@@ -54,7 +84,12 @@ namespace EstanciasCore.Areas.Core.Controllers
                     DNI = model.DNI,
                     Email = model.Email,
                     FechaNacimiento = model.FechaNacimiento,
-                    Domicilio = model.Domicilio,
+                    Calle = model.Calle,
+                    Altura = model.Altura,
+                    PisoDepto = model.PisoDepto,
+                    CodigoPostal = model.CodigoPostal,
+                    Localidad = model.Localidad != null && model.Localidad.Id > 0 ? _context.Localidad.Find(model.Localidad.Id) : null,
+                    Provincia = model.Provincia != null && model.Provincia.Id > 0 ? _context.Provincia.Find(model.Provincia.Id) : null,
                     FechaSolicitud = DateTime.Now,
                     Estado = _context.EstadoSolicitudDeTarjeta.Where(e => e.Id == 1).FirstOrDefault()
                 };
@@ -64,6 +99,7 @@ namespace EstanciasCore.Areas.Core.Controllers
                 TempData["Success"] = "Solicitud de tarjeta guardada correctamente.";
                 return RedirectToAction(nameof(Index));
             }
+            CargarViewBags(model.Provincia?.Id);
             return PartialView(model);
         }
 
@@ -75,11 +111,18 @@ namespace EstanciasCore.Areas.Core.Controllers
                 return NotFound();
             }
 
-            var entity = await _context.SolicitudDeTarjeta.FindAsync(id);
+            var entity = await _context.SolicitudDeTarjeta
+                .Include(s => s.Localidad)
+                .Include(s => s.Provincia)
+                .Include(s => s.Estado)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
             if (entity == null)
             {
                 return NotFound();
             }
+
+            CargarViewBags(entity.Provincia?.Id);
 
             var model = new SolicitudDeTarjetaDTO
             {
@@ -89,9 +132,14 @@ namespace EstanciasCore.Areas.Core.Controllers
                 DNI = entity.DNI,
                 Email = entity.Email,
                 FechaNacimiento = entity.FechaNacimiento,
-                Domicilio = entity.Domicilio,
+                Calle = entity.Calle,
+                Altura = entity.Altura,
+                PisoDepto = entity.PisoDepto,
+                CodigoPostal = entity.CodigoPostal,
+                Localidad = entity.Localidad,
+                Provincia = entity.Provincia,
                 FechaSolicitud = entity.FechaSolicitud,
-                Estado = entity.Estado.Nombre,
+                Estado = entity.Estado?.Nombre,
                 NumeroTarjeta = entity.NumeroTarjeta,
             };
 
@@ -110,7 +158,11 @@ namespace EstanciasCore.Areas.Core.Controllers
 
             if (ModelState.IsValid)
             {
-                var entity = await _context.SolicitudDeTarjeta.FindAsync(id);
+                var entity = await _context.SolicitudDeTarjeta
+                    .Include(s => s.Localidad)
+                    .Include(s => s.Provincia)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
                 if (entity == null)
                 {
                     return NotFound();
@@ -121,7 +173,12 @@ namespace EstanciasCore.Areas.Core.Controllers
                 entity.DNI = model.DNI;
                 entity.Email = model.Email;
                 entity.FechaNacimiento = model.FechaNacimiento;
-                entity.Domicilio = model.Domicilio;
+                entity.Calle = model.Calle;
+                entity.Altura = model.Altura;
+                entity.PisoDepto = model.PisoDepto;
+                entity.CodigoPostal = model.CodigoPostal;
+                entity.Localidad = model.Localidad != null && model.Localidad.Id > 0 ? _context.Localidad.Find(model.Localidad.Id) : null;
+                entity.Provincia = model.Provincia != null && model.Provincia.Id > 0 ? _context.Provincia.Find(model.Provincia.Id) : null;
 
                 try
                 {
@@ -142,7 +199,20 @@ namespace EstanciasCore.Areas.Core.Controllers
                 TempData["Success"] = "Solicitud de tarjeta actualizada correctamente.";
                 return RedirectToAction(nameof(Index));
             }
+            CargarViewBags(model.Provincia?.Id);
             return PartialView(model);
+        }
+
+        [HttpPost]
+        public string SelectLocalidades(int id)
+        {
+            string array = "<option value=''>Seleccione una Localidad</option>";
+            var localidad = _context.Localidad.Where(x => x.IdProvincia == id).OrderBy(x => x.Descripcion).ToList();
+            foreach (var loc in localidad)
+            {
+                array += "<option value='" + loc.Id + "'>" + loc.Descripcion + "</option>";
+            }
+            return array;
         }
 
         // GET: Core/SolicitudDeTarjeta/_Aprobar/5

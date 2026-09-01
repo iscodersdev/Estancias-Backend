@@ -56,7 +56,8 @@
                         <td>@Html.DisplayFor(modelItem => item.DNI)</td>
                         <td>@Html.DisplayFor(modelItem => item.Email)</td>
                         <td>@item.FechaNacimiento.ToString("dd/MM/yyyy")</td>
-                        <td>@Html.DisplayFor(modelItem => item.Domicilio)</td>
+                        <td>@item.Calle @item.Altura @item.PisoDepto , @(item.Localidad!=null?item.Localidad.Descripcion:"") , @(item.Provincia!=null?item.Provincia.Descripcion:"")</td>
+                        <td>@item.CodigoPostal</td>
                         <td>@item.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</td>
                         <td class="text-center">
                             @if (estadoId == 2)

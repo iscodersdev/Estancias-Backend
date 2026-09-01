@@ -1555,6 +1555,16 @@ namespace EstanciasCore.Controllers
                     {
                         user.UsuariosCategorias = _context.UsuariosCategorias.Where(x => x.Id==5).FirstOrDefault();
                     }
+
+                    var moroso = _context.Morosos.Where(x => x.DNI == user.Personas.NroDocumento).FirstOrDefault();
+                    if (moroso != null)
+                    {
+                        user.Incobrable = true;
+                    }
+                    else
+                    {
+                        user.Incobrable = false;
+                    }
                     _context.Usuarios.Update(user);
                     _context.SaveChanges();
                     Registro.Status = 200;

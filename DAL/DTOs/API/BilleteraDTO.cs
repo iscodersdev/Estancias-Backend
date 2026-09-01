@@ -153,7 +153,12 @@ namespace DAL.DTOs.API
         public byte[] DorsoDNI { get; set; }
         public byte[] Selfie { get; set; }
         public DateTime FechaNacimiento { get; set; }
-        public string Domicilio { get; set; }
+        public string Calle { get; set; }
+        public string Altura { get; set; }
+        public string PisoDepto { get; set; }
+        public int LocalidadId { get; set; }
+        public int ProvinciaId { get; set; }
+        public string CodigoPostal { get; set; }
 
     }
 

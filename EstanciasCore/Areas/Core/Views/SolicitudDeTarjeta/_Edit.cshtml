@@ -12,28 +12,32 @@
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="FechaSolicitud" />
         
-        <div class="form-group">
-            <label asp-for="Nombre" class="control-label"></label>
-            <input asp-for="Nombre" class="form-control" placeholder="Ingrese el Nombre" required />
-            <span asp-validation-for="Nombre" class="text-danger"></span>
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label asp-for="Nombre" class="control-label"></label>
+                <input asp-for="Nombre" class="form-control" placeholder="Ingrese el Nombre" required />
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-6 form-group">
+                <label asp-for="Apellido" class="control-label"></label>
+                <input asp-for="Apellido" class="form-control" placeholder="Ingrese el Apellido" required />
+                <span asp-validation-for="Apellido" class="text-danger"></span>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label asp-for="Apellido" class="control-label"></label>
-            <input asp-for="Apellido" class="form-control" placeholder="Ingrese el Apellido" required />
-            <span asp-validation-for="Apellido" class="text-danger"></span>
-        </div>
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label asp-for="DNI" class="control-label"></label>
+                <input asp-for="DNI" class="form-control" placeholder="Ingrese el DNI" required />
+                <span asp-validation-for="DNI" class="text-danger"></span>
+            </div>
 
-        <div class="form-group">
-            <label asp-for="DNI" class="control-label"></label>
-            <input asp-for="DNI" class="form-control" placeholder="Ingrese el DNI" required />
-            <span asp-validation-for="DNI" class="text-danger"></span>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="Email" class="control-label"></label>
-            <input asp-for="Email" type="email" class="form-control" placeholder="Ingrese el Email" required />
-            <span asp-validation-for="Email" class="text-danger"></span>
+            <div class="col-md-6 form-group">
+                <label asp-for="Email" class="control-label"></label>
+                <input asp-for="Email" type="email" class="form-control" placeholder="Ingrese el Email" required />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
         </div>
 
         <div class="form-group">
@@ -42,10 +46,51 @@
             <span asp-validation-for="FechaNacimiento" class="text-danger"></span>
         </div>
 
-        <div class="form-group">
-            <label asp-for="Domicilio" class="control-label"></label>
-            <input asp-for="Domicilio" class="form-control" placeholder="Ingrese el Domicilio" required />
-            <span asp-validation-for="Domicilio" class="text-danger"></span>
+        <hr />
+        <h5 style="font-weight: bold; margin-bottom: 15px;">Domicilio</h5>
+
+        <div class="row">
+            <div class="col-md-8 form-group">
+                <label asp-for="Calle" class="control-label"></label>
+                <input asp-for="Calle" class="form-control" placeholder="Ingrese la Calle" />
+                <span asp-validation-for="Calle" class="text-danger"></span>
+            </div>
+            <div class="col-md-4 form-group">
+                <label asp-for="Altura" class="control-label"></label>
+                <input asp-for="Altura" class="form-control" placeholder="Altura" />
+                <span asp-validation-for="Altura" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label asp-for="PisoDepto" class="control-label"></label>
+                <input asp-for="PisoDepto" class="form-control" placeholder="Piso / Depto" />
+                <span asp-validation-for="PisoDepto" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 form-group">
+                <label asp-for="CodigoPostal" class="control-label"></label>
+                <input asp-for="CodigoPostal" class="form-control" placeholder="Código Postal" />
+                <span asp-validation-for="CodigoPostal" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label asp-for="Provincia" class="control-label"></label>
+                <select asp-for="Provincia.Id" asp-items="@ViewBag.Provincias" class="form-control">
+                    <option value="">Seleccione una Provincia</option>
+                </select>
+                <span asp-validation-for="Provincia" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-6 form-group">
+                <label asp-for="Localidad" class="control-label"></label>
+                <select asp-for="Localidad.Id" asp-items="@ViewBag.Localidades" class="form-control">
+                    <option value="">Seleccione una Localidad</option>
+                </select>
+                <span asp-validation-for="Localidad" class="text-danger"></span>
+            </div>
         </div>
     }
     
@@ -56,6 +101,28 @@
     }
 </form>
 
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+<script>
+    $(document).ready(function () {
+        $(document).off('change', '#Provincia_Id').on('change', '#Provincia_Id', function () {
+            var provId = $(this).val();
+            if (provId) {
+                $.ajax({
+                    url: "/Core/SolicitudDeTarjeta/SelectLocalidades",
+                    data: { id: provId },
+                    type: "POST",
+                    success: function (data) {
+                        $('#Localidad_Id').empty().html(data);
+                        if ($.fn && $.fn.selectpicker) {
+                            try { $('#Localidad_Id').selectpicker('refresh'); } catch (e) { }
+                        }
+                    }
+                });
+            } else {
+                $('#Localidad_Id').empty().html('<option value="">Seleccione una Localidad</option>');
+                if ($.fn && $.fn.selectpicker) {
+                    try { $('#Localidad_Id').selectpicker('refresh'); } catch (e) { }
+                }
+            }
+        });
+    });
+</script>

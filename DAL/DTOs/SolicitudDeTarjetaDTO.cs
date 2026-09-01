@@ -1,3 +1,4 @@
+using DAL.Models;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -30,7 +31,6 @@ namespace DAL.DTOs
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         public DateTime FechaNacimiento { get; set; } = DateTime.Today.AddYears(-18);
 
-        [Required(ErrorMessage = "El campo Domicilio es obligatorio.")]
         [Display(Name = "Domicilio")]
         public string Domicilio { get; set; }
 
@@ -48,6 +48,24 @@ namespace DAL.DTOs
 
         [Display(Name = "Fecha Respuesta")]
         public DateTime? FechaRespuesta { get; set; }
+
+        [Display(Name = "Calle")]
+        public string Calle { get; set; }
+
+        [Display(Name = "Altura")]
+        public string Altura { get; set; }
+
+        [Display(Name = "Piso / Depto")]
+        public string PisoDepto { get; set; }
+
+        [Display(Name = "Localidad")]
+        public virtual Localidad Localidad { get; set; }
+
+        [Display(Name = "Provincia")]
+        public virtual Provincia Provincia { get; set; }
+
+        [Display(Name = "Código Postal")]
+        public string CodigoPostal { get; set; }
     }
 
     public class AprobarSolicitudDTO
