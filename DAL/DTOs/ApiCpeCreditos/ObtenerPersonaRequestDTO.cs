@@ -26,7 +26,12 @@ namespace DAL.DTOs.ApiCpeCreditos
         public LoginServicio LoginServicio { get; set; }
         public string numeroOperacion { get; set; }
     }
-
+    public class ObtenerConsultaRequestDTO
+    {
+        public LoginInterface LoginInterface { get; set; }
+        public string documento { get; set; }
+        public string sexo { get; set; }
+    }
     public class LoginInterface
     {
         public string Login { get; set; }
@@ -306,5 +311,78 @@ namespace DAL.DTOs.ApiCpeCreditos
         public string TipoDatoAnexo { get; set; }
         public string Valor { get; set; }
     }
-}
 
+
+    /* DTO para las Respuestas de obtener persona desde la API de CPE Creditos.*/
+    /*--------------------Api Nueva-----------------------*/
+
+
+    public class ResponseObtenerConsultaDTO
+    {
+        public ResultadoInfo Resultado { get; set; }
+        public long documento { get; set; }
+        public string nombre { get; set; }
+        public string apellido  { get; set; }
+        public string codigoTrx { get; set; }
+        public List<CobranzaDto> cobranzas { get; set; }
+        public ReciboDetalleDto reciboDetalle { get; set; }
+        public string recibo { get; set; }
+    }
+
+    public class CobranzaDto
+    {
+        public int tipo { get; set; }
+        public long identificador { get; set; }
+        public long numero { get; set; }
+        public int numeroCuota { get; set; }
+        public DateTime fechaVencimiento { get; set; }
+        public decimal importe { get; set; }
+        public string detalle { get; set; }
+        public decimal importeAjustes { get; set; }
+        public decimal importeSellos { get; set; }
+        public decimal importeImpuestos { get; set; }
+        public decimal importeSeguroSaldoDeudor { get; set; }
+        public decimal importeSeguroVida { get; set; }
+        public decimal importeSeguro { get; set; }
+        public decimal importeGastos { get; set; }
+        public decimal ivaGastos { get; set; }
+        public decimal importeInteres { get; set; }
+        public decimal ivaInteres { get; set; }
+        public decimal importeCapital { get; set; }
+        public decimal importePunitorios { get; set; }
+        public decimal ivaInteresPunitorio { get; set; }
+        public decimal interesDevengado { get; set; }
+        public decimal ivaInteresDevengado { get; set; }
+        public decimal interesPercibido { get; set; }
+        public decimal ivaInteresPercibido { get; set; }
+        public int diasEnMora { get; set; }
+    }
+
+    public class ReciboDetalleDto
+    {
+        public int numeroCuota { get; set; }
+        public decimal importeCancelar { get; set; }
+        public decimal importeAjustes { get; set; }
+        public decimal importeSellos { get; set; }
+        public decimal importeImpuestos { get; set; }
+        public decimal importeSeguroSaldoDeudor { get; set; }
+        public decimal importeSeguroVida { get; set; }
+        public decimal importeSeguro { get; set; }
+        public decimal importeGastos { get; set; }
+        public decimal importePunitorios { get; set; }
+        public decimal importeInteres { get; set; }
+        public decimal importeCapital { get; set; }
+        public decimal importeBonificacionIva { get; set; }
+        public decimal importeBonificacion { get; set; }
+        public decimal interesDevengado { get; set; }
+        public decimal interesPercibido { get; set; }
+        public decimal ivaInteres { get; set; }
+        public decimal ivaInteresPunitorio { get; set; }
+        public decimal ivaGastos { get; set; }
+        public string tipoRecibo { get; set; }
+        public DateTime? fechaVencimiento { get; set; }
+        public int diasEnMora { get; set; }
+        public DateTime? fechaCobro { get; set; }
+    }
+
+}

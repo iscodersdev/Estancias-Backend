@@ -105,7 +105,8 @@ namespace EstanciasCore.Controllers.ViewComponents.Layout
                     MenuHelpers.AddModule("Menú Mobile", "/Core/MenuMobile/"),
                     MenuHelpers.AddModule("PreRegistro de Categoria", "/Core/PreRegistroCategorias"),
                     MenuHelpers.AddModule("Morosos", "/Core/Morosos"),
-                    MenuHelpers.AddModule("Solicitudes de Tarjeta", "/Core/SolicitudDeTarjeta")
+                    MenuHelpers.AddModule("Solicitudes de Tarjeta", "/Core/SolicitudDeTarjeta"),
+                    MenuHelpers.AddModule("Movimientos Tarjeta (LOAN)", "/Core/MovimientoTarjeta")
             };
                 //reportes.TreeChild = new List<SidebarMenu>()
                 //{

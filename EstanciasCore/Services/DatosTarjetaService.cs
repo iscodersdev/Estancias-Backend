@@ -467,6 +467,43 @@ namespace EstanciasCore.Services
             }
         }
 
+        //Trae los montos con punitorios de la persona, para el resumen de tarjeta
+        public async Task<ResponseObtenerConsultaDTO> ObtenerConsulta(string dni, string sexo)
+        {
+            var requestBody = new ObtenerConsultaRequestDTO
+            {
+                LoginInterface = new LoginInterface
+                {
+                    Login = "appestancias",
+                    Clave = "appcpe01"
+                },
+                documento = dni,
+                sexo = sexo
+            };
+
+            var jsonPayload = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            try
+            {
+                var response = await _httpClient.PostAsync(this._apiBaseUrl + "integracion/api/consulta", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<ResponseObtenerConsultaDTO>(jsonResponse);
+                }
+                else
+                {
+                    throw new Exception($"Error al llamar a la API: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error en la comunicación con el servicio de personas", ex);
+            }
+        }
+
 
 
 

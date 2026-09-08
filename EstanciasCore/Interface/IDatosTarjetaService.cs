@@ -123,6 +123,14 @@ namespace EstanciasCore.Interface
         /// <returns></returns>
         Task<ResponseObtenerOperacionDetallesDTO> ObtenerOperacionDetalles(string numOperacion);
 
+        /// <summary>
+        /// Montos con punitorios de la persona, para el resumen de tarjeta.
+        /// </summary>
+        /// <param name="dni"></param>
+        /// <param name="sexo"></param>
+        /// <returns></returns>
+        Task<ResponseObtenerConsultaDTO> ObtenerConsulta(string dni, string sexo);
+
 
     }
 }

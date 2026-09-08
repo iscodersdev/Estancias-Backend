@@ -1,6 +1,7 @@
 ﻿using DAL.Data;
 using DAL.DTOs;
 using DAL.DTOs.API;
+using DAL.DTOs.ApiCpeCreditos;
 using DAL.DTOs.Reportes;
 using DAL.DTOs.Servicios;
 using DAL.Mobile;
@@ -100,8 +101,14 @@ namespace EstanciasCore.API.Controllers.Billetera
                 decimal DeudaTotal = 0;
                 decimal TotalRedondeo = 0;
                 decimal MontoDisponible = 0;
+                string totalDeuda = "0";
+                int Status = 200;
+                string Mensaje = "Movimiento obtenidos";
+                string Resultado = "Exito";
 
-                List<MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+                List <MovimientoTarjetaDTO> comprasAgrupadas = new List<MovimientoTarjetaDTO>();
+                ResponseObtenerDatosPersonaDTO datosPersona = new ResponseObtenerDatosPersonaDTO();
+                ResponseObtenerConsultaDTO montosConPunitorios = new ResponseObtenerConsultaDTO();
                 var fechaMesActualCuotas = DateTime.Now;
                 //var fechaMesActualCuotas = new DateTime(2025,10,01);
 
@@ -143,6 +150,52 @@ namespace EstanciasCore.API.Controllers.Billetera
                     //Calculo de Punitorios
                     MontoPunitorios = await _datosServices.CalcularPunitorios(datosMovimientos.DetallesSolicitud);
 
+                    //Obtiene los datos de la persona
+                    datosPersona = await _datosServices.ObtenerPersona(usuario.Personas.NroDocumento);
+
+                    if(datosPersona!=null)
+                    {
+                        string letraSexo = "";
+                        if (datosPersona.Persona.Sexo.Id == 3)
+                        {
+                            letraSexo = "F";
+                        }
+                        else
+                        {
+                            if (datosPersona.Persona.Sexo.Id == 2)
+                            {
+                                letraSexo = "M";
+                            }
+                            else if (datosPersona.Persona.Sexo.Id == 1)
+                            {
+                                letraSexo = "F";
+                            }
+                        }
+
+                        //Obtiene los datos de la persona
+                        montosConPunitorios = await _datosServices.ObtenerConsulta(usuario.Personas.NroDocumento, letraSexo);
+                        if(montosConPunitorios!=null)
+                        {
+                            DateTime hoy = DateTime.Today;
+                            int diasEnElMes = DateTime.DaysInMonth(hoy.Year, hoy.Month);
+                            DateTime fechaActual = new DateTime(hoy.Year, hoy.Month, diasEnElMes);
+                            totalDeuda = montosConPunitorios.cobranzas.Where(x=>x.fechaVencimiento.Date<=fechaActual).Sum(x => x.importe).ToString();
+                        }
+                        else
+                        {
+
+                            Status = 400;
+                            Mensaje = "Error al obtener montos y punitorios de LOAN";
+                            Resultado = "Error";
+                        }
+                    }
+                    else
+                    {
+                        Status = 400;
+                        Mensaje = "Error al obtener datos de la persona de LOAN";
+                        Resultado = "Error";
+                    }
+
                     //Movimientos Tarjeta
                     comprasAgrupadas = await _datosServices.ObtieneUltimosMovimientos(datosMovimientos, 20);
                 }
@@ -168,15 +221,16 @@ namespace EstanciasCore.API.Controllers.Billetera
                 return new JsonResult(
                     new ListaMovimientoTarjetaDTO
                     {
-                        Status = 200,
+                        Status = Status,
                         UAT = "null",
-                        Mensaje = "Movimiento obtenidos",
-                        Resultado = "Exito",
+                        Mensaje = Mensaje,
+                        Resultado = Resultado,
                         NroTarjeta = movimientostarjetaDTOS.NroTarjeta,
                         Nombre = usuario.Personas.GetNombreCompleto(),
                         NroDocumento = Convert.ToInt32(usuario.Personas.NroDocumento),
                         Direccion = datosMovimientos.Detalle.Direccion,
-                        MontoAdeudado = TotalRedondeo.ToString().Replace(".", ","),
+                        MontoAdeudado = totalDeuda.Replace(".", ","),
+                        //MontoAdeudado = TotalRedondeo.ToString().Replace(".", ","),
                         ProximaFechaPago = fechaVencimiento.ToString("dd/MM/yyyy"),
                         CuotaVencida = true,
                         TotalProximaCuota = MontoProximaCuota.ToString().Replace(".", ","),
